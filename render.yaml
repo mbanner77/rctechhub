@@ -16,6 +16,15 @@ services:
       - key: ADMIN_PASSWORD
         value: "realcore123"
       - key: DATABASE_URL
-        sync: false
+        fromDatabase:
+          name: rc-techhub-db
+          property: connectionString
       - key: MAIL_CONFIG
         value: ""
+
+databases:
+  - name: rc-techhub-db
+    databaseName: rctechhub
+    user: rctechhub_user
+    plan: free
+    ipAllowList: []
