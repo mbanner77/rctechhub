@@ -18,7 +18,7 @@ services:
       - key: DATABASE_URL
         fromDatabase:
           name: rc-techhub-db
-          property: connectionString
+          property: externalConnectionString
       - key: MAIL_CONFIG
         value: ""
 
