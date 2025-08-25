@@ -6,7 +6,8 @@ services:
     autoDeploy: true
     buildCommand: |
       corepack enable
-      pnpm install --frozen-lockfile || (npm i -g pnpm && pnpm install --frozen-lockfile)
+      corepack prepare pnpm@10.11.0 --activate
+      pnpm install --frozen-lockfile
       pnpm build
     startCommand: pnpm start
     envVars:
