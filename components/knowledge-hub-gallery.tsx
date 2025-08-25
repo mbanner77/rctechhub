@@ -1,0 +1,657 @@
+"use client"
+
+import { useEffect, useState } from "react"
+import { Card, CardContent, CardFooter } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Download, Eye, FileText, Search } from "lucide-react"
+import { Badge } from "@/components/ui/badge"
+import { Input } from "@/components/ui/input"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { useToast } from "@/hooks/use-toast"
+import { defaultKnowledgeHubContent } from "@/data/default-data";
+import { db, sanitizeKnowledgeHubContent } from "@/lib/db";
+import { getClientKnowledgeHubContent } from "@/lib/client-data-service";
+import { mockSchulungen } from "@/app/api/shared/mock-data/schulungen";
+import { analytics } from "@/lib/analytics"
+import { useDownloadCounter } from "@/hooks/useDownloadCounter"
+import { fetchDownloadCounts, updateContentWithDownloadCounts } from "@/lib/download-helpers"
+import { getMailConfig } from "@/lib/mail-config-service"
+import { MinimalContactDialog } from "./minimal-contact-dialog"
+
+type ContentItemProps = {
+  item: any,
+  onDownload: (item: any) => void
+  onPreview: (item: any) => void
+  onContact: (item: any) => void
+}
+
+const ContentItem = ({ item, onDownload, onPreview, onContact }: ContentItemProps) => {
+  // Track if download is in progress
+  const [isDownloading, setIsDownloading] = useState(false);
+
+  const handleDownloadClick = async () => {
+    setIsDownloading(true);
+    try {
+      await onDownload(item);
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
+  return (
+    <Card className="overflow-hidden hover:shadow-lg transition-shadow">
+      <div className="relative h-48 bg-gray-100 overflow-hidden">
+        <img
+          src={item.image || `/placeholder.svg?height=200&width=400&query=${item.type}`}
+          alt={item.title}
+          className="w-full h-full object-cover transition-transform hover:scale-105 duration-300"
+        />
+      </div>
+      <CardContent className="p-6">
+        <h3 className="text-lg font-bold mb-2">{item.title}</h3>
+        <p className="text-gray-600 text-sm mb-4">{item.description}</p>
+        <div className="flex flex-wrap gap-2 mb-4">
+          {(item.tags || []).slice(0, 3).map((tag: string) => (
+            <Badge key={tag} variant="secondary" className="text-xs">
+              {tag}
+            </Badge>
+          ))}
+        </div>
+        <div className="flex items-center text-sm text-gray-500">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-4 w-4 mr-1"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"
+            />
+          </svg>
+          {item.downloads || 0} Downloads
+        </div>
+      </CardContent>
+      <CardFooter className="p-6 pt-0 flex justify-between">
+        <Button variant="outline" size="sm" onClick={() => onPreview(item)}>
+          <Eye className="mr-2 h-4 w-4" />
+          {item.type === "template" ? "Details" : "Lesen"}
+        </Button>
+        {((item.pdfDocument?.fileUrl && item.pdfDocument.fileUrl.trim()) || (item.downloadUrl && item.downloadUrl.trim())) ? (
+          <Button
+            size="sm"
+            className="bg-green-600 hover:bg-green-700"
+            onClick={handleDownloadClick}
+            disabled={isDownloading}
+          >
+            <Download className="mr-2 h-4 w-4" />
+            {isDownloading ? "Downloading..." : "Download"}
+          </Button>
+        ) : (
+          <Button
+            size="sm"
+            className="bg-blue-600 hover:bg-blue-700"
+            onClick={() => onContact(item)}
+          >
+            Anfragen
+          </Button>
+        )}
+      </CardFooter>
+    </Card>
+  );
+}
+
+export default function KnowledgeHubGallery() {
+  const { toast } = useToast()
+  const [activeTab, setActiveTab] = useState("templates")
+  const [isLoading, setIsLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("")
+  const [selectedItem, setSelectedItem] = useState<any | null>(null)
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false)
+  const [isContactDialogOpen, setIsContactDialogOpen] = useState(false)
+  const [contactItem, setContactItem] = useState<any | null>(null)
+  const [allTemplates, setAllTemplates] = useState<any[]>([])  // Store all templates
+  const [allBestPractices, setAllBestPractices] = useState<any[]>([])  // Store all best practices
+  const [filteredTemplates, setFilteredTemplates] = useState<any[]>([])
+  const [filteredBestPractices, setFilteredBestPractices] = useState<any[]>([])
+  const [allSchulungen, setAllSchulungen] = useState<any[]>([])  // Store all trainings
+  const [filteredSchulungen, setFilteredSchulungen] = useState<any[]>([])  // Store filtered trainings for display
+  const { incrementDownloadCount } = useDownloadCounter()
+
+  const populateInitialContent = async (content: any[]) => {
+    // Get the latest download counts from the API
+    try {
+      const downloadCounts = await fetchDownloadCounts();
+      console.log("[KNOWLEDGE-HUB-GALLERY] Download counts fetched:", downloadCounts);
+
+      // Update content with latest download counts
+      content = updateContentWithDownloadCounts(content, downloadCounts);
+    } catch (error) {
+      console.error("[KNOWLEDGE-HUB-GALLERY] Error fetching download counts:", error);
+    }
+
+    const initialTemplates = content.filter((contentItem) => contentItem.type === "template")
+    const initialBestPractices = content.filter((contentItem) => contentItem.type === "best-practice")
+    
+    console.log("[KNOWLEDGE-HUB-GALLERY] Filtered templates:", initialTemplates.length, initialTemplates);
+    console.log("[KNOWLEDGE-HUB-GALLERY] Filtered best practices:", initialBestPractices.length, initialBestPractices);
+    
+    // Store all templates and best practices for search filtering
+    setAllTemplates(initialTemplates)
+    setAllBestPractices(initialBestPractices)
+    setFilteredTemplates(initialTemplates)
+    setFilteredBestPractices(initialBestPractices)
+
+    // Apply search filtering if there's a search term
+    if (searchTerm !== "") {
+      // Since this runs asynchronously, we need to manually apply the search
+      const filteredTemplates = initialTemplates.filter(
+        (template) =>
+          template.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          template.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          template.tags?.some((tag: string) => tag.toLowerCase().includes(searchTerm.toLowerCase())),
+      )
+      setFilteredTemplates(filteredTemplates)
+
+      const filteredBestPractices = initialBestPractices.filter(
+        (bp) =>
+          bp.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          bp.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          bp.tags?.some((tag: string) => tag.toLowerCase().includes(searchTerm.toLowerCase())),
+      )
+      setFilteredBestPractices(filteredBestPractices)
+    }
+  }
+
+  useEffect(() => {
+    const loadKnowledgeHubContent = async () => {
+      setIsLoading(true);
+      try {
+        console.log("[KNOWLEDGE-HUB-GALLERY] Loading Knowledge Hub content...");
+
+        // Load trainings from API or fallback to mock data
+        try {
+          console.log("[KNOWLEDGE-HUB-GALLERY] Loading trainings from API...");
+          const response = await fetch('/api/schulungen');
+          if (response.ok) {
+            const data = await response.json();
+            // Check if we received actual data
+            if (Array.isArray(data) && data.length > 0) {
+              console.log("[KNOWLEDGE-HUB-GALLERY] Trainings loaded from API:", data.length, data);
+              setAllSchulungen(data);
+              setFilteredSchulungen(data);
+            } else {
+              console.log("[KNOWLEDGE-HUB-GALLERY] API returned empty trainings array, using mock data");
+              setAllSchulungen(mockSchulungen);
+              setFilteredSchulungen(mockSchulungen);
+            }
+          } else {
+            console.log("[KNOWLEDGE-HUB-GALLERY] Error loading trainings from API, using mock data");
+            setAllSchulungen(mockSchulungen);
+            setFilteredSchulungen(mockSchulungen);
+          }
+        } catch (error) {
+          console.log("[KNOWLEDGE-HUB-GALLERY] Error fetching trainings:", error);
+          setAllSchulungen(mockSchulungen);
+          setFilteredSchulungen(mockSchulungen);
+        }
+
+        // Versuche zuerst, die Daten vom Server zu laden
+        try {
+          const serverKnowledgeHubContent = await getClientKnowledgeHubContent();
+          console.log(
+            "[KNOWLEDGE-HUB-GALLERY] Knowledge Hub Inhalte vom Server geladen:",
+            serverKnowledgeHubContent.length
+          );
+          console.log("serverKnowledgeHubContent", serverKnowledgeHubContent)
+          
+          if (Array.isArray(serverKnowledgeHubContent) && serverKnowledgeHubContent.length > 0) {
+            populateInitialContent(serverKnowledgeHubContent);
+            return; // Server-Daten erfolgreich geladen, beende hier
+          }
+        } catch (serverError) {
+          console.error(
+            "[KNOWLEDGE-HUB-GALLERY] Fehler beim Laden vom Server, versuche lokale Datenbank:",
+            serverError
+          );
+        }
+
+        // Wenn Server-Laden fehlschlägt, versuche lokale Datenbank
+        const dbKnowledgeHubContent = await db.knowledgeHubContent.toArray();
+
+        if (Array.isArray(dbKnowledgeHubContent) && dbKnowledgeHubContent.length > 0) {
+          console.log(
+            "[KNOWLEDGE-HUB-GALLERY] Knowledge Hub Inhalte aus der lokalen Datenbank geladen:",
+            dbKnowledgeHubContent.length
+          );
+          populateInitialContent(dbKnowledgeHubContent);
+        } else {
+          console.log(
+            "[KNOWLEDGE-HUB-GALLERY] Keine Knowledge Hub Inhalte in der Datenbank gefunden, verwende Standarddaten"
+          );
+          const sanitizedKnowledgeHubContent = defaultKnowledgeHubContent.map(sanitizeKnowledgeHubContent);
+          populateInitialContent(sanitizedKnowledgeHubContent);
+
+          // Initialisiere die Datenbank mit Standarddaten
+          try {
+            await db.knowledgeHubContent.clear();
+            await db.knowledgeHubContent.bulkPut(sanitizedKnowledgeHubContent);
+            console.log("[KNOWLEDGE-HUB-GALLERY] Datenbank mit Standarddaten initialisiert");
+          } catch (dbError) {
+            console.error(
+              "[KNOWLEDGE-HUB-GALLERY] Fehler beim Initialisieren der Datenbank:",
+              dbError
+            );
+          }
+        }
+      } catch (err) {
+        console.error("[KNOWLEDGE-HUB-GALLERY] Fehler beim Laden der Knowledge Hub Inhalte:", err);
+        populateInitialContent(defaultKnowledgeHubContent.map(sanitizeKnowledgeHubContent));
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadKnowledgeHubContent();
+  }, []);
+
+  useEffect(() => {
+    // Debug log for filtered trainings whenever they change
+    console.log("[KNOWLEDGE-HUB-GALLERY] Filtered trainings changed:", filteredSchulungen.length, filteredSchulungen);
+  }, [filteredSchulungen]);
+
+  useEffect(() => {
+    // Debug log for all trainings whenever they change
+    console.log("[KNOWLEDGE-HUB-GALLERY] All trainings changed:", allSchulungen.length, allSchulungen);
+  }, [allSchulungen]);
+
+  const handleSearchTermChange = (term: string) => {
+    setSearchTerm(term)
+
+    // Filter from the original complete arrays, not the already filtered ones
+    const newFilteredTemplates = allTemplates.filter(
+      (template) =>
+        template.title.toLowerCase().includes(term.toLowerCase()) ||
+        template.description.toLowerCase().includes(term.toLowerCase()) ||
+        template.tags?.some((tag: string) => tag.toLowerCase().includes(term.toLowerCase())),
+    )
+    setFilteredTemplates(newFilteredTemplates)
+
+    const newFilteredBestPractices = allBestPractices.filter(
+      (bp) =>
+        bp.title.toLowerCase().includes(term.toLowerCase()) ||
+        bp.description.toLowerCase().includes(term.toLowerCase()) ||
+        bp.tags?.some((tag: string) => tag.toLowerCase().includes(term.toLowerCase())),
+    )
+    setFilteredBestPractices(newFilteredBestPractices)
+
+    // Also filter trainings
+    const newFilteredSchulungen = allSchulungen.filter(
+      (schulung: any) =>
+        schulung.title.toLowerCase().includes(term.toLowerCase()) ||
+        schulung.category.toLowerCase().includes(term.toLowerCase())
+    )
+    setFilteredSchulungen(newFilteredSchulungen)
+  }
+
+  // Handle preview
+  const handlePreview = (item: any) => {
+    analytics.serviceClick(item.title, `preview-${item.type || 'content'}`)
+    setSelectedItem(item)
+    setIsPreviewOpen(true)
+  }
+
+  // Handle contact
+  const handleContact = (item: any) => {
+    analytics.serviceClick(item.title, `contact-${item.type || 'content'}`)
+    setContactItem(item)
+    setIsContactDialogOpen(true)
+  }
+
+  // Handle download
+  const handleDownload = async (item: any) => {
+    if (item.pdfDocument) {
+      const response: any = await fetch(item.pdfDocument?.fileUrl, { method: "GET", cache: "no-store" });
+      if (response.ok) {
+        const blob = await response.blob();
+        blob.arrayBuffer().then((buffer: any) => {
+          const url = URL.createObjectURL(new Blob([buffer], { type: "application/pdf" }));
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = item.pdfDocument?.fileName || "download.pdf";
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+        });
+      }
+    }
+    console.log("[KNOWLEDGE-HUB-GALLERY] Downloading item:", item.title, item.pdfDocument?.fileUrl)
+    analytics.templateDownload(item.title)
+
+    // Increment download count using our new API
+    try {
+      const newCount = await incrementDownloadCount(item.id);
+      if (newCount !== null) {
+        // Update the item's download count in our state - both in all arrays and filtered arrays
+        if (item.type === "template") {
+          setAllTemplates(prevTemplates =>
+            prevTemplates.map(template =>
+              template.id === item.id ? { ...template, downloads: newCount } : template
+            )
+          );
+          setFilteredTemplates(prevTemplates =>
+            prevTemplates.map(template =>
+              template.id === item.id ? { ...template, downloads: newCount } : template
+            )
+          );
+        } else if (item.type === "best-practice") {
+          setAllBestPractices(prevBestPractices =>
+            prevBestPractices.map(bp =>
+              bp.id === item.id ? { ...bp, downloads: newCount } : bp
+            )
+          );
+          setFilteredBestPractices(prevBestPractices =>
+            prevBestPractices.map(bp =>
+              bp.id === item.id ? { ...bp, downloads: newCount } : bp
+            )
+          );
+        }
+
+        // Update the selected item if it's currently being viewed
+        if (selectedItem && selectedItem.id === item.id) {
+          setSelectedItem({ ...selectedItem, downloads: newCount });
+        }
+      }
+    } catch (error) {
+      console.error("[KNOWLEDGE-HUB-GALLERY] Error incrementing download count:", error);
+    }
+
+    // Create a temporary link element to trigger the download if URL is provided
+    if (item.downloadUrl) {
+      const link = document.createElement('a');
+      link.href = item.downloadUrl;
+      link.setAttribute('download', item.title);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    toast({
+      title: "Download gestartet",
+      description: `${item.title} wird heruntergeladen...`,
+    })
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Search bar */}
+      <div className="relative w-full">
+        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+        <Input
+          placeholder="Suchen..."
+          className="pl-10"
+          value={searchTerm}
+          onChange={(e) => handleSearchTermChange(e.target.value)}
+        />
+      </div>
+
+      {/* Tabs */}
+      <Tabs defaultValue="templates" value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="templates">Templates</TabsTrigger>
+          <TabsTrigger value="best-practices">Best Practices</TabsTrigger>
+          <TabsTrigger value="schulungen">Schulungen</TabsTrigger>
+        </TabsList>
+
+        {/* Templates Tab */}
+        <TabsContent value="templates" className="mt-6">
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredTemplates.length > 0 ? (
+              filteredTemplates.map((template) => (
+                <ContentItem key={template.id} item={template} onDownload={handleDownload} onPreview={handlePreview} onContact={handleContact} />
+              ))
+            ) : (
+              <div className="col-span-3 text-center py-12">
+                <p className="text-gray-500">Keine Templates gefunden, die Ihren Filterkriterien entsprechen.</p>
+              </div>
+            )}
+          </div>
+        </TabsContent>
+
+        {/* Best Practices Tab */}
+        <TabsContent value="best-practices" className="mt-6">
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredBestPractices.length > 0 ? (
+              filteredBestPractices.map((bp) => (
+                <ContentItem key={bp.id} item={bp} onDownload={handleDownload} onPreview={handlePreview} onContact={handleContact} />
+              ))
+            ) : (
+              <div className="col-span-3 text-center py-12">
+                <p className="text-gray-500">Keine Best Practices gefunden, die Ihren Filterkriterien entsprechen.</p>
+              </div>
+            )}
+          </div>
+        </TabsContent>
+
+        {/* Schulungen Tab */}
+        <TabsContent value="schulungen" className="mt-6">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-lg font-semibold">Verfügbare Schulungen: {filteredSchulungen.length}</h2>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                // Force refresh schulungen from API
+                fetch('/api/schulungen')
+                  .then(res => res.json())
+                  .then(data => {
+                    if (Array.isArray(data) && data.length > 0) {
+                      console.log("[KNOWLEDGE-HUB-GALLERY] Refreshed trainings:", data.length, data);
+                      setAllSchulungen(data);
+                      setFilteredSchulungen(data);
+                      toast({
+                        title: "Schulungen aktualisiert",
+                        description: `${data.length} Schulungen geladen`
+                      });
+                    } else {
+                      console.log("[KNOWLEDGE-HUB-GALLERY] No trainings found on refresh");
+                      toast({
+                        title: "Keine Schulungen gefunden",
+                        description: "Es konnten keine Schulungen geladen werden."
+                      });
+                    }
+                  })
+                  .catch(err => {
+                    console.error("[KNOWLEDGE-HUB-GALLERY] Error refreshing trainings:", err);
+                    toast({
+                      title: "Fehler beim Laden",
+                      description: "Schulungen konnten nicht aktualisiert werden."
+                    });
+                  });
+              }}
+            >
+              Aktualisieren
+            </Button>
+          </div>
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredSchulungen.length > 0 ? (
+              filteredSchulungen.map((schulung: any) => (
+                <Card key={schulung.id} className="overflow-hidden hover:shadow-lg transition-shadow">
+                  <CardContent className="p-6">
+                    <div className="flex items-center mb-4">
+                      <div className="rounded-full bg-blue-100 p-3 mr-3">
+                        <FileText className="h-6 w-6 text-blue-600" />
+                      </div>
+                      <h3 className="text-lg font-bold">{schulung.title}</h3>
+                    </div>
+                    <div className="space-y-3 mb-4">
+                      <div className="flex justify-between">
+                        <span className="text-sm font-medium text-gray-500">Kategorie:</span>
+                        <Badge variant="outline">{schulung.category}</Badge>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-sm font-medium text-gray-500">Dauer:</span>
+                        <span>{schulung.duration}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-sm font-medium text-gray-500">Preis:</span>
+                        <span className="font-bold">{schulung.price > 0 ? `${schulung.price} €` : "Kostenlos"}</span>
+                      </div>
+                    </div>
+                  </CardContent>
+                  <CardFooter className="p-6 pt-0 flex justify-between">
+                    <Button variant="outline" size="sm" onClick={() => handlePreview({
+                      title: schulung.title,
+                      description: `${schulung.title} - ${schulung.category}`,
+                      tags: [schulung.category, `Dauer: ${schulung.duration}`, schulung.price > 0 ? "Kostenpflichtig" : "Kostenlos"],
+                      image: schulung.image,
+                      pdfDocument: schulung.pdfDocument
+                    })}>
+                      <Eye className="mr-2 h-4 w-4" />
+                      Details
+                    </Button>
+                    <Button
+                      size="sm"
+                      className="bg-green-600 hover:bg-green-700"
+                      onClick={async () => {
+                        try {
+                          // Get mail configuration
+                          const mailConfig = await getMailConfig();
+                          const targetEmail = mailConfig.defaultTarget || 'techhub@realcore.de';
+
+                          // Create email subject with training title
+                          const subject = encodeURIComponent(`Anfrage zur Schulung: ${schulung.title}`);
+
+                          // Create email body with all training details and placeholders for user information
+                          const body = encodeURIComponent(
+                            `Sehr geehrtes Team,\n\n` +
+                            `ich interessiere mich für die folgende Schulung:\n\n` +
+                            `Schulungstitel: ${schulung.title}\n` +
+                            `Kategorie: ${schulung.category}\n` +
+                            `Dauer: ${schulung.duration}\n` +
+                            `Preis: ${schulung.price > 0 ? `${schulung.price} €` : "Kostenlos"}\n\n` +
+                            `Bitte senden Sie mir weitere Informationen zu dieser Schulung.\n\n` +
+                            `Unternehmensinformationen:\n` +
+                            `Firmenname: [Bitte eintragen]\n` +
+                            `Ansprechpartner: [Bitte eintragen]\n` +
+                            `Position: [Bitte eintragen]\n` +
+                            `Telefonnummer: [Bitte eintragen]\n` +
+                            `Bevorzugter Termin: [Bitte eintragen]\n` +
+                            `Anzahl der Teilnehmer: [Bitte eintragen]\n\n` +
+                            `Vielen Dank und freundliche Grüße,\n` +
+                            `[Ihr Name]`
+                          );
+
+                          // Open default mail client with pre-filled information
+                          window.location.href = `mailto:${targetEmail}?subject=${subject}&body=${body}`;
+
+                          // Show confirmation toast
+                          toast({
+                            title: "E-Mail-Client geöffnet",
+                            description: `Bitte vervollständigen Sie die E-Mail für Ihre Anfrage zu "${schulung.title}".`,
+                          });
+                        } catch (error) {
+                          console.error('Error getting mail config:', error);
+                          toast({
+                            title: "Fehler",
+                            description: "Konnte E-Mail-Konfiguration nicht laden.",
+                          });
+                        }
+                      }}
+                    >
+                      Anfragen
+                    </Button>
+                  </CardFooter>
+                </Card>
+              ))
+            ) : (
+              <div className="col-span-3 text-center py-12">
+                <p className="text-gray-500">Keine Schulungen verfügbar.</p>
+              </div>
+            )}
+          </div>
+        </TabsContent>
+      </Tabs>
+
+      {/* Detail Dialog */}
+      {selectedItem && (
+        <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>{selectedItem.title}</DialogTitle>
+              <DialogDescription>{selectedItem.description}</DialogDescription>
+            </DialogHeader>
+
+            <div className="mt-4">
+              <div className={ selectedItem.image ? "relative h-64 mb-6 bg-gray-100 overflow-hidden rounded-md" : "hidden" }> 
+                <img
+                  src={selectedItem.image}
+                  alt={selectedItem.title}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+
+              <div className="space-y-6">
+                <div>
+                  <h3 className="text-lg font-semibold mb-2">Tags</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {(selectedItem.tags || []).map((tag: string) => (
+                      <Badge key={tag} variant="secondary">
+                        {tag}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="text-lg font-semibold mb-2">Beschreibung</h3>
+                  <p className="text-gray-700">{selectedItem.description}</p>
+                </div>
+                <div className={((selectedItem.pdfDocument?.fileUrl && selectedItem.pdfDocument.fileUrl.trim()) || (selectedItem.downloadUrl && selectedItem.downloadUrl.trim())) ? "" : "hidden"}>
+                  <div className="flex justify-between items-center gap-4 pt-4">
+                    <div className="flex items-center text-gray-500">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-4 w-4 mr-1"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"
+                        />
+                      </svg>
+                      <span>{selectedItem.downloads || 0} Downloads</span>
+                    </div>
+                    <Button className="bg-green-600 hover:bg-green-700" onClick={() => handleDownload(selectedItem)}>
+                      <Download className="mr-2 h-4 w-4" />
+                      Download
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )
+      }
+
+      {/* Contact Dialog */}
+      <MinimalContactDialog
+        isOpen={isContactDialogOpen}
+        onClose={() => setIsContactDialogOpen(false)}
+        title={`Anfrage zu: ${contactItem?.title || 'Knowledge Hub Content'}`}
+        description="Füllen Sie das Formular aus, und wir melden uns zeitnah bei Ihnen."
+        context={contactItem?.title}
+        emailType="Knowledge-Hub"
+      />
+    </div >
+  )
+}

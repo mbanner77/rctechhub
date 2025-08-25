@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: rc-techhub
+    runtime: node
+    plan: free
+    autoDeploy: true
+    buildCommand: |
+      corepack enable
+      pnpm install --frozen-lockfile || (npm i -g pnpm && pnpm install --frozen-lockfile)
+      pnpm build
+    startCommand: pnpm start
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
+      - key: ADMIN_PASSWORD
+        value: ""
+      - key: BLOB_READ_WRITE_TOKEN
+        value: ""
+      - key: MAIL_CONFIG
+        value: ""

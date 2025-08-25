@@ -1,0 +1,8 @@
+{
+  "clientId": "35c00140-4da9-4ba3-a606-a53a7999a911",
+  "clientSecret": "uso8Q~NR9K2d.JV6QWdTx6RBfTO85EIV0VYPibVA",
+  "tenantId": "99c7da52-56fc-49ca-aa95-8f7fb09c995e",
+  "defaultFrom": "no-reply@realcore.de",
+  "defaultTarget": "techhub-poc@realcore.de",
+  "enabled": false
+}

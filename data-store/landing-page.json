@@ -1,0 +1,193 @@
+{
+  "hero": {
+    "title": "Ihr Full-Stack Technologiepartner",
+    "subtitle": "Als SAP-Beratungshaus blicken wir technologisch weit über den Tellerrand und verbinden SAP, Open Source und Microsoft-Technologien zu maßgeschneiderten Lösungen, die Ihr Unternehmen auf die nächste Stufe heben.",
+    "primaryButtonText": "Services entdecken",
+    "secondaryButtonText": "Lösungsbaukasten",
+    "backgroundImage": "/images/tech-hero-bg.png",
+    "heroImage": "/images/hero-illustration.png"
+  },
+  "featureCards": [
+    {
+      "id": "feature-1",
+      "icon": "Briefcase",
+      "title": "Technologieübergreifende Expertise",
+      "description": "SAP, Open Source und Microsoft - wir beherrschen das gesamte Spektrum moderner Unternehmenstechnologien."
+    },
+    {
+      "id": "feature-2",
+      "icon": "Code",
+      "title": "Ein Partner für alles",
+      "description": "Statt 2-3 verschiedener Dienstleister erhalten Sie alle Leistungen aus einer Hand - inklusive Integration."
+    },
+    {
+      "id": "feature-3",
+      "icon": "Layers",
+      "title": "Nahtlose Integration",
+      "description": "Wir verbinden unterschiedliche Technologiewelten zu einem harmonischen Ganzen für Ihr Unternehmen."
+    },
+    {
+      "id": "feature-4",
+      "icon": "Zap",
+      "title": "Zukunftssichere Architektur",
+      "description": "Unsere ganzheitlichen Architekturen sind modular, skalierbar und auf langfristigen Erfolg ausgerichtet."
+    }
+  ],
+  "technologySection": {
+    "title": "Technologie ohne Grenzen",
+    "subtitle": "Wir vereinen das Beste aus allen Welten: SAP-Expertise, Open-Source-Innovation und Microsoft-Enterprise-Lösungen - perfekt integriert für Ihren Erfolg.",
+    "image": "/images/all-technologies.png",
+    "features": [
+      {
+        "title": "SAP Business Technology Platform",
+        "description": "Modernste SAP-Technologien für Ihre Geschäftsprozesse"
+      },
+      {
+        "title": "Microsoft Azure & .NET",
+        "description": "Enterprise-Ready Cloud- und Entwicklungslösungen"
+      },
+      {
+        "title": "Open-Source-Ökosystem",
+        "description": "Innovative Technologien wie Node.js, React und Kubernetes"
+      },
+      {
+        "title": "Cross-Technology Integration",
+        "description": "Nahtlose Verbindung aller Systeme in einer harmonischen Architektur"
+      }
+    ],
+    "buttonText": "Mehr erfahren"
+  },
+  "approachSection": {
+    "title": "Ein Partner für die gesamte Technologielandschaft",
+    "subtitle": "Schluss mit komplexen Multi-Vendor-Setups. Mit RealCore haben Sie einen Partner, der alle relevanten Technologien beherrscht und nahtlos integriert.",
+    "image": "/images/modular-consulting.png",
+    "features": [
+      {
+        "title": "Ganzheitliche Bedarfsanalyse",
+        "description": "Technologieübergreifende Bewertung Ihrer Anforderungen"
+      },
+      {
+        "title": "Integrierte Architektur",
+        "description": "Design einer harmonischen Technologielandschaft"
+      },
+      {
+        "title": "Übergreifende Implementierung",
+        "description": "Nahtlose Umsetzung über Technologiegrenzen hinweg"
+      },
+      {
+        "title": "Unified Operations",
+        "description": "Betrieb und Weiterentwicklung der gesamten Landschaft"
+      }
+    ],
+    "buttonText": "Unsere Starter Packages"
+  },
+  "successStories": [
+    {
+      "id": "story-1",
+      "title": "Hybride Fertigung mit SAP und Microsoft",
+      "industry": "Fertigungsindustrie",
+      "backgroundImage": "/images/manufacturing-success.png",
+      "tags": [
+        "SAP BTP",
+        "Microsoft Azure",
+        "Integration",
+        "IoT"
+      ],
+      "description": "Integration von SAP S/4HANA mit Microsoft Azure IoT und Power Platform für eine durchgängige Digitalisierung der Fertigung.",
+      "achievement": {
+        "icon": "Zap",
+        "text": "30% höhere Produktivität"
+      }
+    },
+    {
+      "id": "story-2",
+      "title": "Full-Stack Logistikplattform",
+      "industry": "Logistik",
+      "backgroundImage": "/images/logistics-success.png",
+      "tags": [
+        "SAP BTP",
+        "Open Source",
+        "React",
+        "Node.js"
+      ],
+      "description": "Entwicklung einer modernen Logistikplattform, die SAP-Backend mit React-Frontend und Node.js-Middleware verbindet.",
+      "achievement": {
+        "icon": "Clock",
+        "text": "40% schnellere Lieferzeiten"
+      }
+    },
+    {
+      "id": "story-3",
+      "title": "Integriertes Finanz-Ökosystem",
+      "industry": "Finanzwesen",
+      "backgroundImage": "/images/finance-success.png",
+      "tags": [
+        "SAP BTP",
+        "Microsoft",
+        ".NET",
+        "Power BI"
+      ],
+      "description": "Nahtlose Integration von SAP-Finanzprozessen mit Microsoft-.NET-Microservices und Power BI-Analysen.",
+      "achievement": {
+        "icon": "CheckCircle",
+        "text": "50% weniger manuelle Eingriffe"
+      }
+    }
+  ],
+  "statsSection": {
+    "title": "Cross-Technology Erfolg in Zahlen",
+    "subtitle": "Unsere technologieübergreifende Expertise schafft messbaren Mehrwert für unsere Kunden.",
+    "stats": [
+      {
+        "value": 50,
+        "label": "Integrierte Projekte",
+        "suffix": "+"
+      },
+      {
+        "value": 30,
+        "label": "Zufriedene Kunden",
+        "suffix": "+"
+      },
+      {
+        "value": 3,
+        "label": "Technologie-Welten vereint",
+        "suffix": ""
+      },
+      {
+        "value": 99,
+        "label": "Kundenzufriedenheit",
+        "suffix": "%"
+      }
+    ]
+  },
+  "innovationSection": {
+    "title": "Cross-Technology Innovation Factory",
+    "subtitle": "In unserer Innovation Factory bringen wir das Beste aus SAP, Microsoft und der Open-Source-Welt zusammen, um einzigartige Lösungen für Ihre Herausforderungen zu entwickeln.",
+    "image": "/images/innovation-workshop.png",
+    "features": [
+      {
+        "title": "Technology Radar Workshops",
+        "description": "Identifikation der optimalen Technologien für Ihre Anforderungen"
+      },
+      {
+        "title": "Cross-Platform Prototyping",
+        "description": "Schnelle Entwicklung technologieübergreifender Prototypen"
+      },
+      {
+        "title": "Hybrid Architecture Design",
+        "description": "Entwicklung integrierter Architekturen für alle Plattformen"
+      },
+      {
+        "title": "Continuous Integration",
+        "description": "Nahtlose Zusammenführung aller Technologiekomponenten"
+      }
+    ],
+    "buttonText": "Workshop buchen"
+  },
+  "ctaSection": {
+    "title": "Bereit für eine integrierte Technologielandschaft?",
+    "subtitle": "Kontaktieren Sie uns noch heute, um zu erfahren, wie wir Ihre SAP-, Microsoft- und Open-Source-Landschaft harmonisieren können.",
+    "primaryButtonText": "Kontakt aufnehmen",
+    "secondaryButtonText": "Services entdecken"
+  }
+}
