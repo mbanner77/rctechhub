@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { put, list } from '@vercel/blob';
+import { put, list } from '@/lib/blob-storage';
 import { defaultKnowledgeHubContent } from '@/data/default-data';
 import FileManager from '@/app/api/shared/file-manager';
 

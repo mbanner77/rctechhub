@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { list, put } from '@vercel/blob';
+import { list, put } from '@/lib/blob-storage';
 
 // Define constants and types
 const DOWNLOAD_COUNTS_BLOB = 'download-counts.json';
@@ -17,11 +17,6 @@ async function fetchBlobDownloadCounts(): Promise<{
   countData: DownloadCounts | null;
 }> {
   try {
-    if (!process.env.BLOB_READ_WRITE_TOKEN) {
-      console.warn('Blob storage not configured - missing BLOB_READ_WRITE_TOKEN');
-      return { blobList: null, countBlob: null, countData: null };
-    }
-    
     // Get list of blobs
     const blobList = await list();
     
@@ -50,9 +45,6 @@ async function fetchBlobDownloadCounts(): Promise<{
 // Debug endpoint for Blob storage
 export async function GET() {
   try {
-    // Check if BLOB storage is configured
-    const blobConfigured = !!process.env.BLOB_READ_WRITE_TOKEN;
-    
     // Get download counts from Blob storage
     const { blobList, countBlob: downloadCountsBlob, countData: downloadCountsData } = await fetchBlobDownloadCounts();
     
@@ -62,7 +54,7 @@ export async function GET() {
       environment: process.env.NODE_ENV || 'unknown',
       timestamp: new Date().toISOString(),
       blobStorage: {
-        configured: blobConfigured,
+        configured: true,
         blobs: blobList ? blobList.blobs.map(blob => ({
           pathname: blob.pathname,
           size: blob.size,
@@ -114,13 +106,6 @@ export async function POST(request: Request) {
     }
     
     // Check if BLOB storage is configured properly
-    if (!process.env.BLOB_READ_WRITE_TOKEN) {
-      return NextResponse.json({ 
-        success: false, 
-        message: 'Blob storage is not configured' 
-      }, { status: 500 });
-    }
-    
     // Get existing download counts
     const { countData } = await fetchBlobDownloadCounts();
     let downloadCountsData: DownloadCounts = countData || {};

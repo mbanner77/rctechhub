@@ -1,33 +1,41 @@
-import { put, list, del } from "@vercel/blob"
 import type { Content, PageContent, ContentSearchParams } from "@/types/content-management"
+import { getPool } from "@/lib/pg"
 
 const CONTENT_ITEMS_PREFIX = "content-items/"
 const PAGE_CONTENTS_PREFIX = "page-contents/"
 
-// Hilfsfunktion zum Abrufen eines Blobs
-async function getBlobContent(url: string): Promise<any> {
-  try {
-    const response = await fetch(url)
-    if (!response.ok) {
-      throw new Error(`Failed to fetch blob: ${response.status} ${response.statusText}`)
-    }
-    return await response.json()
-  } catch (error) {
-    console.error("Error fetching blob:", error)
-    throw error
-  }
+// Helpers for KV
+async function kvGetJson(key: string): Promise<any | null> {
+  const pool = getPool()
+  const res = await pool.query(
+    `SELECT value FROM kv_store WHERE key = $1 AND COALESCE(is_binary, FALSE) = FALSE`,
+    [key],
+  )
+  return res.rowCount ? res.rows[0].value : null
 }
 
-// Hilfsfunktion zum Überprüfen, ob ein Blob existiert
-async function blobExists(key: string): Promise<{ url: string } | null> {
-  try {
-    const { blobs } = await list({ prefix: key })
-    const exactMatch = blobs.find((blob) => blob.pathname === key)
-    return exactMatch || null
-  } catch (error) {
-    console.error("Error checking if blob exists:", error)
-    return null
-  }
+async function kvUpsertJson(key: string, value: any, contentType = "application/json") {
+  const pool = getPool()
+  await pool.query(
+    `INSERT INTO kv_store(key, value, content_type, is_binary)
+     VALUES ($1, $2::jsonb, $3, FALSE)
+     ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, content_type = EXCLUDED.content_type, is_binary = FALSE, updated_at = NOW()`,
+    [key, JSON.stringify(value), contentType],
+  )
+}
+
+async function kvDelete(key: string) {
+  const pool = getPool()
+  await pool.query(`DELETE FROM kv_store WHERE key = $1`, [key])
+}
+
+async function kvListPrefix(prefix: string): Promise<{ key: string; value: any }[]> {
+  const pool = getPool()
+  const res = await pool.query(
+    `SELECT key, value FROM kv_store WHERE key LIKE $1 AND COALESCE(is_binary, FALSE) = FALSE`,
+    [prefix.replace(/%/g, '\\%') + '%'],
+  )
+  return res.rows.map((r: any) => ({ key: r.key, value: r.value }))
 }
 
 // Content-Item speichern
@@ -45,45 +53,28 @@ export async function saveContentItem(content: Content): Promise<Content> {
     const pageContent = content as PageContent
     const key = `${PAGE_CONTENTS_PREFIX}${pageContent.id}.json`
 
-    // Speichere ein Backup, falls die Datei bereits existiert
-    try {
-      const existingBlob = await blobExists(key)
-      if (existingBlob) {
-        const backupKey = `${PAGE_CONTENTS_PREFIX}backups/${pageContent.id}_${Date.now()}.json`
-        const existingContent = await getBlobContent(existingBlob.url)
-        await put(backupKey, JSON.stringify(existingContent), { access: "public" })
-      }
-    } catch (error) {
-      console.warn("No existing page content to backup:", error)
+    // Backup previous if exists
+    const existing = await kvGetJson(key)
+    if (existing) {
+      const backupKey = `${PAGE_CONTENTS_PREFIX}backups/${pageContent.id}_${Date.now()}.json`
+      await kvUpsertJson(backupKey, existing)
     }
-
-    // Speichere die neue Version
-    await put(key, JSON.stringify(pageContent), { access: "public" })
-
-    // Speichere auch einen Eintrag nach Pfad für schnelleren Zugriff
+    // Save
+    await kvUpsertJson(key, pageContent)
+    // Index by path
     const pathKey = `${PAGE_CONTENTS_PREFIX}paths/${encodeURIComponent(pageContent.path)}.json`
-    await put(pathKey, JSON.stringify({ id: pageContent.id }), { access: "public" })
+    await kvUpsertJson(pathKey, { id: pageContent.id })
   } else {
     const key = `${CONTENT_ITEMS_PREFIX}${content.id}.json`
 
-    // Speichere ein Backup, falls die Datei bereits existiert
-    try {
-      const existingBlob = await blobExists(key)
-      if (existingBlob) {
-        const backupKey = `${CONTENT_ITEMS_PREFIX}backups/${content.id}_${Date.now()}.json`
-        const existingContent = await getBlobContent(existingBlob.url)
-        await put(backupKey, JSON.stringify(existingContent), { access: "public" })
-      }
-    } catch (error) {
-      console.warn("No existing content item to backup:", error)
+    const existing = await kvGetJson(key)
+    if (existing) {
+      const backupKey = `${CONTENT_ITEMS_PREFIX}backups/${content.id}_${Date.now()}.json`
+      await kvUpsertJson(backupKey, existing)
     }
-
-    // Speichere die neue Version
-    await put(key, JSON.stringify(content), { access: "public" })
-
-    // Speichere auch einen Eintrag nach Schlüssel für schnelleren Zugriff
+    await kvUpsertJson(key, content)
     const keyKey = `${CONTENT_ITEMS_PREFIX}keys/${content.type}/${encodeURIComponent((content as any).key)}.json`
-    await put(keyKey, JSON.stringify({ id: content.id }), { access: "public" })
+    await kvUpsertJson(keyKey, { id: content.id })
   }
 
   return content
@@ -92,23 +83,15 @@ export async function saveContentItem(content: Content): Promise<Content> {
 // Content-Item abrufen
 export async function getContentItem(id: string): Promise<Content | null> {
   try {
-    // Zuerst in content_items suchen
+    // content_items
     const contentItemKey = `${CONTENT_ITEMS_PREFIX}${id}.json`
-    const contentItemBlob = await blobExists(contentItemKey)
+    const contentItem = (await kvGetJson(contentItemKey)) as Content | null
+    if (contentItem) return contentItem
 
-    if (contentItemBlob) {
-      const content = (await getBlobContent(contentItemBlob.url)) as Content
-      return content
-    }
-
-    // Dann in page_contents suchen
+    // page_contents
     const pageContentKey = `${PAGE_CONTENTS_PREFIX}${id}.json`
-    const pageContentBlob = await blobExists(pageContentKey)
-
-    if (pageContentBlob) {
-      const pageContent = (await getBlobContent(pageContentBlob.url)) as PageContent
-      return pageContent
-    }
+    const pageContent = (await kvGetJson(pageContentKey)) as PageContent | null
+    if (pageContent) return pageContent
 
     return null
   } catch (error) {
@@ -121,44 +104,25 @@ export async function getContentItem(id: string): Promise<Content | null> {
 export async function getContentByKey(key: string, type: string): Promise<Content | null> {
   try {
     if (type === "page") {
-      // Suche nach Seite mit diesem Schlüssel
-      const { blobs } = await list({ prefix: PAGE_CONTENTS_PREFIX })
-
-      for (const blob of blobs) {
-        if (!blob.pathname.includes("/backups/") && !blob.pathname.includes("/paths/")) {
-          try {
-            const content = (await getBlobContent(blob.url)) as PageContent
-            if (content.key === key) {
-              return content
-            }
-          } catch (error) {
-            console.warn("Error parsing page content:", error)
-          }
+      // scan pages
+      const entries = await kvListPrefix(PAGE_CONTENTS_PREFIX)
+      for (const e of entries) {
+        if (!e.key.includes("/backups/") && !e.key.includes("/paths/")) {
+          const content = e.value as PageContent
+          if ((content as any)?.key === key) return content
         }
       }
     } else {
       // Versuche, den Eintrag über den Index zu finden
       const keyKey = `${CONTENT_ITEMS_PREFIX}keys/${type}/${encodeURIComponent(key)}.json`
-      const keyBlob = await blobExists(keyKey)
-
-      if (keyBlob) {
-        const { id } = await getBlobContent(keyBlob.url)
-        return await getContentItem(id)
-      }
-
-      // Fallback: Durchsuche alle Inhalte
-      const { blobs } = await list({ prefix: CONTENT_ITEMS_PREFIX })
-
-      for (const blob of blobs) {
-        if (!blob.pathname.includes("/backups/") && !blob.pathname.includes("/keys/")) {
-          try {
-            const content = (await getBlobContent(blob.url)) as Content
-            if (content.type === type && (content as any).key === key) {
-              return content
-            }
-          } catch (error) {
-            console.warn("Error parsing content item:", error)
-          }
+      const mapping = await kvGetJson(keyKey)
+      if (mapping?.id) return await getContentItem(mapping.id)
+      // Fallback: scan
+      const entries = await kvListPrefix(CONTENT_ITEMS_PREFIX)
+      for (const e of entries) {
+        if (!e.key.includes("/backups/") && !e.key.includes("/keys/")) {
+          const content = e.value as Content
+          if (content.type === type && (content as any).key === key) return content
         }
       }
     }
@@ -173,19 +137,12 @@ export async function getContentByKey(key: string, type: string): Promise<Conten
 // Content-Items nach Kategorie abrufen
 export async function getContentByCategory(category: string): Promise<Content[]> {
   try {
-    const { blobs } = await list({ prefix: CONTENT_ITEMS_PREFIX })
+    const entries = await kvListPrefix(CONTENT_ITEMS_PREFIX)
     const contents: Content[] = []
-
-    for (const blob of blobs) {
-      if (!blob.pathname.includes("/backups/") && !blob.pathname.includes("/keys/")) {
-        try {
-          const content = (await getBlobContent(blob.url)) as Content
-          if ((content as any).category === category) {
-            contents.push(content)
-          }
-        } catch (error) {
-          console.warn("Error parsing content item:", error)
-        }
+    for (const e of entries) {
+      if (!e.key.includes("/backups/") && !e.key.includes("/keys/")) {
+        const content = e.value as Content
+        if ((content as any).category === category) contents.push(content)
       }
     }
 
@@ -199,19 +156,12 @@ export async function getContentByCategory(category: string): Promise<Content[]>
 // Alle Seiteninhalte abrufen
 export async function getAllPages(includeUnpublished = false): Promise<PageContent[]> {
   try {
-    const { blobs } = await list({ prefix: PAGE_CONTENTS_PREFIX })
+    const entries = await kvListPrefix(PAGE_CONTENTS_PREFIX)
     const pages: PageContent[] = []
-
-    for (const blob of blobs) {
-      if (!blob.pathname.includes("/backups/") && !blob.pathname.includes("/paths/")) {
-        try {
-          const page = (await getBlobContent(blob.url)) as PageContent
-          if (includeUnpublished || page.isPublished) {
-            pages.push(page)
-          }
-        } catch (error) {
-          console.warn("Error parsing page content:", error)
-        }
+    for (const e of entries) {
+      if (!e.key.includes("/backups/") && !e.key.includes("/paths/")) {
+        const page = e.value as PageContent
+        if (includeUnpublished || (page as any)?.isPublished) pages.push(page)
       }
     }
 
@@ -225,29 +175,16 @@ export async function getAllPages(includeUnpublished = false): Promise<PageConte
 // Seiteninhalt nach Pfad abrufen
 export async function getPageByPath(path: string): Promise<PageContent | null> {
   try {
-    // Versuche, den Eintrag über den Index zu finden
+    // via index
     const pathKey = `${PAGE_CONTENTS_PREFIX}paths/${encodeURIComponent(path)}.json`
-    const pathBlob = await blobExists(pathKey)
-
-    if (pathBlob) {
-      const { id } = await getBlobContent(pathBlob.url)
-      const page = (await getContentItem(id)) as PageContent
-      return page
-    }
-
-    // Fallback: Durchsuche alle Seiten
-    const { blobs } = await list({ prefix: PAGE_CONTENTS_PREFIX })
-
-    for (const blob of blobs) {
-      if (!blob.pathname.includes("/backups/") && !blob.pathname.includes("/paths/")) {
-        try {
-          const page = (await getBlobContent(blob.url)) as PageContent
-          if (page.path === path) {
-            return page
-          }
-        } catch (error) {
-          console.warn("Error parsing page content:", error)
-        }
+    const mapping = await kvGetJson(pathKey)
+    if (mapping?.id) return (await getContentItem(mapping.id)) as PageContent
+    // fallback scan
+    const entries = await kvListPrefix(PAGE_CONTENTS_PREFIX)
+    for (const e of entries) {
+      if (!e.key.includes("/backups/") && !e.key.includes("/paths/")) {
+        const page = e.value as PageContent
+        if ((page as any)?.path === path) return page
       }
     }
 
@@ -261,57 +198,33 @@ export async function getPageByPath(path: string): Promise<PageContent | null> {
 // Content-Item löschen
 export async function deleteContentItem(id: string): Promise<boolean> {
   try {
-    // Versuche, das Content-Item zu löschen
+    // Try content item
     const contentItemKey = `${CONTENT_ITEMS_PREFIX}${id}.json`
-    const contentItemBlob = await blobExists(contentItemKey)
-
-    if (contentItemBlob) {
-      // Erstelle ein Backup
+    const contentItem = await kvGetJson(contentItemKey)
+    if (contentItem) {
       const backupKey = `${CONTENT_ITEMS_PREFIX}backups/${id}_${Date.now()}.json`
-      const existingContent = await getBlobContent(contentItemBlob.url)
-      await put(backupKey, JSON.stringify(existingContent), { access: "public" })
-
-      // Lösche das Original
-      await del(contentItemKey)
-
-      // Lösche auch den Schlüssel-Index, falls vorhanden
-      const content = existingContent as Content
-      if (content.type && (content as any).key) {
-        const keyKey = `${CONTENT_ITEMS_PREFIX}keys/${content.type}/${encodeURIComponent((content as any).key)}.json`
-        try {
-          await del(keyKey)
-        } catch (error) {
-          console.warn("Error deleting key index:", error)
-        }
+      await kvUpsertJson(backupKey, contentItem)
+      await kvDelete(contentItemKey)
+      const content = contentItem as Content
+      if ((content as any)?.type && (content as any).key) {
+        const keyKey = `${CONTENT_ITEMS_PREFIX}keys/${(content as any).type}/${encodeURIComponent((content as any).key)}.json`
+        try { await kvDelete(keyKey) } catch {}
       }
-
       return true
     }
 
-    // Versuche, die Seite zu löschen
+    // Try page
     const pageContentKey = `${PAGE_CONTENTS_PREFIX}${id}.json`
-    const pageContentBlob = await blobExists(pageContentKey)
-
-    if (pageContentBlob) {
-      // Erstelle ein Backup
+    const pageContent = await kvGetJson(pageContentKey)
+    if (pageContent) {
       const backupKey = `${PAGE_CONTENTS_PREFIX}backups/${id}_${Date.now()}.json`
-      const existingContent = await getBlobContent(pageContentBlob.url)
-      await put(backupKey, JSON.stringify(existingContent), { access: "public" })
-
-      // Lösche das Original
-      await del(pageContentKey)
-
-      // Lösche auch den Pfad-Index, falls vorhanden
-      const page = existingContent as PageContent
-      if (page.path) {
-        const pathKey = `${PAGE_CONTENTS_PREFIX}paths/${encodeURIComponent(page.path)}.json`
-        try {
-          await del(pathKey)
-        } catch (error) {
-          console.warn("Error deleting path index:", error)
-        }
+      await kvUpsertJson(backupKey, pageContent)
+      await kvDelete(pageContentKey)
+      const page = pageContent as PageContent
+      if ((page as any)?.path) {
+        const pathKey = `${PAGE_CONTENTS_PREFIX}paths/${encodeURIComponent((page as any).path)}.json`
+        try { await kvDelete(pathKey) } catch {}
       }
-
       return true
     }
 
@@ -334,16 +247,10 @@ export async function searchContent(params: ContentSearchParams): Promise<Conten
       const pages = await getAllPages(true)
       allContents = pages
     } else {
-      const { blobs } = await list({ prefix: CONTENT_ITEMS_PREFIX })
-
-      for (const blob of blobs) {
-        if (!blob.pathname.includes("/backups/") && !blob.pathname.includes("/keys/")) {
-          try {
-            const content = (await getBlobContent(blob.url)) as Content
-            allContents.push(content)
-          } catch (error) {
-            console.warn("Error parsing content item:", error)
-          }
+      const entries = await kvListPrefix(CONTENT_ITEMS_PREFIX)
+      for (const e of entries) {
+        if (!e.key.includes("/backups/") && !e.key.includes("/keys/")) {
+          allContents.push(e.value as Content)
         }
       }
     }

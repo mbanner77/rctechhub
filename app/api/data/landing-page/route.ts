@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { put, list } from "@vercel/blob"
+import { put, list } from "@/lib/blob-storage"
 import { cookies } from "next/headers"
 import { defaultLandingPage } from "@/data/landing-page-data"
 import { revalidatePath } from "next/cache"
@@ -17,7 +17,12 @@ async function getLandingPage() {
 
     if (blobs.length > 0) {
       // Sortiere nach letzter Änderung, um die neueste Version zu erhalten
-      const latestBlob = blobs.sort((a, b) => new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime())[0]
+      const latestBlob = blobs
+        .sort((a, b) => {
+          const at = a.uploadedAt ? new Date(a.uploadedAt).getTime() : 0
+          const bt = b.uploadedAt ? new Date(b.uploadedAt).getTime() : 0
+          return bt - at
+        })[0]
 
       // Lade den Inhalt des Blobs
       const response = await fetch(latestBlob.url, { cache: "no-store" })

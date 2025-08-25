@@ -1,5 +1,6 @@
 // Importiere die Landingpage-Daten
 import { defaultLandingPage } from "./landing-page-data";
+import mailConfigJson from "../data-store/mail-config.json";
 
 // Standarddaten für Services
 export const defaultServices = [
@@ -627,4 +628,5 @@ export const defaultData = {
   knowledgeHubContent: defaultKnowledgeHubContent,
   resources: defaultResources,
   landingPage: defaultLandingPage,
+  mailConfig: mailConfigJson,
 };

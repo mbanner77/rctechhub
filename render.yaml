@@ -14,7 +14,7 @@ services:
         value: "20"
       - key: ADMIN_PASSWORD
         value: ""
-      - key: BLOB_READ_WRITE_TOKEN
-        value: ""
+      - key: DATABASE_URL
+        sync: false
       - key: MAIL_CONFIG
         value: ""

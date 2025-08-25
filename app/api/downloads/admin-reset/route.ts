@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { put } from '@vercel/blob';
+import { put } from '@/lib/blob-storage';
 import { defaultKnowledgeHubContent } from '@/data/default-data';
 
 // Type for download counts

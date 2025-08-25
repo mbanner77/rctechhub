@@ -1,6 +1,6 @@
 "use server";
 
-import { put, list } from "@vercel/blob";
+import { put, list } from "@/lib/blob-storage";
 import { revalidatePath } from "next/cache";
 import { defaultData } from "@/data/default-data";
 import { checkAuthAction } from "./auth-actions";

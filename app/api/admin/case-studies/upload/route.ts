@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import { put } from '@vercel/blob';
+import { put } from '@/lib/blob-storage';
 import { ICookieStore } from '../../../shared/Interfaces/ICookieStore';
 
 // Base path for storing case study files (images and PDFs)

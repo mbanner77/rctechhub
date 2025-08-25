@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { put, list } from "@vercel/blob"
+import { put, list } from "@/lib/blob-storage"
 import { cookies } from "next/headers"
 import { decrypt } from "@/lib/crypto"
 import { ICookieStore } from "../../shared/Interfaces/ICookieStore"

@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { cookies } from "next/headers"
-import { put, list } from "@vercel/blob"
+import { put, list } from "@/lib/blob-storage"
 import { revalidatePath } from "next/cache"
 import { ICookieStore } from "../../shared/Interfaces/ICookieStore"
 import { isAuthenticated, unauthorizedResponse } from "../../shared/auth-utils"

@@ -1,135 +1,137 @@
-import { put, list, del } from "@vercel/blob"
-import { revalidatePath } from "next/cache"
+import { getPool } from "@/lib/pg"
 
-// Definiere die möglichen Datentypen für den Blob-Speicher
+// Definiere die möglichen Datentypen (für bestehende Aufrufer)
 export type BlobDataType = "services" | "workshops" | "best-practices" | "resources" | "mail-config" | "landing-page"
 
-/**
- * Ruft den Inhalt eines Blobs ab
- */
-export async function getBlobContent(url: string): Promise<any> {
-  try {
-    const response = await fetch(url, {
-      cache: "no-store",
-      headers: {
-        "Cache-Control": "no-cache, no-store, must-revalidate",
-        Pragma: "no-cache",
-        Expires: "0",
-      },
-    })
+export type BlobListItem = { pathname: string; url: string; uploadedAt?: string; size?: number }
 
-    if (!response.ok) {
-      throw new Error(`Failed to fetch blob: ${response.status} ${response.statusText}`)
-    }
-
-    return await response.json()
-  } catch (error) {
-    console.error("Error fetching blob content:", error)
-    throw error
-  }
+// Interne Helper
+function toKey(name: string) {
+  return name.replace(/^\/+/, "")
 }
 
-/**
- * Speichert eine Datei im Blob-Storage
- */
-export async function uploadFile(
-  file: File | Blob | ArrayBuffer | Buffer,
-  filename: string,
+function isJsonContentType(ct?: string) {
+  return !ct || ct.includes("application/json")
+}
+
+export async function getBlobContent(url: string): Promise<any> {
+  // Versuche, Key aus unserer internen Files-Route zu extrahieren
+  try {
+    const marker = "/api/files/"
+    const idx = url.indexOf(marker)
+    if (idx !== -1) {
+      const key = decodeURIComponent(url.substring(idx + marker.length))
+      const pool = getPool()
+      const res = await pool.query(
+        `SELECT value, is_binary FROM kv_store WHERE key = $1`,
+        [key],
+      )
+      if (!res.rowCount) throw new Error("Not found")
+      const row = res.rows[0]
+      if (row.is_binary) throw new Error("Binary content cannot be parsed as JSON")
+      return row.value
+    }
+  } catch (e) {
+    // Fallback auf fetch
+  }
+  const response = await fetch(url, { cache: "no-store" })
+  if (!response.ok) throw new Error(`Failed to fetch: ${response.statusText}`)
+  return await response.json()
+}
+
+// Kompatible put-Funktion
+export async function put(
+  name: string,
+  data: string | ArrayBuffer | Buffer | Blob,
   options?: {
-    access?: "public" | "private"
-    addRandomSuffix?: boolean
-    contentType?: string
-    multipart?: boolean
-    revalidatePaths?: string[]
+    contentType?: string;
+    access?: "public" | "private";
+    allowOverwrite?: boolean;
+    addRandomSuffix?: boolean; // ignored for compatibility
+    cacheControlMaxAge?: number; // ignored for compatibility
   },
 ) {
-  try {
-    // Standardoptionen
-    const {
-      access = "public",
-      addRandomSuffix = true,
-      contentType,
-      multipart = false,
-      revalidatePaths = [],
-    } = options || {}
+  const key = toKey(name)
+  const pool = getPool()
+  const ct = options?.contentType || "application/json"
+  const isBinary = !isJsonContentType(ct)
+  // Normalize to Buffer for size & storage
+  let buf: Buffer
+  if (typeof data === "string") {
+    buf = Buffer.from(data, "utf8")
+  } else if (Buffer.isBuffer(data)) {
+    buf = data
+  } else if (data instanceof ArrayBuffer) {
+    buf = Buffer.from(new Uint8Array(data))
+  } else if (typeof Blob !== "undefined" && data instanceof Blob) {
+    const ab = await data.arrayBuffer()
+    buf = Buffer.from(new Uint8Array(ab))
+  } else {
+    buf = Buffer.from(data as any)
+  }
+  const value = isBinary
+    ? JSON.stringify({ base64: buf.toString("base64") })
+    : buf.toString("utf8")
 
-    // Füge einen Zeitstempel zum Dateinamen hinzu, um Caching-Probleme zu vermeiden
-    const timestamp = Date.now()
-    const filenameParts = filename.split(".")
-    const extension = filenameParts.pop()
-    const nameWithTimestamp = addRandomSuffix ? `${filenameParts.join(".")}_${timestamp}.${extension}` : filename
+  // Wenn JSON, sicherstellen dass valid JSON gespeichert wird
+  const payload = isBinary ? value : JSON.stringify(JSON.parse(value))
 
-    // Speichere die Datei im Blob-Storage
-    const blob = await put(nameWithTimestamp, file, {
-      access,
-      contentType,
-      multipart,
-    })
+  await pool.query(
+    `INSERT INTO kv_store(key, value, content_type, is_binary)
+     VALUES ($1, $2::jsonb, $3, $4)
+     ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, content_type = EXCLUDED.content_type, is_binary = EXCLUDED.is_binary, updated_at = NOW()`,
+    [key, payload, ct, isBinary],
+  )
 
-    console.log(`File uploaded to ${blob.url}`)
+  return { url: `/api/files/${encodeURIComponent(key)}`, pathname: key }
+}
 
-    // Revalidiere die angegebenen Pfade
-    if (revalidatePaths.length > 0) {
-      revalidatePaths.forEach((path) => {
-        revalidatePath(path)
-        console.log(`Revalidated path: ${path}`)
-      })
+// Kompatible list-Funktion
+export async function list(args?: { prefix?: string; limit?: number }): Promise<{ blobs: BlobListItem[] }> {
+  const prefix = args?.prefix ? toKey(args.prefix) : ""
+  const limit = args?.limit && args.limit > 0 ? Math.min(args.limit, 1000) : undefined
+  const pool = getPool()
+  const params: any[] = [prefix.replace(/%/g, '\\%') + '%']
+  if (limit) params.push(limit)
+  const res = await pool.query(
+    `SELECT key, updated_at, value, is_binary FROM kv_store WHERE key LIKE $1 ORDER BY updated_at DESC, key ASC ${limit ? 'LIMIT $2' : ''}`,
+    params,
+  )
+  const blobs: BlobListItem[] = res.rows.map((r: any) => {
+    let size: number | undefined
+    try {
+      if (r.is_binary) {
+        const obj = r.value as { base64?: string }
+        const b64 = obj?.base64 || ""
+        // approximate decoded size
+        size = Math.floor((b64.length * 3) / 4)
+      } else {
+        const s = JSON.stringify(r.value)
+        size = Buffer.byteLength(s, "utf8")
+      }
+    } catch {
+      size = undefined
     }
-
-    return blob
-  } catch (error) {
-    console.error("Error uploading file to Blob storage:", error)
-    throw error
-  }
-}
-
-/**
- * Listet alle Dateien im Blob-Storage auf
- */
-export async function listFiles(prefix?: string) {
-  try {
-    const { blobs } = await list({ prefix })
-    return blobs
-  } catch (error) {
-    console.error("Error listing files from Blob storage:", error)
-    throw error
-  }
-}
-
-/**
- * Löscht eine Datei aus dem Blob-Storage
- */
-export async function deleteFile(url: string, options?: { revalidatePaths?: string[] }) {
-  try {
-    const { revalidatePaths = [] } = options || {}
-    await del(url)
-    console.log(`File deleted: ${url}`)
-
-    // Revalidiere die angegebenen Pfade
-    if (revalidatePaths.length > 0) {
-      revalidatePaths.forEach((path) => {
-        revalidatePath(path)
-        console.log(`Revalidated path: ${path}`)
-      })
+    return {
+      pathname: r.key,
+      url: `/api/files/${encodeURIComponent(r.key)}`,
+      uploadedAt: r.updated_at ? new Date(r.updated_at).toISOString() : undefined,
+      size,
     }
-
-    return true
-  } catch (error) {
-    console.error("Error deleting file from Blob storage:", error)
-    throw error
-  }
+  })
+  return { blobs }
 }
 
-/**
- * Überprüft, ob ein Blob existiert
- */
+// Kompatible del-Funktion
+export async function del(nameOrKey: string): Promise<{ ok: boolean }> {
+  const key = toKey(nameOrKey)
+  const pool = getPool()
+  await pool.query(`DELETE FROM kv_store WHERE key = $1`, [key])
+  return { ok: true }
+}
+
 export async function blobExists(key: string): Promise<{ url: string } | null> {
-  try {
-    const { blobs } = await list({ prefix: key })
-    const exactMatch = blobs.find((blob) => blob.pathname === key)
-    return exactMatch || null
-  } catch (error) {
-    console.error("Error checking if blob exists:", error)
-    return null
-  }
+  const pool = getPool()
+  const res = await pool.query(`SELECT 1 FROM kv_store WHERE key = $1`, [toKey(key)])
+  return res.rowCount ? { url: `/api/files/${encodeURIComponent(toKey(key))}` } : null
 }

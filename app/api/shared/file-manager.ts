@@ -1,10 +1,8 @@
 import { cookies } from "next/headers";
-import { put, list, del } from "@vercel/blob";
-
 import { IFileManager } from "./Interfaces/IFileManager";
 import { ICookieStore } from "./Interfaces/ICookieStore";
-
-import { Cache } from './cache';
+import { Cache } from "./cache";
+import { getPool } from "@/lib/pg";
 
 export default class FileManager implements IFileManager {
   private static instance: FileManager;
@@ -33,16 +31,18 @@ export default class FileManager implements IFileManager {
     return FileManager.instance;
   }
 
-  // Hilfsfunktion zum Überprüfen, ob ein Blob existiert
-  public async blobExists(key: string): Promise<{ url: string } | undefined> {
-    try {
-      const { blobs } = await list({ prefix: key.substring(0, key.lastIndexOf("/")) });
-      const exactMatch = blobs.find((blob) => blob.pathname === key);
-      return exactMatch;
-    } catch (error) {
-      console.error("Error checking if blob exists:", error);
-      return;
-    }
+  // Ensure KV table exists
+  private async ensureTable(): Promise<void> {
+    const pool = getPool();
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS kv_store (
+        key TEXT PRIMARY KEY,
+        value JSONB,
+        content_type TEXT,
+        is_binary BOOLEAN DEFAULT FALSE,
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      );
+    `);
   }
 
   // Hilfsfunktion zur Überprüfung der Authentifizierung
@@ -72,15 +72,17 @@ export default class FileManager implements IFileManager {
 
     const isPdf = fileNameAndPath.match(/\.pdf$/i);
     if (!isPdf) console.warn('FileManager.uploadPdfFile: A non pdf has been uploaded.');
-
-    const { url } = await put(fileNameAndPath, fileBlob as Buffer | ArrayBuffer, {
-      contentType: "application/pdf",
-      access: "public",
-      allowOverwrite: true,
-    });
-    
-    if (!url) console.error('FileManager.uploadPdfFile: No url for file has been returned.')
-    return url;
+    await this.ensureTable();
+    const pool = getPool();
+    const base64 = Buffer.from(fileBlob).toString("base64");
+    await pool.query(
+      `INSERT INTO kv_store(key, value, content_type, is_binary)
+       VALUES ($1, $2::jsonb, $3, TRUE)
+       ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, content_type = EXCLUDED.content_type, is_binary = TRUE, updated_at = NOW()`,
+      [fileNameAndPath, JSON.stringify({ base64 }), "application/pdf"]
+    );
+    // Return API route to fetch the file
+    return `/api/files/${encodeURIComponent(fileNameAndPath)}`;
   }
 
   public async uploadFile(file: object, fileName: string): Promise<boolean> {
@@ -91,28 +93,32 @@ export default class FileManager implements IFileManager {
     if (FileManager.ENVIRONMENT === "Develop" && !fileName.startsWith(FileManager.DEVELOP_PATH))
       fileName = `${FileManager.DEVELOP_PATH}${fileName}`;
 
+    // read current value for backup logic
     const existingFile = await this.getFile(fileName);
 
     try {
+      await this.ensureTable();
+      const pool = getPool();
+      // Backup previous content if existed
       if (existingFile !== null) {
-        const fileBasePath = fileName.substring(0, fileName.lastIndexOf("/"));
-        const backupPath = `${fileBasePath}/backup.json`;
-
-        await put(backupPath, JSON.stringify(existingFile), {
-          contentType: "application/json",
-          access: "public",
-          addRandomSuffix: true,
-        });
+        const backupKey = `${fileName}.backup.${Date.now()}`;
+        await pool.query(
+          `INSERT INTO kv_store(key, value, content_type, is_binary)
+           VALUES ($1, $2::jsonb, 'application/json', FALSE)
+           ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, content_type = EXCLUDED.content_type, is_binary = FALSE, updated_at = NOW()`,
+          [backupKey, JSON.stringify(existingFile)]
+        );
       }
       FileManager.JSONCache.uploadFile(file, fileName);
-      
+
       console.log(`[FILE-MANAGER] Uploading file to ${fileName}`);
-      const { url } = await put(fileName, JSON.stringify(file, null, 2), {
-        contentType: "application/json",
-        access: "public",
-        allowOverwrite: true,
-      });
-      console.log(`[FILE-MANAGER] File uploaded successfully to ${url}`);
+      await pool.query(
+        `INSERT INTO kv_store(key, value, content_type, is_binary)
+         VALUES ($1, $2::jsonb, 'application/json', FALSE)
+         ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, content_type = EXCLUDED.content_type, is_binary = FALSE, updated_at = NOW()`,
+        [fileName, JSON.stringify(file)]
+      );
+      console.log(`[FILE-MANAGER] File uploaded successfully to kv_store`);
 
       return true;
     } catch (error) {
@@ -128,9 +134,9 @@ export default class FileManager implements IFileManager {
     // TODO: Replace with FileManager.IS_DEV in the future 
     if (FileManager.ENVIRONMENT === "Develop" && !fileNameAndPath.startsWith(FileManager.DEVELOP_PATH))
       fileNameAndPath = `${FileManager.DEVELOP_PATH}${fileNameAndPath}`;
-    
-    await del(fileNameAndPath);
-
+    await this.ensureTable();
+    const pool = getPool();
+    await pool.query(`DELETE FROM kv_store WHERE key = $1`, [fileNameAndPath]);
     return true;    
   }
 
@@ -153,24 +159,7 @@ export default class FileManager implements IFileManager {
 
       // If no real data found, check if folder exists with data
       try {
-        const { blobs } = await list({ prefix: dataType.toLowerCase() + '/' });
-        if (blobs.length > 0) {
-          console.info(`[FILE-MANAGER] Found folder data for ${dataType}, using latest file`);
-          // Sort by uploadedAt desc and get the latest one
-          const latestBlob = blobs
-            .filter(blob => blob.pathname.toLowerCase().endsWith('.json'))
-            .sort((a, b) =>
-              new Date(b.uploadedAt || 0).getTime() -
-              new Date(a.uploadedAt || 0).getTime()
-            )[0];
-
-          if (latestBlob) {
-            const response = await fetch(latestBlob.url, { cache: "no-store" });
-            if (response.ok) {
-              return await response.json();
-            }
-          }
-        }
+        // With Postgres storage we skip folder listing and rely on explicit files
       } catch (err) {
         console.warn(`[FILE-MANAGER] Error checking folder for ${dataType}:`, err);
         // Continue to use hardcoded mock data
@@ -239,26 +228,25 @@ export default class FileManager implements IFileManager {
     // prefix the file name with the develop path if in development environment
     if (FileManager.ENVIRONMENT === "Develop" && !fileName.startsWith(FileManager.DEVELOP_PATH))
       fileName = `${FileManager.DEVELOP_PATH}${fileName}`;
-
-    const exactMatch: any = await this.blobExists(fileName);
-
-    // If file doesn't exist, return null instead of throwing an error
-    if (!exactMatch) {
+    await this.ensureTable();
+    const pool = getPool();
+    const result = await pool.query(
+      `SELECT value, content_type, is_binary FROM kv_store WHERE key = $1`,
+      [fileName]
+    );
+    if (result.rowCount === 0) {
       console.warn(`[FILE-MANAGER] File not found: ${fileName}`);
       return null;
     }
-
-    const response = await fetch(exactMatch.url, { cache: "no-store" });
-    if (!response.ok) {
-      return null;
-    }
-
-    if (fileName.toLowerCase().endsWith('.pdf')) {
-      return await response.arrayBuffer();
+    const row = result.rows[0];
+    if (row.is_binary) {
+      const base64 = row.value?.base64 as string | undefined;
+      if (!base64) return null;
+      return Buffer.from(base64, "base64");
     } else {
       let file: any = await FileManager.JSONCache.getFile(fileName);
-      if ( !file ) {
-        file = await response.json()
+      if (!file) {
+        file = row.value;
       }
       return file;
     }

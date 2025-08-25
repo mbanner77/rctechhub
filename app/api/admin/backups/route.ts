@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
-import { put, list } from "@vercel/blob"
+import { put, list, type BlobListItem } from "@/lib/blob-storage"
 import { checkAuthAction } from "@/lib/auth-actions"
 
 // Definiere die Datentypen
@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
     const { blobs } = await list({ prefix })
 
     // Extrahiere relevante Informationen
-    const backups = blobs.map((blob) => {
+    const backups = blobs.map((blob: BlobListItem) => {
       // Extrahiere Zeitstempel aus dem Dateinamen (backup-{timestamp})
       const nameParts = blob.pathname.split("/").pop()?.split(".")[0].split("-") || []
       const timestamp = Number.parseInt(nameParts[nameParts.length - 1]) || 0

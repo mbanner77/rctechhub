@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import path from 'path';
 import { existsSync, readdirSync, statSync } from 'fs';
-import { list } from '@vercel/blob';
+import { list } from '@/lib/blob-storage';
 
 const CATALOG_BLOB_PATH = 'realcore-data/schulungskatalog/';
 const UPLOAD_DIR = path.join(process.cwd(), 'public', 'uploads');

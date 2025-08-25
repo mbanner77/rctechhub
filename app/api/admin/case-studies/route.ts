@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import { list, put } from '@vercel/blob';
+import { list, put } from '@/lib/blob-storage';
 import { revalidatePath } from 'next/cache';
 import { ICookieStore } from '../../shared/Interfaces/ICookieStore';
 import FileManager from '../../shared/file-manager';

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import { put, list, del } from '@vercel/blob';
+import { put, list, del } from '@/lib/blob-storage';
 import { ICookieStore } from '../shared/Interfaces/ICookieStore';
 
 // Base path for storing training catalog files
