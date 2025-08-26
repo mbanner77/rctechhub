@@ -31,6 +31,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RichTextEditor } from "@/components/ui/rich-text-editor";
 import { Expert } from "@/types/expert";
+import { UnitCard } from "@/types/unit-cards";
 import { defaultExperts } from "@/data/experts";
 
 export default function ExpertEditor() {
@@ -41,6 +42,10 @@ export default function ExpertEditor() {
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saveSuccess, setSaveSuccess] = useState<string | null>(null);
   const { toast } = useToast();
+  // Pathfinder Unit assignment state
+  const [unitCards, setUnitCards] = useState<UnitCard[]>([]);
+  const [unitsLoading, setUnitsLoading] = useState(false);
+  const [unitChanges, setUnitChanges] = useState<Record<number, { expert: boolean; contact: boolean }>>({});
 
   // Form state for editing
   const [formData, setFormData] = useState<Partial<Expert>>({});
@@ -105,6 +110,92 @@ export default function ExpertEditor() {
 
     loadExperts();
   }, []);
+
+  // Load Unit-Cards for Pathfinder assignments
+  useEffect(() => {
+    const loadUnitCards = async () => {
+      setUnitsLoading(true);
+      try {
+        const response = await fetch("/api/admin/unit-cards");
+        if (response.ok) {
+          const data = await response.json();
+          setUnitCards(Array.isArray(data) ? data : []);
+        }
+      } catch (e) {
+        console.error("Error loading unit-cards:", e);
+      } finally {
+        setUnitsLoading(false);
+      }
+    };
+    loadUnitCards();
+  }, []);
+
+  // Initialize unitChanges when selecting an expert
+  useEffect(() => {
+    if (!selectedExpert) return;
+    const init: Record<number, { expert: boolean; contact: boolean }> = {};
+    unitCards.forEach((uc) => {
+      const isExpert = Array.isArray(uc.expertIds) && uc.expertIds.includes(selectedExpert.id);
+      const isContact = Array.isArray((uc as any).contactPersonIds) && (uc as any).contactPersonIds.includes(selectedExpert.id);
+      if (uc.id != null) {
+        init[uc.id] = { expert: !!isExpert, contact: !!isContact };
+      }
+    });
+    setUnitChanges(init);
+  }, [selectedExpert, unitCards]);
+
+  const toggleUnitAssignment = (unitId: number, field: 'expert' | 'contact', value: boolean) => {
+    setUnitChanges((prev) => ({
+      ...prev,
+      [unitId]: { ...(prev[unitId] || { expert: false, contact: false }), [field]: value },
+    }));
+  };
+
+  const saveUnitAssignments = async () => {
+    if (!selectedExpert) return;
+    try {
+      const promises: Promise<Response>[] = [];
+      unitCards.forEach((uc) => {
+        if (uc.id == null) return;
+        const current = unitChanges[uc.id];
+        if (!current) return;
+        const wasExpert = Array.isArray(uc.expertIds) && uc.expertIds.includes(selectedExpert.id);
+        const wasContact = Array.isArray((uc as any).contactPersonIds) && (uc as any).contactPersonIds.includes(selectedExpert.id);
+        const changed = wasExpert !== current.expert || wasContact !== current.contact;
+        if (!changed) return;
+        const nextExpertIds = new Set<string>(Array.isArray(uc.expertIds) ? uc.expertIds : []);
+        const nextContactIds = new Set<string>(Array.isArray((uc as any).contactPersonIds) ? (uc as any).contactPersonIds : []);
+        if (current.expert) nextExpertIds.add(selectedExpert.id); else nextExpertIds.delete(selectedExpert.id);
+        if (current.contact) nextContactIds.add(selectedExpert.id); else nextContactIds.delete(selectedExpert.id);
+        const payload = {
+          ...uc,
+          expertIds: Array.from(nextExpertIds),
+          contactPersonIds: Array.from(nextContactIds),
+        } as UnitCard & { contactPersonIds?: string[] };
+        promises.push(
+          fetch(`/api/data/unit-cards/${uc.id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          })
+        );
+      });
+      if (promises.length === 0) {
+        toast({ title: 'Keine Änderungen', description: 'Es gibt keine geänderten Zuweisungen.', variant: 'default' });
+        return;
+      }
+      const results = await Promise.all(promises);
+      const ok = results.every(r => r.ok);
+      if (ok) {
+        toast({ title: 'Zuweisungen gespeichert', description: 'Pathfinder-Zuweisungen erfolgreich übernommen.' });
+      } else {
+        toast({ title: 'Teilweise fehlgeschlagen', description: 'Einige Zuweisungen konnten nicht gespeichert werden.', variant: 'destructive' });
+      }
+    } catch (e) {
+      console.error('Error saving unit assignments', e);
+      toast({ title: 'Fehler', description: 'Zuweisungen konnten nicht gespeichert werden.', variant: 'destructive' });
+    }
+  };
 
   const handleSave = async () => {
     setSaveError(null);
@@ -524,11 +615,12 @@ export default function ExpertEditor() {
               </CardHeader>
               <CardContent>
                 <Tabs defaultValue="basic" className="w-full">
-                  <TabsList className="grid w-full grid-cols-4">
+                  <TabsList className="grid w-full grid-cols-5">
                     <TabsTrigger value="basic">Grunddaten</TabsTrigger>
                     <TabsTrigger value="contact">Kontakt</TabsTrigger>
                     <TabsTrigger value="expertise">Expertise</TabsTrigger>
                     <TabsTrigger value="additional">Zusatzinfo</TabsTrigger>
+                    <TabsTrigger value="pathfinder">Pathfinder</TabsTrigger>
                   </TabsList>{" "}
                   <TabsContent value="basic" className="space-y-4 mt-4">
                     {/* Profile Picture Section */}
@@ -681,6 +773,54 @@ export default function ExpertEditor() {
                         placeholder="z.B. 15+ Jahre"
                       />{" "}
                     </div>
+                  </TabsContent>
+                  <TabsContent value="pathfinder" className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <Label>Pathfinder-Units</Label>
+                        <p className="text-sm text-muted-foreground">Weise den Experten einzelnen Units als Experte oder Ansprechpartner zu.</p>
+                      </div>
+                      <Button onClick={saveUnitAssignments} className="flex items-center gap-2" disabled={unitsLoading || !selectedExpert}>
+                        Zuweisungen speichern
+                      </Button>
+                    </div>
+                    {unitsLoading ? (
+                      <div className="text-sm text-gray-500">Lade Units…</div>
+                    ) : unitCards.length === 0 ? (
+                      <div className="text-sm text-gray-500">Keine Units gefunden.</div>
+                    ) : (
+                      <div className="space-y-2 max-h-[500px] overflow-y-auto">
+                        {unitCards.map((uc) => {
+                          const state = unitChanges[uc.id as number] || { expert: false, contact: false };
+                          return (
+                            <div key={uc.id} className="flex items-center justify-between p-3 border rounded-md">
+                              <div className="min-w-0">
+                                <div className="font-medium truncate">{uc.title}</div>
+                                <div className="text-xs text-gray-500 truncate">{uc.subtitle}</div>
+                              </div>
+                              <div className="flex items-center gap-6">
+                                <label className="flex items-center gap-2 text-sm">
+                                  <input
+                                    type="checkbox"
+                                    checked={!!state.expert}
+                                    onChange={(e) => toggleUnitAssignment(uc.id as number, 'expert', e.target.checked)}
+                                  />
+                                  Experte
+                                </label>
+                                <label className="flex items-center gap-2 text-sm">
+                                  <input
+                                    type="checkbox"
+                                    checked={!!state.contact}
+                                    onChange={(e) => toggleUnitAssignment(uc.id as number, 'contact', e.target.checked)}
+                                  />
+                                  Ansprechpartner
+                                </label>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
                   </TabsContent>
                   <TabsContent value="contact" className="space-y-4">
                     <div>
