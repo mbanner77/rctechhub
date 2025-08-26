@@ -811,9 +811,11 @@ export default function PathfinderUnitPageClient() {
                       ))}
                     </>
                   ) : (
-                    <div className="text-center py-8">
-                      <p className="text-gray-500">Noch keine Vorgangsdetails für diese Unit definiert</p>
-                    </div>
+                    unit.title !== 'Digital Core' ? (
+                      <div className="text-center py-8">
+                        <p className="text-gray-500">Noch keine Vorgangsdetails für diese Unit definiert</p>
+                      </div>
+                    ) : null
                   )}
                 </div>
               </TabsContent>
