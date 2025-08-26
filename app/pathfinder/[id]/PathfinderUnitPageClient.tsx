@@ -473,7 +473,7 @@ export default function PathfinderUnitPageClient() {
                               </div>
                             )}
                           </div>
-                          <CardContent className="p-5 flex flex-col h-[300px]">
+                          <CardContent className="p-5 flex flex-col min-h-[300px]">
                             <div className="flex-1">
                               <h3 className="text-xl font-bold mb-1">{expert.firstName} {expert.name}</h3>
                               <p className="text-gray-600 mb-3">{expert.role}</p>
