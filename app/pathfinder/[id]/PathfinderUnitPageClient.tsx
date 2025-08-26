@@ -110,11 +110,16 @@ export default function PathfinderUnitPageClient() {
         ],
         'Data-Driven Decision': [
           { firstName: 'Till', lastName: 'Dannapfel' },
-          { firstName: 'Gerrit', lastName: 'Gmeiner' },
+          { firstName: 'Timon', lastName: 'Neuenbauer' },
+        ],
+        // Support both the correct and legacy title spellings
+        'Business Simplified': [
+          { firstName: 'Benjamin', lastName: 'Kunold' },
+          { firstName: 'Can', lastName: 'Karaduman' },
         ],
         'Business Simpliyer': [
           { firstName: 'Benjamin', lastName: 'Kunold' },
-          { firstName: 'Nail', lastName: 'Karaduman' },
+          { firstName: 'Can', lastName: 'Karaduman' },
         ],
         'XaaS Transformation': [
           { firstName: 'Can', lastName: 'Karaduman' },
@@ -452,9 +457,9 @@ export default function PathfinderUnitPageClient() {
                       <Users className="mr-2 h-6 w-6 text-cyan-500" />
                       {'Ihre Ansprechpartner'}
                     </h2>
-                    <div className="grid md:grid-cols-3 gap-6">
+                    <div className="grid md:grid-cols-3 gap-6 items-stretch">
                       {unitExperts.map((expert: any, index: number) => (
-                        <Card key={index} className="overflow-hidden hover:shadow-md transition-shadow">
+                        <Card key={index} className="overflow-hidden hover:shadow-md transition-shadow h-full flex flex-col">
                           <div className="relative h-64">
                             {expert.image ? (
                               <Image
@@ -473,7 +478,7 @@ export default function PathfinderUnitPageClient() {
                               </div>
                             )}
                           </div>
-                          <CardContent className="p-5 flex flex-col min-h-[300px]">
+                          <CardContent className="p-5 flex flex-col min-h-[300px] flex-1">
                             <div className="flex-1">
                               <h3 className="text-xl font-bold mb-1">{expert.firstName} {expert.name}</h3>
                               <p className="text-gray-600 mb-3">{expert.role}</p>
@@ -505,7 +510,7 @@ export default function PathfinderUnitPageClient() {
                             </div>
                             <Button
                               onClick={() => handleExpertClick(expert)}
-                              className="w-full bg-green-600 hover:bg-green-700 text-white"
+                              className="w-full bg-green-600 hover:bg-green-700 text-white mt-auto"
                             >
                               Profil anzeigen
                             </Button>
@@ -667,7 +672,7 @@ export default function PathfinderUnitPageClient() {
                     <div className="mb-10 rounded-lg border bg-white overflow-hidden">
                       <div className="p-6 md:p-8">
                         <h3 className="text-2xl md:text-3xl font-bold mb-6">Vorgehensmodell „Digital Core Transformation”</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+                        <div className="grid grid-cols-1 gap-8 items-start">
                           {/* Steps */}
                           <div>
                             <ol className="space-y-6">
@@ -722,19 +727,6 @@ export default function PathfinderUnitPageClient() {
                                 </ul>
                               </li>
                             </ol>
-                          </div>
-                          {/* Image */}
-                          <div className="relative w-full h-[320px] md:h-[420px] rounded-md overflow-hidden bg-gray-100">
-                            <Image
-                              src={'/images/digital-core-vorgehensmodell.png'}
-                              alt="Vorgehensmodell – Digital Core Transformation"
-                              fill
-                              className="object-contain"
-                              onError={(e) => {
-                                const target = e.target as HTMLImageElement
-                                target.src = (unit.heroImage || unit.image || `/placeholder.svg?height=420&width=640&query=Digital+Core+Transformation`) as string
-                              }}
-                            />
                           </div>
                         </div>
                       </div>
