@@ -1,4 +1,6 @@
 import "./globals.css"
+import "quill/dist/quill.snow.css";
+import "@/styles/rich-text-editor.css";
 import { ReactNode, Suspense } from "react";
 import type { Metadata } from "next"
 import { Analytics } from "@vercel/analytics/next"
