@@ -31,6 +31,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { predefinedTags } from "@/data/predefined-tags";
+import RichTextEditor from "@/components/admin/rich-text-editor";
 import { 
   AlertDialog,
   AlertDialogAction,
@@ -567,15 +568,13 @@ export default function UcEditor() {
                                                 />
 
                                                 <Label htmlFor="description" className="mb-2 block">
-                                                    Description
+                                                    Description (Rich Text)
                                                 </Label>
-                                                <Textarea
+                                                <RichTextEditor
                                                     id="description"
                                                     value={formData.description || ''}
-                                                    onChange={(e) => handleFormChange("description", e.target.value)}
-                                                    placeholder="Enter description"
-                                                    className="mb-4"
-                                                    rows={3}
+                                                    onChange={(html) => handleFormChange("description", html)}
+                                                    placeholder="Beschreibe die Unit (Überschriften, Listen, Links)"
                                                 />
 
                                                 <Label htmlFor="category" className="mb-2 block">
@@ -611,6 +610,16 @@ export default function UcEditor() {
                                                     onChange={(e) => handleFormChange("slogan", e.target.value)}
                                                     placeholder="Enter slogan"
                                                     className="mb-4"
+                                                />
+
+                                                <Label htmlFor="introduction" className="mb-2 block">
+                                                    Einleitung (Rich Text)
+                                                </Label>
+                                                <RichTextEditor
+                                                    id="introduction"
+                                                    value={formData.introduction || ''}
+                                                    onChange={(html) => handleFormChange("introduction", html)}
+                                                    placeholder="Kurze Einleitung/Intro für die Detailseite"
                                                 />
 
                                                 <Label htmlFor="image" className="mb-2 block">
