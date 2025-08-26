@@ -3,7 +3,6 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import UcEditor from "@/components/admin/uc-editor";
-import UnitcardsImportButton from "@/components/admin/unitcards-import-button";
 
 export const metadata: Metadata = {
     title: "Unit-Cards verwalten| Admin Dashboard",
@@ -22,7 +21,6 @@ export default function ManageUCsPage() {
                         </Button>
                     </Link>
                 </div>{" "}
-                <UnitcardsImportButton />
             </div>
             <h1 className="text-3xl font-bold mb-8">Unit-Cards verwalten</h1>
             <UcEditor />

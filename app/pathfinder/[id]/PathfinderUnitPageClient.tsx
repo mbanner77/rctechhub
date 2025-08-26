@@ -152,9 +152,9 @@ export default function PathfinderUnitPageClient() {
     resolvePreferredContacts();
   }, [unit, isLoading]);
 
-  const handleExpertClick = (expert: Expert) => {
-    // Ensure contact dialog doesn't open automatically when just viewing profile
-    const expertCopy = { ...expert, showContactDialog: false }
+  const handleExpertClick = (expert: Expert, openContactDialog: boolean = false) => {
+    // Ensure contact dialog only opens when explicitly requested
+    const expertCopy = { ...expert, showContactDialog: openContactDialog }
     setSelectedExpert(expertCopy)
     setIsExpertDetailOpen(true)
   }
@@ -508,12 +508,21 @@ export default function PathfinderUnitPageClient() {
                                 </div>
                               )}
                             </div>
-                            <Button
-                              onClick={() => handleExpertClick(expert)}
-                              className="w-full bg-green-600 hover:bg-green-700 text-white mt-auto"
-                            >
-                              Profil anzeigen
-                            </Button>
+                            <div className="flex flex-wrap gap-2 mt-auto">
+                              <Button
+                                className="flex-1 min-w-[200px] bg-[#6BB14B] hover:bg-green-700 text-white"
+                                onClick={() => handleExpertClick(expert, false)}
+                              >
+                                Profil ansehen
+                              </Button>
+                              <Button
+                                className="flex-1 min-w-[200px] bg-[#85C916] text-white hover:bg-green-700"
+                                onClick={() => handleExpertClick(expert, true)}
+                              >
+                                <Mail className="h-4 w-4 mr-2" />
+                                Kontakt aufnehmen
+                              </Button>
+                            </div>
                           </CardContent>
                         </Card>
                       ))}

@@ -1,8 +1,9 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
-import { UnitCard } from "../../../../types/unit-cards"
+import { UnitCard, Advantage, Challenge, CaseStudy, Approach, Step, Resource } from "../../../../types/unit-cards"
 import FileManager from "../../shared/file-manager";
 import { isAuthenticated, unauthorizedResponse } from "../../shared/auth-utils";
+import { pathfinderUnits } from "@/app/pathfinder/pathfinder-units";
 
 const FileManagerInstance = FileManager.getInstance();
 
@@ -16,34 +17,119 @@ export async function GET(request: NextRequest) {
             console.log(`[UNITCARDS-API] ${activeUnitCards.length} aktive Unit-Cards aus der Datenbank geladen (${unitcards.length} gesamt)`);
             return NextResponse.json(activeUnitCards);
         } else {
-            console.log("[UNITCARDS-API] Keine Unit-Cards in der Datenbank gefunden, verwende Mock-Daten...");
-            const mockData = await FileManagerInstance.getMockData("unit-cards");
-            
-            if (mockData && mockData.length > 0) {
-                const activeMockCards = mockData.filter((card: UnitCard) => card.active !== false);
-                console.log(`[UNITCARDS-API] ${activeMockCards.length} aktive Unit-Cards aus Mock-Daten geladen (${mockData.length} gesamt)`);
-                return NextResponse.json(activeMockCards);
-            } else {
-                console.log("[UNITCARDS-API] Keine Mock-Daten verfügbar");
-                return NextResponse.json([]);
+            // Seed once from pathfinderUnits if DB is empty
+            console.log("[UNITCARDS-API] Keine Unit-Cards in der DB – führe Initialimport aus pathfinder-units.ts durch...");
+
+            const toId = (idx: number) => idx + 1;
+            const mapped: UnitCard[] = (pathfinderUnits || []).slice(0, 6).map((unit: any, index: number) => {
+                const advantages: (string | Advantage)[] = (unit.benefits || []).map((b: any) => ({
+                    title: b.title,
+                    description: b.description,
+                    catchPhrase: undefined,
+                    outcome: b.outcome,
+                    colorClass: b.colorClass,
+                }));
+                const challenges: (string | Challenge)[] = (unit.challenges || []).map((c: any) => ({
+                    title: c.title,
+                    description: c.description,
+                }));
+                const caseStudies: CaseStudy[] = (unit.caseStudies || []).map((cs: any) => ({
+                    title: cs.title,
+                    description: cs.summary || cs.description || "",
+                    summary: cs.summary,
+                    challenge: cs.challenge,
+                    solution: cs.solution,
+                    results: cs.results,
+                    tags: cs.tags || [],
+                    industry: cs.industry,
+                    category: unit.title,
+                    client_name: cs.client || cs.client_name || "",
+                    client: cs.client,
+                    clientLogo: cs.clientLogo,
+                    location: cs.location,
+                    image: cs.image,
+                    pdf: cs.pdf,
+                }));
+                const approach: Approach[] = [];
+                if (unit.approach && unit.approach.phases) {
+                    unit.approach.phases.forEach((p: any) => {
+                        const steps: Step[] = [{
+                            title: p.title,
+                            description: p.description || "",
+                            activities: p.activities || [],
+                            results: p.outcomes || [],
+                        }];
+                        approach.push({ title: p.title, description: p.description || "", steps });
+                    });
+                }
+                const resources: Resource[] = [];
+                (unit.resources || []).forEach((r: any) => resources.push({
+                    title: r.title,
+                    description: r.description || r.format || r.type || "",
+                    format: r.format,
+                    icon: r.icon,
+                    pdf: r.pdf,
+                }));
+                (unit.workshops || []).forEach((w: any) => resources.push({
+                    title: w.title,
+                    description: w.description || "",
+                    duration: w.duration,
+                    price: w.price ? String(w.price) : undefined,
+                    icon: w.icon,
+                }));
+                (unit.events || []).forEach((e: any) => resources.push({
+                    title: e.title,
+                    description: e.description || `${e.date || ""} ${e.time || ""} ${e.location || ""}`.trim(),
+                }));
+                (unit.trainings || []).forEach((t: any) => resources.push({
+                    title: t.title,
+                    description: t.description || "",
+                    duration: t.duration,
+                }));
+
+                const tags: string[] = Array.isArray(unit.technologies) ? unit.technologies : [];
+
+                const uc: UnitCard = {
+                    id: toId(index),
+                    title: unit.title,
+                    subtitle: unit.shortDescription || "",
+                    description: unit.description || "",
+                    tags,
+                    category: unit.title,
+                    image: unit.image,
+                    introduction: unit.quote || unit.description || "",
+                    slogan: unit.shortDescription || "",
+                    quote: unit.quote,
+                    advantages,
+                    challenges,
+                    caseStudies,
+                    approach,
+                    resources,
+                    heroImage: unit.heroImage,
+                    backgroundPattern: unit.backgroundPattern,
+                    expertIds: unit.expertIds || [],
+                    active: true,
+                };
+                return uc;
+            });
+
+            await FileManagerInstance.uploadFile(mapped, "pathfinder/unit-cards/unit-cards.json");
+            try {
+                revalidatePath("/admin/unit-cards");
+                revalidatePath("/pathfinder");
+                revalidatePath("/landing");
+                mapped.forEach(m => { if (m.id) revalidatePath(`/pathfinder/${m.id}`) });
+            } catch (e) {
+                console.error("[UNITCARDS-API] Revalidate nach Initialimport fehlgeschlagen", e);
             }
+
+            const active = mapped.filter((card: UnitCard) => card.active !== false);
+            console.log(`[UNITCARDS-API] Initialimport abgeschlossen: ${active.length} aktive Unit-Cards`);
+            return NextResponse.json(active);
         }
     } catch (error) {
         console.error("[UNITCARDS-API] Fehler beim Laden der Unit-Cards:", error);
-        console.log("[UNITCARDS-API] Versuche Mock-Daten zu laden...");
-        
-        try {
-            const mockData = await FileManagerInstance.getMockData("unit-cards");
-            if (mockData && mockData.length > 0) {
-                const activeMockCards = mockData.filter((card: UnitCard) => card.active !== false);
-                console.log(`[UNITCARDS-API] ${activeMockCards.length} aktive Unit-Cards aus Mock-Daten als Fallback geladen`);
-                return NextResponse.json(activeMockCards);
-            }
-        } catch (mockError) {
-            console.error("[UNITCARDS-API] Fehler beim Laden der Mock-Daten:", mockError);
-        }
-        
-        return NextResponse.json([]);
+        return NextResponse.json([], { status: 500 });
     }
 }
 

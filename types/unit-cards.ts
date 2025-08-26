@@ -17,6 +17,9 @@ export interface UnitCard {
     heroImage?: string,
     backgroundPattern?: string,
     expertIds?: string[],
+    // Optional: dedicated contacts to highlight on the unit detail page
+    contactPersonIds?: string[],
+    showContactPersons?: boolean,
     active?: boolean,
 }
 
