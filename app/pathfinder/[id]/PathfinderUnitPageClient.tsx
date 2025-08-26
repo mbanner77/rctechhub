@@ -726,13 +726,13 @@ export default function PathfinderUnitPageClient() {
                           {/* Image */}
                           <div className="relative w-full h-[320px] md:h-[420px] rounded-md overflow-hidden bg-gray-100">
                             <Image
-                              src={(unit.heroImage || unit.image || '/images/digital-core-vorgehensmodell.png') as string}
+                              src={'/images/digital-core-vorgehensmodell.png'}
                               alt="Vorgehensmodell – Digital Core Transformation"
                               fill
                               className="object-contain"
                               onError={(e) => {
                                 const target = e.target as HTMLImageElement
-                                target.src = `/placeholder.svg?height=420&width=640&query=Digital+Core+Transformation`
+                                target.src = (unit.heroImage || unit.image || `/placeholder.svg?height=420&width=640&query=Digital+Core+Transformation`) as string
                               }}
                             />
                           </div>
