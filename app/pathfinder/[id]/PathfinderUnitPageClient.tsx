@@ -48,6 +48,7 @@ import { CaseStudies } from "@/components/case-studies"
 import SchulungenDisplay from "@/components/schulungen-display"
 import { Approach, Step } from "@/types/unit-cards"
 import { getClientWorkshops } from "@/lib/client-data-service"
+import { fetchCurrentExperts } from "@/data/experts"
 
 // Icon Map für Workshop-Karten
 const iconMap: Record<string, React.ReactNode> = {
@@ -75,11 +76,76 @@ export default function PathfinderUnitPageClient() {
   const [nextUnit, setNextUnit] = useState<any>(null)
   const [prevUnit, setPrevUnit] = useState<any>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [overrideExpertIds, setOverrideExpertIds] = useState<string[] | null>(null)
   
   // Define handlers
   const handleUnitChange = (value: string) => {
     router.push(`/pathfinder/${value}`)
   }
+
+  // Resolve preferred contacts by unit title to expert IDs if not provided by unit data
+  useEffect(() => {
+    async function resolvePreferredContacts() {
+      if (!unit || isLoading) return;
+
+      // If unit already defines contacts, do not override
+      if ((unit.contactPersonIds && unit.contactPersonIds.length > 0) || (unit.showContactPersons && unit.showContactPersons === true)) {
+        setOverrideExpertIds(null);
+        return;
+      }
+
+      // Map unit titles to preferred contact name pairs
+      const preferredByTitle: Record<string, Array<{ firstName: string; lastName: string }>> = {
+        'Digital Core': [
+          { firstName: 'Arne', lastName: 'Steinkamp' },
+          { firstName: 'Silke', lastName: 'Griewel' },
+        ],
+        'Platform Elevation': [
+          { firstName: 'Silke', lastName: 'Griewel' },
+          { firstName: 'Till', lastName: 'Dannapfel' },
+        ],
+        'Adaptive Integration': [
+          { firstName: 'Christian', lastName: 'Niermann' },
+          { firstName: 'Arne', lastName: 'Steinkamp' },
+        ],
+        'Data-Driven Decision': [
+          { firstName: 'Till', lastName: 'Dannapfel' },
+          { firstName: 'Gerrit', lastName: 'Gmeiner' },
+        ],
+        'Business Simpliyer': [
+          { firstName: 'Benjamin', lastName: 'Kunold' },
+          { firstName: 'Nail', lastName: 'Karaduman' },
+        ],
+        'XaaS Transformation': [
+          { firstName: 'Can', lastName: 'Karaduman' },
+          { firstName: 'Timon', lastName: 'Neuenbauer' },
+        ],
+      };
+
+      const wanted = preferredByTitle[unit.title as string];
+      if (!wanted || wanted.length === 0) {
+        setOverrideExpertIds(null);
+        return;
+      }
+
+      try {
+        const experts = await fetchCurrentExperts();
+        const ids = wanted
+          .map(w => experts.find(e => e.firstName === w.firstName && e.name === w.lastName)?.id)
+          .filter((id): id is string => !!id);
+
+        if (ids.length > 0) {
+          setOverrideExpertIds(ids);
+        } else {
+          setOverrideExpertIds(null);
+        }
+      } catch (e) {
+        setOverrideExpertIds(null);
+      }
+    }
+
+    resolvePreferredContacts();
+  }, [unit, isLoading]);
 
   const handleExpertClick = (expert: Expert) => {
     // Ensure contact dialog doesn't open automatically when just viewing profile
@@ -188,10 +254,12 @@ export default function PathfinderUnitPageClient() {
   
   // Use useMemo to prevent array recreation on every render
   const expertIds = useMemo(() => {
+    // Highest priority: explicit overrides derived from preferred contact names
+    if (overrideExpertIds && overrideExpertIds.length > 0) return overrideExpertIds;
     if (shouldShowContactPersons) return unit.contactPersonIds || [];
     if (shouldShowExperts) return unit.expertIds || [];
     return [];
-  }, [shouldShowContactPersons, shouldShowExperts, unit?.contactPersonIds, unit?.expertIds]);
+  }, [overrideExpertIds, shouldShowContactPersons, shouldShowExperts, unit?.contactPersonIds, unit?.expertIds]);
   
   // Test hooks one by one
   const { experts: unitExperts, loading: expertsLoading } = useExpertsByIds(expertIds)
@@ -382,7 +450,7 @@ export default function PathfinderUnitPageClient() {
                   <div>
                     <h2 className="text-2xl font-bold mb-6 flex items-center">
                       <Users className="mr-2 h-6 w-6 text-cyan-500" />
-                      {shouldShowContactPersons ? 'Ansprechpartner' : 'Unsere Experten'}
+                      {'Ihre Ansprechpartner'}
                     </h2>
                     <div className="grid md:grid-cols-3 gap-6">
                       {unitExperts.map((expert: any, index: number) => (

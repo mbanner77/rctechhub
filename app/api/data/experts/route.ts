@@ -69,6 +69,7 @@ export async function POST(request: NextRequest) {
     // Revalidate relevant paths
     revalidatePath("/admin/experts");
     revalidatePath("/experts");
+    revalidatePath("/unsere-experten");
     return NextResponse.json({
       success: true,
       message: "Experten erfolgreich gespeichert",
