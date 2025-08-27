@@ -157,6 +157,27 @@ export default function ConsultingPhasesDisplay() {
         )}
       </div>
 
+      {/* Initial informational overview of phases (non-interactive) */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {data.phases.map((phase) => (
+          <Card key={`info-${phase.id}`} className="h-full">
+            <CardHeader>
+              <CardTitle className="text-xl">{phase.title}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {phase.description ? (
+                <div
+                  className="text-sm text-muted-foreground"
+                  dangerouslySetInnerHTML={{ __html: phase.description }}
+                />
+              ) : (
+                <div className="text-sm text-muted-foreground">Beschreibung folgt.</div>
+              )}
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
       <Dialog open={ctaOpen} onOpenChange={setCtaOpen}>
         <DialogContent>
           <DialogHeader>

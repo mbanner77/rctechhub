@@ -79,6 +79,12 @@ export default function SchulungenManager() {
           const withIds = arr.map((s: Schulung) => ({
             ...s,
             id: s.id && String(s.id).trim() ? String(s.id) : `schulung-${Math.random().toString(36).substr(2, 9)}`,
+            category: (s as any).category && String((s as any).category).trim() ? (s as any).category as Schulung["category"] : "Online-Kurs",
+            duration: typeof (s as any).duration === "string" ? (s as any).duration : "",
+            price: Number.isFinite((s as any).price) ? Number((s as any).price) : 0,
+            description: typeof (s as any).description === "string" ? (s as any).description : "",
+            scope: typeof (s as any).scope === "string" ? (s as any).scope : "",
+            procedure: typeof (s as any).procedure === "string" ? (s as any).procedure : "",
           }))
           setSchulungen(withIds);
         }
@@ -279,6 +285,12 @@ export default function SchulungenManager() {
         const withIds = arr.map((s: Schulung) => ({
           ...s,
           id: s.id && String(s.id).trim() ? String(s.id) : `schulung-${Math.random().toString(36).substr(2, 9)}`,
+          category: (s as any).category && String((s as any).category).trim() ? (s as any).category as Schulung["category"] : "Online-Kurs",
+          duration: typeof (s as any).duration === "string" ? (s as any).duration : "",
+          price: Number.isFinite((s as any).price) ? Number((s as any).price) : 0,
+          description: typeof (s as any).description === "string" ? (s as any).description : "",
+          scope: typeof (s as any).scope === "string" ? (s as any).scope : "",
+          procedure: typeof (s as any).procedure === "string" ? (s as any).procedure : "",
         }))
         setSchulungen(withIds);
       }
