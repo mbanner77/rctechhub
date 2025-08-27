@@ -3,16 +3,9 @@
 import type { IMailConfig } from "@/types/mail-config";
 import { getMailConfigFromBlob, saveMailConfigToBlob } from "./blob-db-actions";
 import { revalidatePath } from "next/cache";
+import { defaultMailConfig } from "./mail-config-default";
 
-// Default mail configuration
-export const defaultMailConfig: IMailConfig = {
-  enabled: false,
-  clientId: "",
-  clientSecret: "",
-  tenantId: "",
-  defaultFrom: "",
-  defaultTarget: "",
-};
+// Default mail configuration is imported from a non-server module to comply with Next.js rules
 
 /**
  * Get mail configuration with fallback hierarchy:
