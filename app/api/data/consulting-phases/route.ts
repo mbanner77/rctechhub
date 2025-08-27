@@ -15,9 +15,9 @@ const defaultData: ConsultingPhasesData = {
       description:
         "Wir verstehen Ziele, Rahmenbedingungen und Ist-Situation und schaffen eine belastbare Entscheidungsgrundlage.",
       offers: [
-        { id: "p1-o1", title: "Discovery Workshop" },
-        { id: "p1-o2", title: "BTP Readiness Assessment" },
-        { id: "p1-o3", title: "Anforderungsanalyse" },
+        { id: "p1-o1", title: "Discovery Workshop", shortDescription: "Ziele, Stakeholder und Ist-Situation klären", price: 1900, defaultSelected: true },
+        { id: "p1-o2", title: "BTP Readiness Assessment", shortDescription: "Bewertung der BTP-Fähigkeiten", price: 2200 },
+        { id: "p1-o3", title: "Anforderungsanalyse", shortDescription: "Business- und Technik-Anforderungen erfassen", price: 2400 },
       ],
     },
     {
@@ -26,9 +26,9 @@ const defaultData: ConsultingPhasesData = {
       description:
         "Wir entwickeln tragfähige Zielbilder, Architektur- und Sicherheitskonzepte sowie Umsetzungsroadmaps.",
       offers: [
-        { id: "p2-o1", title: "Solution Design Workshop" },
-        { id: "p2-o2", title: "Architekturdesign" },
-        { id: "p2-o3", title: "Sicherheitskonzept" },
+        { id: "p2-o1", title: "Solution Design Workshop", shortDescription: "Zielbild, Use-Cases, Scope", price: 2100 },
+        { id: "p2-o2", title: "Architekturdesign", shortDescription: "Komponenten- und Schnittstellendesign", price: 3900 },
+        { id: "p2-o3", title: "Sicherheitskonzept", shortDescription: "Security & Compliance Maßnahmen", price: 3200 },
       ],
     },
     {
@@ -37,9 +37,9 @@ const defaultData: ConsultingPhasesData = {
       description:
         "Wir setzen die Lösung iterativ um, integrieren Systeme und liefern schnell nutzbare Ergebnisse.",
       offers: [
-        { id: "p3-o1", title: "CAP Entwicklung" },
-        { id: "p3-o2", title: "Fiori App-Entwicklung" },
-        { id: "p3-o3", title: "Integration Suite Setup" },
+        { id: "p3-o1", title: "CAP Entwicklung", shortDescription: "Services & Persistenz", price: 9500 },
+        { id: "p3-o2", title: "Fiori App-Entwicklung", shortDescription: "UX, OData, Rollen", price: 7800 },
+        { id: "p3-o3", title: "Integration Suite Setup", shortDescription: "Flows, Adapater, Monitoring", price: 6200 },
       ],
     },
     {
@@ -48,9 +48,9 @@ const defaultData: ConsultingPhasesData = {
       description:
         "Wir bereiten den stabilen Betrieb vor, unterstützen beim Rollout und qualifizieren das Team.",
       offers: [
-        { id: "p4-o1", title: "Deployment & Go-Live" },
-        { id: "p4-o2", title: "Monitoring Setup" },
-        { id: "p4-o3", title: "Schulung & Enablement" },
+        { id: "p4-o1", title: "Deployment & Go-Live", shortDescription: "Cutover & Hypercare", price: 3500 },
+        { id: "p4-o2", title: "Monitoring Setup", shortDescription: "Alerting und KPIs", price: 1800 },
+        { id: "p4-o3", title: "Schulung & Enablement", shortDescription: "Train-the-Trainer", price: 2400 },
       ],
     },
   ],

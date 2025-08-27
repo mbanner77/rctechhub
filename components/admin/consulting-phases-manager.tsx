@@ -52,7 +52,7 @@ export default function ConsultingPhasesManager() {
     const phases = [...data.phases]
     const offers = [...phases[phaseIdx].offers]
     const id = `offer-${Math.random().toString(36).slice(2, 8)}`
-    offers.push({ id, title: "Neues Angebot" })
+    offers.push({ id, title: "Neues Angebot", price: 0, shortDescription: "", defaultSelected: false })
     phases[phaseIdx] = { ...phases[phaseIdx], offers }
     setData({ ...data, phases })
   }
@@ -166,15 +166,50 @@ export default function ConsultingPhasesManager() {
                   </div>
                   <div className="grid gap-3">
                     {phase.offers.map((offer, offerIdx) => (
-                      <div key={offer.id} className="flex items-center gap-2">
-                        <Input
-                          value={offer.title}
-                          onChange={(e) => updateOffer(phaseIdx, offerIdx, { title: e.target.value })}
-                          placeholder="Angebotstitel"
-                        />
-                        <Button variant="destructive" size="icon" onClick={() => removeOffer(phaseIdx, offerIdx)}>
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                      <div key={offer.id} className="grid grid-cols-1 md:grid-cols-12 gap-2 items-start">
+                        <div className="md:col-span-4">
+                          <Label className="sr-only">Titel</Label>
+                          <Input
+                            value={offer.title}
+                            onChange={(e) => updateOffer(phaseIdx, offerIdx, { title: e.target.value })}
+                            placeholder="Angebotstitel"
+                          />
+                        </div>
+                        <div className="md:col-span-3">
+                          <Label className="sr-only">Kurzbeschreibung</Label>
+                          <Input
+                            value={offer.shortDescription || ""}
+                            onChange={(e) => updateOffer(phaseIdx, offerIdx, { shortDescription: e.target.value })}
+                            placeholder="Kurzbeschreibung"
+                          />
+                        </div>
+                        <div className="md:col-span-2">
+                          <Label className="sr-only">Preis (€)</Label>
+                          <Input
+                            type="number"
+                            value={Number.isFinite(offer.price as number) ? String(offer.price) : ""}
+                            onChange={(e) => {
+                              const val = e.target.value.trim()
+                              updateOffer(phaseIdx, offerIdx, { price: val === "" ? 0 : parseFloat(val) })
+                            }}
+                            placeholder="Preis (€)"
+                          />
+                        </div>
+                        <div className="md:col-span-2 flex items-center gap-2">
+                          <input
+                            id={`${offer.id}-defsel`}
+                            type="checkbox"
+                            className="h-4 w-4"
+                            checked={!!offer.defaultSelected}
+                            onChange={(e) => updateOffer(phaseIdx, offerIdx, { defaultSelected: e.target.checked })}
+                          />
+                          <Label htmlFor={`${offer.id}-defsel`}>Standard ausgewählt</Label>
+                        </div>
+                        <div className="md:col-span-1 flex md:justify-end">
+                          <Button variant="destructive" size="icon" onClick={() => removeOffer(phaseIdx, offerIdx)}>
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </div>
                     ))}
                     {phase.offers.length === 0 && (
