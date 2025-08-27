@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import type { ConsultingPhasesData, ConsultingPhase, ConsultingPhaseOffer } from "@/types/consulting-phases"
 import { CheckCircle2 } from "lucide-react"
+import { sendFormConfirmationEmail, sendTeamNotificationEmail } from "@/lib/send-confirmation-email"
 import {
   Dialog,
   DialogContent,
@@ -88,19 +89,24 @@ export default function ConsultingPhasesDisplay() {
     }
     setSubmitting(true)
     try {
-      const res = await fetch("/api/orders/consulting", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          customer,
-          items: chosen,
-          total: totals.grand,
-          meta: { source: "consulting-phases", createdAt: new Date().toISOString() },
-        }),
-      })
-      if (!res.ok) throw new Error("Order failed")
-      const result = await res.json()
-      alert(`Vielen Dank! Ihre Anfrage wurde gesendet. Vorgangs-ID: ${result.id || "n/a"}`)
+      // Create details for notification
+      const details: Record<string, string> = {
+        Gesamtbetrag: `${new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR" }).format(totals.grand)}`,
+        Unternehmen: customer.company || "-",
+        Hinweise: customer.note || "-",
+        Auswahl: chosen.map((c) => `${c.title} (${c.phaseId}) – ${new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR" }).format(c.price)}`).join("; ")
+      }
+
+      // Send team notification and user confirmation mails
+      await sendTeamNotificationEmail(customer.email, customer.name, "Consulting-Angebot (Baukasten)", details)
+      await sendFormConfirmationEmail(
+        customer.email,
+        customer.name,
+        "Consulting-Angebot (Baukasten)",
+        `Vielen Dank für Ihre Anfrage zu unserem Beratungsbaukasten. Gesamtsumme: ${new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR" }).format(totals.grand)}.`
+      )
+
+      alert("Vielen Dank! Ihre Anfrage wurde gesendet. Wir melden uns zeitnah bei Ihnen.")
       setCustomer({ name: "", email: "", company: "", note: "" })
     } catch (e) {
       console.error(e)
@@ -125,8 +131,8 @@ export default function ConsultingPhasesDisplay() {
   return (
     <div className="space-y-10">
       <div className="max-w-3xl mx-auto text-center">
-        <h2 className="text-3xl font-bold mb-3">{data.introTitle}</h2>
-        <p className="text-muted-foreground mb-6">{data.introText}</p>
+        <h2 className="text-3xl font-bold mb-3">Unser Easy-Starting Package für erste Schritte in der BTP</h2>
+        <p className="text-muted-foreground mb-6">Mit unserem modularen Starterbaukasten können Sie schnell erste Erfahrungen und schnelle Erfolge in der BTP generieren. Sie können erste Apps und Schnittstellen unter unserer Anleitung erstellen. Wir sorgen für den Know-How Transfer und richten gemeinsam mit Ihnen Ihre Systemlandschaft produktionsfähig ein, so dass Sie danach direkt mit Ihren weiteren Projekten starten können. Risikiofrei, Unkompliziert, Festpreise</p>
         {data.ctaText && (
           <Button variant="default" onClick={() => setCtaOpen(true)}>{data.ctaText}</Button>
         )}
@@ -234,7 +240,7 @@ export default function ConsultingPhasesDisplay() {
           </div>
           <div className="flex justify-end">
             <Button onClick={submitOrder} disabled={submitting || totals.grand <= 0}>
-              {submitting ? "Wird gesendet..." : "Auswahl bestellen"}
+              {submitting ? "Wird gesendet..." : "Angebot anfordern"}
             </Button>
           </div>
         </CardContent>
