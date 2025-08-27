@@ -74,7 +74,7 @@ export default function AdminPage() {
               <Link href="/admin/consulting-phases">
                 <Button className="w-full" variant="outline">
                   <FileText className="mr-2 h-4 w-4" />
-                  Beratungsbaukasten
+                  Beratungspakete pflegen
                 </Button>
               </Link>
             </div>

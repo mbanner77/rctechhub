@@ -30,6 +30,7 @@ import DynamicServiceGrid from "@/components/dynamic-service-grid"
 import DynamicWorkshopGrid from "@/components/dynamic-workshop-grid"
 import DynamicBestPractices from "@/components/dynamic-best-practices"
 import DynamicResources from "@/components/dynamic-resources"
+import ConsultingPhasesDisplay from "@/components/consulting-phases-display"
 import { StickyHeader } from "@/components/sticky-header"
 import { EnhancedFooter } from "@/components/enhanced-footer"
 import { analytics } from "@/lib/analytics"
@@ -415,100 +416,10 @@ export default function Home() {
             </div>
 
             <DynamicWorkshopGrid />
-            <div className="bg-white p-6 rounded-lg shadow-md mt-8">
-              <h3 className="text-xl font-bold mb-4">Unser Beratungsbaukasten</h3>
-              <p className="mb-6">
-                Mit unserem modularen Beratungsbaukasten können Sie genau die Leistungen auswählen, die Sie benötigen.
-                Kombinieren Sie Workshops, Beratungsleistungen und Implementierungspakete zu einer maßgeschneiderten
-                Lösung.
-              </p>
-
-              <div className="relative">
-                <div className="flex overflow-x-auto pb-4 space-x-4">
-                  <div className="flex-shrink-0 w-64 border rounded-lg p-4 bg-gray-50">
-                    <h4 className="font-semibold mb-2">Phase 1: Analyse</h4>
-                    <ul className="space-y-2 text-sm">
-                      <li className="flex items-center">
-                        <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
-                        Discovery Workshop
-                      </li>
-                      <li className="flex items-center">
-                        <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
-                        BTP Readiness Assessment
-                      </li>
-                      <li className="flex items-center">
-                        <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
-                        Anforderungsanalyse
-                      </li>
-                    </ul>
-                  </div>
-
-                  <div className="flex-shrink-0 w-64 border rounded-lg p-4 bg-gray-50">
-                    <h4 className="font-semibold mb-2">Phase 2: Design</h4>
-                    <ul className="space-y-2 text-sm">
-                      <li className="flex items-center">
-                        <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
-                        Solution Design Workshop
-                      </li>
-                      <li className="flex items-center">
-                        <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
-                        Architekturdesign
-                      </li>
-                      <li className="flex items-center">
-                        <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
-                        Sicherheitskonzept
-                      </li>
-                    </ul>
-                  </div>
-
-                  <div className="flex-shrink-0 w-64 border rounded-lg p-4 bg-gray-50">
-                    <h4 className="font-semibold mb-2">Phase 3: Implementierung</h4>
-                    <ul className="space-y-2 text-sm">
-                      <li className="flex items-center">
-                        <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
-                        CAP Entwicklung
-                      </li>
-                      <li className="flex items-center">
-                        <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
-                        Fiori App-Entwicklung
-                      </li>
-                      <li className="flex items-center">
-                        <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
-                        Integration Suite Setup
-                      </li>
-                    </ul>
-                  </div>
-
-                  <div className="flex-shrink-0 w-64 border rounded-lg p-4 bg-gray-50">
-                    <h4 className="font-semibold mb-2">Phase 4: Go-Live</h4>
-                    <ul className="space-y-2 text-sm">
-                      <li className="flex items-center">
-                        <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
-                        Deployment & Go-Live
-                      </li>
-                      <li className="flex items-center">
-                        <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
-                        Monitoring Setup
-                      </li>
-                      <li className="flex items-center">
-                        <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
-                        Schulung & Enablement
-                      </li>
-                    </ul>
-                  </div>
-                </div>
-              </div>
-
-              <div className="mt-6 px-4 text-center">
-                <Button
-                  className="bg-green-600 hover:bg-green-700 whitespace-normal text-center"
-                  onClick={() => setIsPackageBuilderDialogOpen(true)}
-                >
-                  Individuelles Beratungspaket zusammenstellen
-                </Button>
-              </div>
-
+            <div className="mt-8">
+              <ConsultingPhasesDisplay />
             </div>
+
           </div>
 
           <div id="innovation" className="mt-20 mb-16">
