@@ -31,6 +31,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { RichTextEditor } from "@/components/ui/rich-text-editor"
 
 // Pathfinder unit options (from the existing code)
 const pathfinderUnitOptions = [
@@ -357,180 +359,195 @@ export default function SchulungenManager() {
                 </AccordionTrigger>
                 <AccordionContent>
                   <div className="p-4 space-y-4 border-t">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor={`title-${index}`}>Title</Label>
-                        <Input
-                          id={`title-${index}`}
-                          value={schulung.title}
-                          onChange={(e) => handleSchulungChange(index, "title", e.target.value)}
-                          placeholder="Training title"
-                        />
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <Label htmlFor={`category-${index}`}>Category</Label>
-                        <Select
-                          value={schulung.category}
-                          onValueChange={(value) => handleSchulungChange(index, "category", value)}
-                        >
-                          <SelectTrigger id={`category-${index}`}>
-                            <SelectValue placeholder="Select a category" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="Online-Kurs">
-                              <div className="flex items-center">
-                                <BookOpen className="h-4 w-4 mr-2" />
-                                <span>Online-Kurs</span>
-                              </div>
-                            </SelectItem>
-                            <SelectItem value="Workshop">
-                              <div className="flex items-center">
-                                <BookOpen className="h-4 w-4 mr-2" />
-                                <span>Workshop</span>
-                              </div>
-                            </SelectItem>
-                            <SelectItem value="Webinar">
-                              <div className="flex items-center">
-                                <BookOpen className="h-4 w-4 mr-2" />
-                                <span>Webinar</span>
-                              </div>
-                            </SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <Label htmlFor={`duration-${index}`}>Duration</Label>
-                        <div className="grid grid-cols-2 gap-2">
-                          <div>
+                    <Tabs defaultValue="details">
+                      <TabsList>
+                        <TabsTrigger value="details">Details</TabsTrigger>
+                        <TabsTrigger value="beschreibung">Beschreibung</TabsTrigger>
+                        <TabsTrigger value="umfang">Leistungsumfang</TabsTrigger>
+                        <TabsTrigger value="ablauf">Ablauf</TabsTrigger>
+                      </TabsList>
+                      <TabsContent value="details">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label htmlFor={`title-${index}`}>Title</Label>
                             <Input
-                              id={`days-${index}`}
-                              type="number"
-                              value={schulung.days || 0}
-                              onChange={(e) => handleSchulungChange(index, "days", e.target.value)}
-                              placeholder="Days"
+                              id={`title-${index}`}
+                              value={schulung.title}
+                              onChange={(e) => handleSchulungChange(index, "title", e.target.value)}
+                              placeholder="Training title"
                             />
-                            <span className="text-xs text-gray-500">Days</span>
                           </div>
-                          <div>
+                          <div className="space-y-2">
+                            <Label htmlFor={`category-${index}`}>Category</Label>
+                            <Select
+                              value={schulung.category}
+                              onValueChange={(value) => handleSchulungChange(index, "category", value)}
+                            >
+                              <SelectTrigger id={`category-${index}`}>
+                                <SelectValue placeholder="Select a category" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="Online-Kurs">
+                                  <div className="flex items-center">
+                                    <BookOpen className="h-4 w-4 mr-2" />
+                                    <span>Online-Kurs</span>
+                                  </div>
+                                </SelectItem>
+                                <SelectItem value="Workshop">
+                                  <div className="flex items-center">
+                                    <BookOpen className="h-4 w-4 mr-2" />
+                                    <span>Workshop</span>
+                                  </div>
+                                </SelectItem>
+                                <SelectItem value="Webinar">
+                                  <div className="flex items-center">
+                                    <BookOpen className="h-4 w-4 mr-2" />
+                                    <span>Webinar</span>
+                                  </div>
+                                </SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor={`duration-${index}`}>Duration</Label>
+                            <div className="grid grid-cols-2 gap-2">
+                              <div>
+                                <Input
+                                  id={`days-${index}`}
+                                  type="number"
+                                  value={schulung.days || 0}
+                                  onChange={(e) => handleSchulungChange(index, "days", e.target.value)}
+                                  placeholder="Days"
+                                />
+                                <span className="text-xs text-gray-500">Days</span>
+                              </div>
+                              <div>
+                                <Input
+                                  id={`hours-${index}`}
+                                  type="number"
+                                  value={schulung.hours || 0}
+                                  onChange={(e) => handleSchulungChange(index, "hours", e.target.value)}
+                                  placeholder="Hours"
+                                />
+                                <span className="text-xs text-gray-500">Hours</span>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor={`price-${index}`}>Price (€)</Label>
                             <Input
-                              id={`hours-${index}`}
+                              id={`price-${index}`}
                               type="number"
-                              value={schulung.hours || 0}
-                              onChange={(e) => handleSchulungChange(index, "hours", e.target.value)}
-                              placeholder="Hours"
+                              value={schulung.price}
+                              onChange={(e) => handleSchulungChange(index, "price", parseFloat(e.target.value))}
+                              placeholder="Price in Euro"
+                              step="0.01"
                             />
-                            <span className="text-xs text-gray-500">Hours</span>
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor={`unitId-${index}`}>Pathfinder Unit (optional)</Label>
+                            <Select
+                              value={schulung.unitId || ""}
+                              onValueChange={(value) => handleSchulungChange(index, "unitId", value || undefined)}
+                            >
+                              <SelectTrigger id={`unitId-${index}`}>
+                                <SelectValue placeholder="Unit auswählen (optional)" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="">Keine Unit (Standard)</SelectItem>
+                                {pathfinderUnitOptions.map((unit) => (
+                                  <SelectItem key={unit.id} value={unit.id}>
+                                    {unit.title}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
                           </div>
                         </div>
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <Label htmlFor={`price-${index}`}>Price (€)</Label>
-                        <Input
-                          id={`price-${index}`}
-                          type="number"
-                          value={schulung.price}
-                          onChange={(e) => handleSchulungChange(index, "price", parseFloat(e.target.value))}
-                          placeholder="Price in Euro"
-                          step="0.01"
-                        />
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <Label htmlFor={`unitId-${index}`}>Pathfinder Unit (optional)</Label>
-                        <Select
-                          value={schulung.unitId || ""}
-                          onValueChange={(value) => handleSchulungChange(index, "unitId", value || undefined)}
-                        >
-                          <SelectTrigger id={`unitId-${index}`}>
-                            <SelectValue placeholder="Unit auswählen (optional)" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="">Keine Unit (Standard)</SelectItem>
-                            {pathfinderUnitOptions.map((unit) => (
-                              <SelectItem key={unit.id} value={unit.id}>
-                                {unit.title}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-                    
-                    {/* PDF Upload Section */}
-                    <div className="space-y-2 mt-4 border-t pt-4">
-                      <Label>PDF Document</Label>
-                      <div className="flex flex-wrap items-center gap-4">
-                        <Button 
-                          onClick={() => handleUploadClick(schulung.id)} 
-                          variant="outline" 
-                          className="flex items-center gap-2"
-                          type="button"
-                        >
-                          <Upload size={16} />
-                          Upload PDF
-                        </Button>
-                        
-                        {/* Hidden file input */}
-                        <input 
-                          type="file" 
-                          onChange={(e) => handleFileChange(e, index)}
-                          ref={(el) => { fileInputRefs.current[schulung.id] = el; }}
-                          accept=".pdf"
-                          className="hidden" 
-                        />
-                        
-                        {/* Display the uploaded PDF */}
-                        {schulung.pdfDocument && (
-                          <div className="flex items-center gap-2 p-2 bg-gray-50 rounded-md flex-grow">
-                            <FileText size={16} className="text-blue-500 shrink-0" />
-                            <span className="text-sm font-medium overflow-hidden text-ellipsis whitespace-nowrap">
-                              {schulung.pdfDocument.filename}
-                            </span>
-                            <button 
-                              onClick={() => handleRemoveFile(index)}
-                              className="ml-auto p-1 rounded-full hover:bg-gray-200 transition-colors"
+                        <div className="space-y-2 mt-4 border-t pt-4">
+                          <Label>PDF Document</Label>
+                          <div className="flex flex-wrap items-center gap-4">
+                            <Button
+                              onClick={() => handleUploadClick(schulung.id)}
+                              variant="outline"
+                              className="flex items-center gap-2"
                               type="button"
                             >
-                              <X size={14} className="text-gray-500" />
-                            </button>
+                              <Upload size={16} />
+                              Upload PDF
+                            </Button>
+                            <input
+                              type="file"
+                              onChange={(e) => handleFileChange(e, index)}
+                              ref={(el) => { fileInputRefs.current[schulung.id] = el; }}
+                              accept=".pdf"
+                              className="hidden"
+                            />
+                            {schulung.pdfDocument && (
+                              <div className="flex items-center gap-2 p-2 bg-gray-50 rounded-md flex-grow">
+                                <FileText size={16} className="text-blue-500 shrink-0" />
+                                <span className="text-sm font-medium overflow-hidden text-ellipsis whitespace-nowrap">
+                                  {schulung.pdfDocument.filename}
+                                </span>
+                                <button
+                                  onClick={() => handleRemoveFile(index)}
+                                  className="ml-auto p-1 rounded-full hover:bg-gray-200 transition-colors"
+                                  type="button"
+                                >
+                                  <X size={14} className="text-gray-500" />
+                                </button>
+                              </div>
+                            )}
                           </div>
-                        )}
-                      </div>
-                      {schulung.pdfDocument?.uploadDate && (
-                        <p className="text-xs text-gray-500">
-                          Uploaded: {new Date(schulung.pdfDocument.uploadDate).toLocaleString('de-DE')}
-                        </p>
-                      )}
-                    </div>
-                    
-                    <div className="flex justify-end mt-4">
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        onClick={() => handleRemoveSchulung(index)}
-                        className="flex items-center"
-                      >
-                        <Trash2 className="h-4 w-4 mr-1" />
-                        Delete Training
-                      </Button>
-                    </div>
-
-                    {schulung.pdfDocument && (
-                      <div className="flex items-center">
-                        <FileText className="mr-2 h-4 w-4 text-gray-500" />
-                        <span className="text-sm text-gray-700">{schulung.pdfDocument.filename}</span>
-                        <Button
-                          variant="link"
-                          onClick={() => handleRemoveFile(index)}
-                          className="ml-2 text-red-600 hover:text-red-700"
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    )}
+                          {schulung.pdfDocument?.uploadDate && (
+                            <p className="text-xs text-gray-500">
+                              Uploaded: {new Date(schulung.pdfDocument.uploadDate).toLocaleString('de-DE')}
+                            </p>
+                          )}
+                        </div>
+                        <div className="flex justify-end mt-4">
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => handleRemoveSchulung(index)}
+                            className="flex items-center"
+                          >
+                            <Trash2 className="h-4 w-4 mr-1" />
+                            Delete Training
+                          </Button>
+                        </div>
+                      </TabsContent>
+                      <TabsContent value="beschreibung">
+                        <div className="grid gap-2">
+                          <Label>Beschreibung</Label>
+                          <RichTextEditor
+                            value={schulung.description || ""}
+                            onChange={(val) => handleSchulungChange(index, "description", val)}
+                            placeholder="Ausführliche Beschreibung der Schulung..."
+                          />
+                        </div>
+                      </TabsContent>
+                      <TabsContent value="umfang">
+                        <div className="grid gap-2">
+                          <Label>Leistungsumfang</Label>
+                          <RichTextEditor
+                            value={schulung.scope || ""}
+                            onChange={(val) => handleSchulungChange(index, "scope", val)}
+                            placeholder="Was ist enthalten? Inhalte, Ziele, Voraussetzungen..."
+                          />
+                        </div>
+                      </TabsContent>
+                      <TabsContent value="ablauf">
+                        <div className="grid gap-2">
+                          <Label>Ablauf</Label>
+                          <RichTextEditor
+                            value={schulung.procedure || ""}
+                            onChange={(val) => handleSchulungChange(index, "procedure", val)}
+                            placeholder="Tagesordnung, Module, Zeitplan..."
+                          />
+                        </div>
+                      </TabsContent>
+                    </Tabs>
                   </div>
                 </AccordionContent>
               </AccordionItem>

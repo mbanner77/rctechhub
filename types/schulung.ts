@@ -7,10 +7,14 @@ export interface Schulung {
   category: "Online-Kurs" | "Workshop" | "Webinar"; // Fixed categories
   duration: string; // e.g. "2 hours" or "1 day"
   price: number;
-  image: string;
+  image?: string;
   hours?: number;
   days?: number;
   unitId?: string; // ID of the associated pathfinder unit
+  // Rich text content fields (HTML strings)
+  description?: string; // Details tab
+  scope?: string; // Leistungsumfang tab
+  procedure?: string; // Ablauf tab
   pdfDocument?: {
     filename: string;
     deleted: boolean;
