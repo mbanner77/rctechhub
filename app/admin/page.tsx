@@ -71,6 +71,14 @@ export default function AdminPage() {
               </Link>
             </div>
             <div>
+              <Link href="/admin/consulting-phases">
+                <Button className="w-full" variant="outline">
+                  <FileText className="mr-2 h-4 w-4" />
+                  Beratungsbaukasten
+                </Button>
+              </Link>
+            </div>
+            <div>
               <Link href="/admin/experts/view">
                 <Button className="w-full" variant="outline">
                   <Users className="mr-2 h-4 w-4" />
