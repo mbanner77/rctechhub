@@ -71,6 +71,14 @@ export default function AdminPage() {
               </Link>
             </div>
             <div>
+              <Link href="/admin/schulungen">
+                <Button className="w-full" variant="outline">
+                  <BookOpen className="mr-2 h-4 w-4" />
+                  Schulungsmanager
+                </Button>
+              </Link>
+            </div>
+            <div>
               <Link href="/admin/consulting-phases">
                 <Button className="w-full" variant="outline">
                   <FileText className="mr-2 h-4 w-4" />
