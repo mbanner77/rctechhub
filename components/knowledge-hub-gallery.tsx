@@ -563,11 +563,22 @@ export default function KnowledgeHubGallery() {
       {/* Detail Dialog */}
       {selectedItem && (
         <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>{selectedItem.title}</DialogTitle>
-              <DialogDescription>{selectedItem.description}</DialogDescription>
-            </DialogHeader>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto p-0">
+            <div className="sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
+              <div className="flex items-center justify-between p-4">
+                <div>
+                  <DialogTitle>{selectedItem.title}</DialogTitle>
+                  {selectedItem.type !== 'schulung' && (
+                    <DialogDescription>{selectedItem.description}</DialogDescription>
+                  )}
+                </div>
+                {selectedItem.type === 'schulung' && (
+                  <Button size="sm" className="shrink-0" onClick={() => handleContact(selectedItem)}>
+                    Anfragen
+                  </Button>
+                )}
+              </div>
+            </div>
 
             <div className="mt-4">
               <div className={selectedItem.image ? "relative h-64 mb-6 bg-gray-100 overflow-hidden rounded-md" : "hidden"}>
@@ -580,7 +591,7 @@ export default function KnowledgeHubGallery() {
 
               <div className="space-y-6">
                 <div>
-                  <h3 className="text-lg font-semibold mb-2">Tags</h3>
+                  <h3 className="text-lg font-semibold mb-2">{selectedItem.type === 'schulung' ? 'Kursinformationen' : 'Tags'}</h3>
                   <div className="flex flex-wrap gap-2">
                     {(selectedItem.tags || []).map((tag: string) => (
                       <Badge key={tag} variant="secondary">
@@ -594,34 +605,34 @@ export default function KnowledgeHubGallery() {
                   <h3 className="text-lg font-semibold mb-2">Beschreibung</h3>
                   {selectedItem.type === 'schulung' ? (
                     <div
-                      className="prose prose-sm max-w-none text-gray-700"
+                      className="prose prose-sm max-w-none text-gray-700 leading-relaxed"
                       dangerouslySetInnerHTML={{ __html: selectedItem.description || '' }}
                     />
                   ) : (
-                    <p className="text-gray-700">{selectedItem.description}</p>
+                    <p className="text-gray-700 leading-relaxed">{selectedItem.description}</p>
                   )}
                 </div>
                 {selectedItem.type === 'schulung' && selectedItem.scope && (
-                  <div>
+                  <div className="pt-4 border-t">
                     <h3 className="text-lg font-semibold mb-2">Leistungsumfang</h3>
                     <div
-                      className="prose prose-sm max-w-none text-gray-700"
+                      className="prose prose-sm max-w-none text-gray-700 leading-relaxed"
                       dangerouslySetInnerHTML={{ __html: selectedItem.scope }}
                     />
                   </div>
                 )}
                 {selectedItem.type === 'schulung' && selectedItem.procedure && (
-                  <div>
+                  <div className="pt-4 border-t">
                     <h3 className="text-lg font-semibold mb-2">Ablauf</h3>
                     <div
-                      className="prose prose-sm max-w-none text-gray-700"
+                      className="prose prose-sm max-w-none text-gray-700 leading-relaxed"
                       dangerouslySetInnerHTML={{ __html: selectedItem.procedure }}
                     />
                   </div>
                 )}
                 {/* Structured details for Schulungen */}
                 {selectedItem.type === 'schulung' && (
-                  <div>
+                  <div className="pt-4 border-t">
                     <h3 className="text-lg font-semibold mb-2">Details</h3>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="flex justify-between">
@@ -642,7 +653,7 @@ export default function KnowledgeHubGallery() {
                         <span className="text-gray-500">Preis:</span>
                         <span className="font-medium">
                           {typeof selectedItem.price === 'number' && selectedItem.price > 0
-                            ? `${selectedItem.price} €`
+                            ? new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(selectedItem.price)
                             : 'Kostenlos'}
                         </span>
                       </div>
