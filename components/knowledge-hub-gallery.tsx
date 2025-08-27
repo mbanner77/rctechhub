@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
 import { Card, CardContent, CardFooter } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Download, Eye, FileText, Search } from "lucide-react"
+import { Eye, FileText, Search } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
@@ -80,20 +80,18 @@ const ContentItem = ({ item, onDownload, onPreview, onContact }: ContentItemProp
           <Eye className="mr-2 h-4 w-4" />
           {item.type === "template" ? "Details" : "Lesen"}
         </Button>
-        {((item.pdfDocument?.fileUrl && item.pdfDocument.fileUrl.trim()) || (item.downloadUrl && item.downloadUrl.trim())) ? (
+        {item.pdfDocument ? (
           <Button
             size="sm"
-            className="bg-green-600 hover:bg-green-700"
-            onClick={handleDownloadClick}
-            disabled={isDownloading}
+            variant="default"
+            onClick={() => onContact(item)}
           >
-            <Download className="mr-2 h-4 w-4" />
-            {isDownloading ? "Downloading..." : "Download"}
+            Anfragen
           </Button>
         ) : (
           <Button
             size="sm"
-            className="bg-blue-600 hover:bg-blue-700"
+            variant="default"
             onClick={() => onContact(item)}
           >
             Anfragen
@@ -679,9 +677,8 @@ export default function KnowledgeHubGallery() {
                       </svg>
                       <span>{selectedItem.downloads || 0} Downloads</span>
                     </div>
-                    <Button className="bg-green-600 hover:bg-green-700" onClick={() => handleDownload(selectedItem)}>
-                      <Download className="mr-2 h-4 w-4" />
-                      Download
+                    <Button onClick={() => handleContact(selectedItem)}>
+                      Anfragen
                     </Button>
                   </div>
                 </div>
