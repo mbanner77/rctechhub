@@ -22,6 +22,7 @@ export default function ConsultingPhasesDisplay() {
   const [customer, setCustomer] = useState({ name: "", email: "", company: "", note: "" })
   const [submitting, setSubmitting] = useState(false)
   const [ctaOpen, setCtaOpen] = useState(false)
+  const [showConfigurator, setShowConfigurator] = useState(false)
   const configuratorRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
@@ -68,7 +69,10 @@ export default function ConsultingPhasesDisplay() {
   const toggleOffer = (id: string) => setSelected((s) => ({ ...s, [id]: !s[id] }))
 
   const scrollToConfigurator = () => {
-    configuratorRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
+    // ensure configurator is visible before scrolling
+    if (!showConfigurator) setShowConfigurator(true)
+    // allow DOM to paint
+    setTimeout(() => configuratorRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 0)
   }
 
   const submitOrder = async () => {
@@ -181,85 +185,89 @@ export default function ConsultingPhasesDisplay() {
         </DialogContent>
       </Dialog>
 
-      <div ref={configuratorRef} className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {data.phases.map((phase) => (
-          <Card key={phase.id} className="h-full">
-            <CardHeader>
-              <CardTitle className="text-xl">{phase.title}</CardTitle>
-              {phase.description && (
-                <div className="text-sm text-muted-foreground mt-1" dangerouslySetInnerHTML={{ __html: phase.description }} />
-              )}
-            </CardHeader>
-            <CardContent>
-              <ul className="space-y-3">
-                {phase.offers.map((offer) => (
-                  <li key={offer.id} className="flex items-start gap-3">
-                    <input
-                      type="checkbox"
-                      className="mt-1 h-4 w-4"
-                      checked={!!selected[offer.id]}
-                      onChange={() => toggleOffer(offer.id)}
-                      aria-label={`Auswahl ${offer.title}`}
-                    />
-                    <div className="flex-1">
-                      <div className="flex items-center justify-between gap-3">
-                        <div className="font-medium">{offer.title}</div>
-                        <div className="text-sm text-muted-foreground">{currency.format(offerPrice(offer))}</div>
+      {showConfigurator && (
+        <div ref={configuratorRef} className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {data.phases.map((phase) => (
+            <Card key={phase.id} className="h-full">
+              <CardHeader>
+                <CardTitle className="text-xl">{phase.title}</CardTitle>
+                {phase.description && (
+                  <div className="text-sm text-muted-foreground mt-1" dangerouslySetInnerHTML={{ __html: phase.description }} />
+                )}
+              </CardHeader>
+              <CardContent>
+                <ul className="space-y-3">
+                  {phase.offers.map((offer) => (
+                    <li key={offer.id} className="flex items-start gap-3">
+                      <input
+                        type="checkbox"
+                        className="mt-1 h-4 w-4"
+                        checked={!!selected[offer.id]}
+                        onChange={() => toggleOffer(offer.id)}
+                        aria-label={`Auswahl ${offer.title}`}
+                      />
+                      <div className="flex-1">
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="font-medium">{offer.title}</div>
+                          <div className="text-sm text-muted-foreground">{currency.format(offerPrice(offer))}</div>
+                        </div>
+                        {offer.shortDescription && (
+                          <div className="text-sm text-muted-foreground">{offer.shortDescription}</div>
+                        )}
                       </div>
-                      {offer.shortDescription && (
-                        <div className="text-sm text-muted-foreground">{offer.shortDescription}</div>
-                      )}
-                    </div>
-                  </li>
-                ))}
-              </ul>
-              <div className="mt-4 text-right font-semibold">Summe Phase: {currency.format(totals.perPhase[phase.id] || 0)}</div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+                    </li>
+                  ))}
+                </ul>
+                <div className="mt-4 text-right font-semibold">Summe Phase: {currency.format(totals.perPhase[phase.id] || 0)}</div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
 
-      <Card>
-        <CardContent className="pt-6 space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="text-xl font-semibold">Gesamtsumme</div>
-            <div className="text-xl font-semibold">{currency.format(totals.grand)}</div>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            <input
-              className="border rounded px-3 py-2"
-              placeholder="Ihr Name"
-              value={customer.name}
-              onChange={(e) => setCustomer({ ...customer, name: e.target.value })}
-            />
-            <input
-              className="border rounded px-3 py-2"
-              placeholder="E-Mail"
-              type="email"
-              value={customer.email}
-              onChange={(e) => setCustomer({ ...customer, email: e.target.value })}
-            />
-            <input
-              className="border rounded px-3 py-2"
-              placeholder="Unternehmen (optional)"
-              value={customer.company}
-              onChange={(e) => setCustomer({ ...customer, company: e.target.value })}
-            />
-            <textarea
-              className="border rounded px-3 py-2 md:col-span-3"
-              placeholder="Zusätzliche Hinweise (optional)"
-              rows={3}
-              value={customer.note}
-              onChange={(e) => setCustomer({ ...customer, note: e.target.value })}
-            />
-          </div>
-          <div className="flex justify-end">
-            <Button onClick={submitOrder} disabled={submitting || totals.grand <= 0}>
-              {submitting ? "Wird gesendet..." : "Angebot anfordern"}
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+      {showConfigurator && (
+        <Card>
+          <CardContent className="pt-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="text-xl font-semibold">Gesamtsumme</div>
+              <div className="text-xl font-semibold">{currency.format(totals.grand)}</div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <input
+                className="border rounded px-3 py-2"
+                placeholder="Ihr Name"
+                value={customer.name}
+                onChange={(e) => setCustomer({ ...customer, name: e.target.value })}
+              />
+              <input
+                className="border rounded px-3 py-2"
+                placeholder="E-Mail"
+                type="email"
+                value={customer.email}
+                onChange={(e) => setCustomer({ ...customer, email: e.target.value })}
+              />
+              <input
+                className="border rounded px-3 py-2"
+                placeholder="Unternehmen (optional)"
+                value={customer.company}
+                onChange={(e) => setCustomer({ ...customer, company: e.target.value })}
+              />
+              <textarea
+                className="border rounded px-3 py-2 md:col-span-3"
+                placeholder="Zusätzliche Hinweise (optional)"
+                rows={3}
+                value={customer.note}
+                onChange={(e) => setCustomer({ ...customer, note: e.target.value })}
+              />
+            </div>
+            <div className="flex justify-end">
+              <Button onClick={submitOrder} disabled={submitting || totals.grand <= 0}>
+                {submitting ? "Wird gesendet..." : "Angebot anfordern"}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   )
 }
