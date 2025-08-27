@@ -473,14 +473,14 @@ export default function SchulungenManager() {
                           <div className="space-y-2">
                             <Label htmlFor={`unitId-${index}`}>Pathfinder Unit (optional)</Label>
                             <Select
-                              value={schulung.unitId || ""}
-                              onValueChange={(value) => handleSchulungChange(index, "unitId", value)}
+                              value={schulung.unitId && schulung.unitId.trim() ? schulung.unitId : "none"}
+                              onValueChange={(value) => handleSchulungChange(index, "unitId", value === "none" ? "" : value)}
                             >
                               <SelectTrigger id={`unitId-${index}`}>
                                 <SelectValue placeholder="Unit auswählen (optional)" />
                               </SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="">Keine Unit (Standard)</SelectItem>
+                                <SelectItem value="none">Keine Unit (Standard)</SelectItem>
                                 {pathfinderUnitOptions.map((unit) => (
                                   <SelectItem key={unit.id} value={unit.id}>
                                     {unit.title}
