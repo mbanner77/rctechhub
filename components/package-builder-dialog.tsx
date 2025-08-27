@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
@@ -13,6 +13,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { ArrowRight, Check, Mail, Phone } from "lucide-react"
 import { analytics } from "@/lib/analytics"
 import { sendFormConfirmationEmail, sendTeamNotificationEmail } from "@/lib/send-confirmation-email"
+import type { IService } from "@/types/service"
 
 interface PackageBuilderDialogProps {
   isOpen: boolean
@@ -40,6 +41,8 @@ export default function PackageBuilderDialog({ isOpen, onClose }: PackageBuilder
   const [step, setStep] = useState(1)
   const { toast } = useToast()
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [serviceOptions, setServiceOptions] = useState<ServiceOption[]>([])
+  const [isLoadingServices, setIsLoadingServices] = useState<boolean>(false)
 
   const toggleService = (serviceId: string) => {
     const service = serviceOptions.find(s => s.id === serviceId)
@@ -52,111 +55,41 @@ export default function PackageBuilderDialog({ isOpen, onClose }: PackageBuilder
     }
   }
 
-  const serviceOptions: ServiceOption[] = [
-    // Phase 1: Analyse
-    {
-      id: "discovery",
-      name: "Discovery Workshop",
-      description: "Gemeinsame Analyse Ihrer Anforderungen und Identifikation von Optimierungspotentialen",
-      price: 2500,
-      category: "Workshop",
-      phase: 1,
-    },
-    {
-      id: "assessment",
-      name: "BTP Readiness Assessment",
-      description: "Bewertung Ihrer IT-Landschaft für die SAP BTP-Migration",
-      price: 4900,
-      category: "Assessment",
-      phase: 1,
-    },
-    {
-      id: "requirements",
-      name: "Anforderungsanalyse",
-      description: "Detaillierte Erfassung und Dokumentation Ihrer funktionalen und nicht-funktionalen Anforderungen",
-      price: 3800,
-      category: "Analyse",
-      phase: 1,
-    },
-
-    // Phase 2: Design
-    {
-      id: "solution-design",
-      name: "Solution Design Workshop",
-      description: "Entwicklung einer maßgeschneiderten BTP-Lösung mit Architekturdesign",
-      price: 4800,
-      category: "Workshop",
-      phase: 2,
-    },
-    {
-      id: "architecture",
-      name: "Architekturdesign",
-      description: "Erstellung einer detaillierten technischen Architektur für Ihre BTP-Lösung",
-      price: 7500,
-      category: "Design",
-      phase: 2,
-    },
-    {
-      id: "security",
-      name: "Sicherheitskonzept",
-      description: "Entwicklung eines umfassenden Sicherheitskonzepts für Ihre BTP-Landschaft",
-      price: 6500,
-      category: "Sicherheit",
-      phase: 2,
-    },
-
-    // Phase 3: Implementierung
-    {
-      id: "cap-dev",
-      name: "CAP Entwicklung",
-      description: "Entwicklung von Anwendungen mit dem SAP Cloud Application Programming Model",
-      price: 12500,
-      category: "Entwicklung",
-      phase: 3,
-    },
-    {
-      id: "fiori-dev",
-      name: "Fiori App-Entwicklung",
-      description: "Entwicklung von benutzerfreundlichen Fiori-Anwendungen",
-      price: 8500,
-      category: "Entwicklung",
-      phase: 3,
-    },
-    {
-      id: "integration",
-      name: "Integration Suite Setup",
-      description: "Implementierung der SAP Integration Suite für nahtlose Systemintegration",
-      price: 9800,
-      category: "Integration",
-      phase: 3,
-    },
-
-    // Phase 4: Go-Live
-    {
-      id: "deployment",
-      name: "Deployment & Go-Live",
-      description: "Professionelle Unterstützung bei der Bereitstellung und dem Go-Live",
-      price: 7200,
-      category: "Deployment",
-      phase: 4,
-    },
-    {
-      id: "monitoring",
-      name: "Monitoring Setup",
-      description: "Einrichtung eines umfassenden Monitoring- und Betriebskonzepts",
-      price: 5800,
-      category: "Operations",
-      phase: 4,
-    },
-    {
-      id: "training",
-      name: "Schulung & Enablement",
-      description: "Maßgeschneiderte Schulungen für Ihr Team zur effektiven Nutzung der BTP",
-      price: 4200,
-      category: "Schulung",
-      phase: 4,
-    },
-  ]
+  // Load consulting services from DB when dialog opens
+  useEffect(() => {
+    const fetchServices = async () => {
+      setIsLoadingServices(true)
+      try {
+        const res = await fetch(`/api/unified-data/services`, { cache: "no-store" })
+        if (!res.ok) throw new Error(`HTTP ${res.status}`)
+        const data: IService[] = await res.json()
+        // Map DB services to dialog options
+        const mapped: ServiceOption[] = (data || [])
+          .filter(s => typeof s.phase === 'number' && s.title)
+          .map((s) => ({
+            id: s.id,
+            name: s.title,
+            description: s.description,
+            price: s.price,
+            category: s.category,
+            phase: s.phase,
+          }))
+        setServiceOptions(mapped)
+      } catch (err) {
+        console.error("Fehler beim Laden der Beratungsangebote:", err)
+        toast({
+          title: "Services konnten nicht geladen werden",
+          description: "Bitte versuchen Sie es später erneut.",
+          variant: "destructive",
+        })
+      } finally {
+        setIsLoadingServices(false)
+      }
+    }
+    if (isOpen) {
+      fetchServices()
+    }
+  }, [isOpen, toast])
 
   const handleToggleService = (serviceId: string) => {
     if (selectedServices.includes(serviceId)) {
@@ -310,6 +243,21 @@ export default function PackageBuilderDialog({ isOpen, onClose }: PackageBuilder
   }
 
   const renderServiceSelection = () => {
+    if (isLoadingServices) {
+      return (
+        <div className="flex items-center justify-center h-40 text-sm text-gray-600">
+          Services werden geladen...
+        </div>
+      )
+    }
+
+    if (!serviceOptions.length) {
+      return (
+        <div className="flex items-center justify-center h-40 text-sm text-gray-600">
+          Keine Beratungsangebote gefunden.
+        </div>
+      )
+    }
     // Gruppiere Services nach Phase
     const servicesByPhase: Record<number, ServiceOption[]> = {}
     serviceOptions.forEach((service) => {
