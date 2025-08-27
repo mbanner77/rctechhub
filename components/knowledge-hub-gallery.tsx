@@ -515,12 +515,15 @@ export default function KnowledgeHubGallery() {
                       onClick={() =>
                         handlePreview({
                           title: schulung.title,
-                          description: `${schulung.title} - ${schulung.category}`,
+                          description: schulung.description || `${schulung.title} - ${schulung.category}`,
                           type: 'schulung',
                           category: schulung.category,
                           price: schulung.price,
                           days: schulung.days,
                           hours: schulung.hours,
+                          duration: schulung.duration,
+                          scope: schulung.scope,
+                          procedure: schulung.procedure,
                           tags: [
                             schulung.category,
                             `Dauer: ${typeof schulung.days === 'number' && schulung.days > 0
@@ -589,8 +592,33 @@ export default function KnowledgeHubGallery() {
 
                 <div>
                   <h3 className="text-lg font-semibold mb-2">Beschreibung</h3>
-                  <p className="text-gray-700">{selectedItem.description}</p>
+                  {selectedItem.type === 'schulung' ? (
+                    <div
+                      className="prose prose-sm max-w-none text-gray-700"
+                      dangerouslySetInnerHTML={{ __html: selectedItem.description || '' }}
+                    />
+                  ) : (
+                    <p className="text-gray-700">{selectedItem.description}</p>
+                  )}
                 </div>
+                {selectedItem.type === 'schulung' && selectedItem.scope && (
+                  <div>
+                    <h3 className="text-lg font-semibold mb-2">Leistungsumfang</h3>
+                    <div
+                      className="prose prose-sm max-w-none text-gray-700"
+                      dangerouslySetInnerHTML={{ __html: selectedItem.scope }}
+                    />
+                  </div>
+                )}
+                {selectedItem.type === 'schulung' && selectedItem.procedure && (
+                  <div>
+                    <h3 className="text-lg font-semibold mb-2">Ablauf</h3>
+                    <div
+                      className="prose prose-sm max-w-none text-gray-700"
+                      dangerouslySetInnerHTML={{ __html: selectedItem.procedure }}
+                    />
+                  </div>
+                )}
                 {/* Structured details for Schulungen */}
                 {selectedItem.type === 'schulung' && (
                   <div>
@@ -607,7 +635,7 @@ export default function KnowledgeHubGallery() {
                             ? `${selectedItem.days} ${selectedItem.days === 1 ? 'Tag' : 'Tage'}`
                             : (typeof selectedItem.hours === 'number' && selectedItem.hours > 0
                                 ? `${Math.max(1, Math.ceil(selectedItem.hours / 8))} ${Math.max(1, Math.ceil(selectedItem.hours / 8)) === 1 ? 'Tag' : 'Tage'}`
-                                : '')}
+                                : (selectedItem.duration || ''))}
                         </span>
                       </div>
                       <div className="flex justify-between">

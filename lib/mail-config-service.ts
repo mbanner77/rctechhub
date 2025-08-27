@@ -5,7 +5,7 @@ import { getMailConfigFromBlob, saveMailConfigToBlob } from "./blob-db-actions";
 import { revalidatePath } from "next/cache";
 
 // Default mail configuration
-const defaultMailConfig: IMailConfig = {
+export const defaultMailConfig: IMailConfig = {
   enabled: false,
   clientId: "",
   clientSecret: "",

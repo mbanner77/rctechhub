@@ -10,7 +10,7 @@ export interface BTPService {
   useCases: string[]
   documentation: string
   pricing: string
-  freeTier?: string
+  freeTier?: boolean
   trialAvailable: boolean
   technicalDetails: {
     [key: string]: string

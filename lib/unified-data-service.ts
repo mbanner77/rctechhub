@@ -9,6 +9,7 @@ import {
 } from "@/data/default-data";
 import { defaultLandingPage } from "@/data/landing-page-data";
 import { checkAuthAction } from "./auth-actions";
+import { defaultMailConfig } from "./mail-config-service";
 
 // Blob-Storage-Funktionen importieren
 import {

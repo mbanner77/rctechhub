@@ -503,7 +503,7 @@ export async function initializeDatabase(forceReset = false) {
 
       if (forceReset || mailConfigCount === 0) {
         console.log("[DB] Füge Standarddaten für Mail-Konfiguration hinzu...");
-        if (await safePut(db.mailConfig)) {
+        if (await safePut(db.mailConfig, {})) {
           console.log(`[DB] Mail-Konfiguration erfolgreich hinzugefügt`);
         } else {
           console.error(`[DB] Fehler beim Hinzufügen der Mail-Konfiguration`);
@@ -616,7 +616,7 @@ export async function updateDatabaseWithDefaults() {
     // Aktualisiere Mail Config, wenn keine vorhanden ist
     const mailConfigCount = await db.mailConfig.count();
     if (mailConfigCount === 0) {
-      if (await safePut(db.mailConfig)) {
+      if (await safePut(db.mailConfig, {})) {
         console.log(`[DB] Mail-Konfiguration hinzugefügt`);
       }
     }
