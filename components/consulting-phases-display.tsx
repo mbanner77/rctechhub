@@ -152,7 +152,6 @@ export default function ConsultingPhasesDisplay() {
       <div className="max-w-3xl mx-auto text-center">
         <h2 className="text-3xl font-bold mb-3">Unser Easy-Starting Package für erste Schritte in der BTP</h2>
         <p className="text-muted-foreground mb-6">Mit unserem modularen Starterbaukasten können Sie schnell erste Erfahrungen und schnelle Erfolge in der BTP generieren. Sie können erste Apps und Schnittstellen unter unserer Anleitung erstellen. Wir sorgen für den Know-How Transfer und richten gemeinsam mit Ihnen Ihre Systemlandschaft produktionsfähig ein, so dass Sie danach direkt mit Ihren weiteren Projekten starten können. Risikiofrei, Unkompliziert, Festpreise</p>
-        <p className="text-muted-foreground mb-6">In Kombination mit unserem bewährten end-to-end Ansatz entstehen schnell und skalierbar Lösungen, die überzeugen. Denn wir hören dem Nutzer erstmal zu und stellen somit sicher, dass Sie auch wirklich Ihre größten Herausforderungen auf die richtige Art und Weise angehen. Wir verfügen über eine eigene Digital-Agentur als Tochterunternehmen, so dass wir aus einer Hand besonders hochwertige Lösungen erschaffen können, vom Frontend bis zum Profi-Video, hin zur AR/VR Realisierung falls nötig</p>
         {data.ctaText && (
           <Button variant="default" onClick={() => setCtaOpen(true)}>{data.ctaText}</Button>
         )}
