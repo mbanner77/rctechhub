@@ -152,32 +152,34 @@ export default function ConsultingPhasesDisplay() {
       <div className="max-w-3xl mx-auto text-center">
         <h2 className="text-3xl font-bold mb-3">Unser Easy-Starting Package für erste Schritte in der BTP</h2>
         <p className="text-muted-foreground mb-6">Mit unserem modularen Starterbaukasten können Sie schnell erste Erfahrungen und schnelle Erfolge in der BTP generieren. Sie können erste Apps und Schnittstellen unter unserer Anleitung erstellen. Wir sorgen für den Know-How Transfer und richten gemeinsam mit Ihnen Ihre Systemlandschaft produktionsfähig ein, so dass Sie danach direkt mit Ihren weiteren Projekten starten können. Risikiofrei, Unkompliziert, Festpreise</p>
-        <p className="text-muted-foreground mb-6">In Kombination mit unserem bewährten end-to-end Ansatz entstehen schnell und skalierbar Lösungen, die überzeugen. Denn wir hören dem Nutzer erstmal zu und stellen somit sicher, dass Sie auch wirklich Ihre größten Herausforderungen auf die richtige Art und Weise angehen. Wir verfügen über eine eigene Digital-Agentur als Tochterunternehmen, so dass wir aus einer Hand besonders hochwertige Lösungen erschaffen können, vom Frontend bis zum Profi-Video, hin zur AR/VR Realisierung</p>
+        <p className="text-muted-foreground mb-6">In Kombination mit unserem bewährten end-to-end Ansatz entstehen schnell und skalierbar Lösungen, die überzeugen. Denn wir hören dem Nutzer erstmal zu und stellen somit sicher, dass Sie auch wirklich Ihre größten Herausforderungen auf die richtige Art und Weise angehen. Wir verfügen über eine eigene Digital-Agentur als Tochterunternehmen, so dass wir aus einer Hand besonders hochwertige Lösungen erschaffen können, vom Frontend bis zum Profi-Video, hin zur AR/VR Realisierung falls nötig</p>
         {data.ctaText && (
           <Button variant="default" onClick={() => setCtaOpen(true)}>{data.ctaText}</Button>
         )}
       </div>
 
-      {/* Initial informational overview of phases (non-interactive) */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {data.phases.map((phase) => (
-          <Card key={`info-${phase.id}`} className="h-full">
-            <CardHeader>
-              <CardTitle className="text-xl">{phase.title}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {phase.description ? (
-                <div
-                  className="text-sm text-muted-foreground"
-                  dangerouslySetInnerHTML={{ __html: phase.description }}
-                />
-              ) : (
-                <div className="text-sm text-muted-foreground">Beschreibung folgt.</div>
-              )}
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+      {/* Initial informational overview of phases (non-interactive). Hidden in configurator mode. */}
+      {!showConfigurator && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {data.phases.map((phase) => (
+            <Card key={`info-${phase.id}`} className="h-full">
+              <CardHeader>
+                <CardTitle className="text-xl">{phase.title}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {phase.description ? (
+                  <div
+                    className="text-sm text-muted-foreground"
+                    dangerouslySetInnerHTML={{ __html: phase.description }}
+                  />
+                ) : (
+                  <div className="text-sm text-muted-foreground">Beschreibung folgt.</div>
+                )}
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
 
       <Dialog open={ctaOpen} onOpenChange={setCtaOpen}>
         <DialogContent>
