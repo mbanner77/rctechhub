@@ -16,7 +16,6 @@ import { mockSchulungen } from "@/app/api/shared/mock-data/schulungen";
 import { analytics } from "@/lib/analytics"
 import { useDownloadCounter } from "@/hooks/useDownloadCounter"
 import { fetchDownloadCounts, updateContentWithDownloadCounts } from "@/lib/download-helpers"
-import { getMailConfig } from "@/lib/mail-config-service"
 import { MinimalContactDialog } from "./minimal-contact-dialog"
 
 type ContentItemProps = {
@@ -504,64 +503,30 @@ export default function KnowledgeHubGallery() {
                     </div>
                   </CardContent>
                   <CardFooter className="p-6 pt-0 flex justify-between">
-                    <Button variant="outline" size="sm" onClick={() => handlePreview({
-                      title: schulung.title,
-                      description: `${schulung.title} - ${schulung.category}`,
-                      tags: [schulung.category, `Dauer: ${schulung.duration}`, schulung.price > 0 ? "Kostenpflichtig" : "Kostenlos"],
-                      image: schulung.image,
-                      pdfDocument: schulung.pdfDocument
-                    })}>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() =>
+                        handlePreview({
+                          title: schulung.title,
+                          description: `${schulung.title} - ${schulung.category}`,
+                          tags: [
+                            schulung.category,
+                            `Dauer: ${schulung.duration}`,
+                            schulung.price > 0 ? "Kostenpflichtig" : "Kostenlos",
+                          ],
+                          image: schulung.image,
+                          pdfDocument: schulung.pdfDocument,
+                        })
+                      }
+                    >
                       <Eye className="mr-2 h-4 w-4" />
                       Details
                     </Button>
                     <Button
                       size="sm"
-                      className="bg-green-600 hover:bg-green-700"
-                      onClick={async () => {
-                        try {
-                          // Get mail configuration
-                          const mailConfig = await getMailConfig();
-                          const targetEmail = mailConfig.defaultTarget || 'techhub@realcore.de';
-
-                          // Create email subject with training title
-                          const subject = encodeURIComponent(`Anfrage zur Schulung: ${schulung.title}`);
-
-                          // Create email body with all training details and placeholders for user information
-                          const body = encodeURIComponent(
-                            `Sehr geehrtes Team,\n\n` +
-                            `ich interessiere mich für die folgende Schulung:\n\n` +
-                            `Schulungstitel: ${schulung.title}\n` +
-                            `Kategorie: ${schulung.category}\n` +
-                            `Dauer: ${schulung.duration}\n` +
-                            `Preis: ${schulung.price > 0 ? `${schulung.price} €` : "Kostenlos"}\n\n` +
-                            `Bitte senden Sie mir weitere Informationen zu dieser Schulung.\n\n` +
-                            `Unternehmensinformationen:\n` +
-                            `Firmenname: [Bitte eintragen]\n` +
-                            `Ansprechpartner: [Bitte eintragen]\n` +
-                            `Position: [Bitte eintragen]\n` +
-                            `Telefonnummer: [Bitte eintragen]\n` +
-                            `Bevorzugter Termin: [Bitte eintragen]\n` +
-                            `Anzahl der Teilnehmer: [Bitte eintragen]\n\n` +
-                            `Vielen Dank und freundliche Grüße,\n` +
-                            `[Ihr Name]`
-                          );
-
-                          // Open default mail client with pre-filled information
-                          window.location.href = `mailto:${targetEmail}?subject=${subject}&body=${body}`;
-
-                          // Show confirmation toast
-                          toast({
-                            title: "E-Mail-Client geöffnet",
-                            description: `Bitte vervollständigen Sie die E-Mail für Ihre Anfrage zu "${schulung.title}".`,
-                          });
-                        } catch (error) {
-                          console.error('Error getting mail config:', error);
-                          toast({
-                            title: "Fehler",
-                            description: "Konnte E-Mail-Konfiguration nicht laden.",
-                          });
-                        }
-                      }}
+                      className="bg-blue-600 hover:bg-blue-700"
+                      onClick={() => handleContact(schulung)}
                     >
                       Anfragen
                     </Button>
@@ -570,7 +535,7 @@ export default function KnowledgeHubGallery() {
               ))
             ) : (
               <div className="col-span-3 text-center py-12">
-                <p className="text-gray-500">Keine Schulungen verfügbar.</p>
+                <p className="text-gray-500">Keine Schulungen gefunden, die Ihren Filterkriterien entsprechen.</p>
               </div>
             )}
           </div>
@@ -587,7 +552,7 @@ export default function KnowledgeHubGallery() {
             </DialogHeader>
 
             <div className="mt-4">
-              <div className={ selectedItem.image ? "relative h-64 mb-6 bg-gray-100 overflow-hidden rounded-md" : "hidden" }> 
+              <div className={selectedItem.image ? "relative h-64 mb-6 bg-gray-100 overflow-hidden rounded-md" : "hidden"}>
                 <img
                   src={selectedItem.image}
                   alt={selectedItem.title}
@@ -640,8 +605,7 @@ export default function KnowledgeHubGallery() {
             </div>
           </DialogContent>
         </Dialog>
-      )
-      }
+      )}
 
       {/* Contact Dialog */}
       <MinimalContactDialog

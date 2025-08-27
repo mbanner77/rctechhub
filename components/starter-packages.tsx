@@ -22,9 +22,9 @@ import {
 } from "@/components/ui/dialog"
 import { analytics } from "@/lib/analytics"
 import ProcessView from "@/components/process-view"
-import { getMailConfig } from "@/lib/mail-config-service"
 import { useToast } from "@/hooks/use-toast"
 import { parseQuillHTML } from "@/lib/html-parser"
+import MinimalContactDialog from "@/components/minimal-contact-dialog"
 
 export default function StarterPackages() {
   const [services, setServices] = useState<any[]>([])
@@ -34,6 +34,10 @@ export default function StarterPackages() {
   const [showProcessView, setShowProcessView] = useState(false)
   const [selectedPackage, setSelectedPackage] = useState<string>("")
   const { toast } = useToast()
+  const [isContactDialogOpen, setIsContactDialogOpen] = useState(false)
+  const [contactContext, setContactContext] = useState<string | undefined>(undefined)
+  const [contactDialogTitle, setContactDialogTitle] = useState<string | undefined>(undefined)
+  const [contactEmailType, setContactEmailType] = useState<string | undefined>(undefined)
 
   // Pagination state for each category
   const ITEMS_PER_PAGE = 6
@@ -485,50 +489,11 @@ export default function StarterPackages() {
                   </Button>
                   <Button 
                     className="bg-green-600 hover:bg-green-700 flex-1"
-                    onClick={async () => {
-                      try {
-                        // Get mail configuration
-                        const mailConfig = await getMailConfig();
-                        const targetEmail = mailConfig.defaultTarget || 'techhub@realcore.de';
-
-                        // Create email subject with training title
-                        const subject = encodeURIComponent(`Anfrage zur Schulung: ${schulung.title}`);
-                        
-                        // Create email body with all training details and placeholders for user information
-                        const body = encodeURIComponent(
-                          `Sehr geehrtes Team,\n\n` +
-                          `ich interessiere mich für die folgende Schulung:\n\n` +
-                          `Schulungstitel: ${schulung.title}\n` +
-                          `Kategorie: ${schulung.category}\n` +
-                          `Dauer: ${schulung.duration}\n` +
-                          `Preis: ${schulung.price > 0 ? `${schulung.price} €` : "Kostenlos"}\n\n` +
-                          `Bitte senden Sie mir weitere Informationen zu dieser Schulung.\n\n` +
-                          `Unternehmensinformationen:\n` +
-                          `Firmenname: [Bitte eintragen]\n` +
-                          `Ansprechpartner: [Bitte eintragen]\n` +
-                          `Position: [Bitte eintragen]\n` +
-                          `Telefonnummer: [Bitte eintragen]\n` +
-                          `Bevorzugter Termin: [Bitte eintragen]\n` +
-                          `Anzahl der Teilnehmer: [Bitte eintragen]\n\n` +
-                          `Vielen Dank und freundliche Grüße,\n` +
-                          `[Ihr Name]`
-                        );
-                        
-                        // Open default mail client with pre-filled information
-                        window.location.href = `mailto:${targetEmail}?subject=${subject}&body=${body}`;
-                        
-                        // Show confirmation toast
-                        toast({
-                          title: "E-Mail-Client geöffnet",
-                          description: `Bitte vervollständigen Sie die E-Mail für Ihre Anfrage zu "${schulung.title}".`,
-                        });
-                      } catch (error) {
-                        console.error('Error getting mail config:', error);
-                        toast({
-                          title: "Fehler",
-                          description: "Konnte E-Mail-Konfiguration nicht laden.",
-                        });
-                      }
+                    onClick={() => {
+                      setContactDialogTitle("Anfrage zur Schulung")
+                      setContactEmailType("Schulung")
+                      setContactContext(`Schulung: ${schulung.title}`)
+                      setIsContactDialogOpen(true)
                     }}
                   >
                     Anfragen
@@ -625,6 +590,14 @@ export default function StarterPackages() {
           </div>
         </DialogContent>
       </Dialog>
+      {/* Global minimal contact dialog */}
+      <MinimalContactDialog
+        isOpen={isContactDialogOpen}
+        onClose={() => setIsContactDialogOpen(false)}
+        title={contactDialogTitle}
+        context={contactContext}
+        emailType={contactEmailType}
+      />
     </div>
   )
 
@@ -868,11 +841,10 @@ export default function StarterPackages() {
             variant="default" 
             className="bg-green-600 hover:bg-green-700"
             onClick={() => {
-              // Set the selected package and open the process view dialog
-              setSelectedPackage(service.id);
-              setShowProcessView(true);
-              // Track analytics if needed
-              analytics.dialogOpen('process-view', service.id);
+              setContactDialogTitle("Anfrage zum StarterPackage")
+              setContactEmailType("StarterPackage")
+              setContactContext(`StarterPackage: ${service.title}`)
+              setIsContactDialogOpen(true)
             }}
           >
             Anfragen

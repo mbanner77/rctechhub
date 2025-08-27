@@ -26,6 +26,7 @@ import { format } from "date-fns"
 import parse from 'html-react-parser'
 import { de } from "date-fns/locale"
 import { analytics } from "@/lib/analytics"
+import MinimalContactDialog from "@/components/minimal-contact-dialog"
 import { parseQuillHTML } from "@/lib/html-parser"
 
 export default function ServiceGrid() {
@@ -33,6 +34,10 @@ export default function ServiceGrid() {
   const [showProcessView, setShowProcessView] = useState(false)
   const [date, setDate] = useState<Date>()
   const [contactEmail, setContactEmail] = useState<string>('techhub@realcore.de')
+  const [isContactDialogOpen, setIsContactDialogOpen] = useState(false)
+  const [contactContext, setContactContext] = useState<string | undefined>(undefined)
+  const [contactDialogTitle, setContactDialogTitle] = useState<string | undefined>(undefined)
+  const [contactEmailType, setContactEmailType] = useState<string | undefined>(undefined)
 
   useEffect(() => {
     const loadMailConfig = async () => {
@@ -112,6 +117,13 @@ export default function ServiceGrid() {
 
   return (
     <div>
+      <MinimalContactDialog
+        isOpen={isContactDialogOpen}
+        onClose={() => setIsContactDialogOpen(false)}
+        title={contactDialogTitle}
+        context={contactContext}
+        emailType={contactEmailType}
+      />
       {selectedServices.length > 0 && (
         <div className="sticky top-0 z-10 bg-white shadow-md p-4 mb-6 rounded-lg flex flex-col md:flex-row justify-between items-center">
           <div>
@@ -466,7 +478,12 @@ export default function ServiceGrid() {
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </div>
-                    <Button className="bg-green-600 hover:bg-green-700">
+                    <Button className="bg-green-600 hover:bg-green-700" onClick={() => {
+                      setContactDialogTitle("Anfrage zu Angebot")
+                      setContactEmailType("Service")
+                      setContactContext(`Service: ${service.title}`)
+                      setIsContactDialogOpen(true)
+                    }}>
                       <ShoppingCart className="mr-2 h-4 w-4" />
                       Anfragen
                     </Button>
@@ -509,7 +526,16 @@ export default function ServiceGrid() {
                 >
                   Als PDF speichern
                 </Button>
-                <Button className="w-full sm:w-auto bg-green-600 hover:bg-green-700">
+                <Button className="w-full sm:w-auto bg-green-600 hover:bg-green-700" onClick={() => {
+                  const titles = selectedServices
+                    .map(id => services.find(s => s.id === id)?.title)
+                    .filter(Boolean)
+                    .join(", ")
+                  setContactDialogTitle("Anfrage zu ausgewählten Angeboten")
+                  setContactEmailType("Service-Auswahl")
+                  setContactContext(titles ? `Auswahl: ${titles}` : `Auswahl: ${selectedServices.join(', ')}`)
+                  setIsContactDialogOpen(true)
+                }}>
                   <ShoppingCart className="mr-2 h-4 w-4" />
                   Anfrage senden
                 </Button>

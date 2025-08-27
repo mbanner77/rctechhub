@@ -23,6 +23,7 @@ import { format } from "date-fns"
 import SelectedServicesDialog from "./selected-services-dialog"
 import { useRouter, useSearchParams } from "next/navigation"
 import { parseQuillHTML } from "@/lib/html-parser"
+import MinimalContactDialog from "@/components/minimal-contact-dialog"
 
 export default function DynamicServiceGrid({
   searchQuery,
@@ -49,6 +50,10 @@ export default function DynamicServiceGrid({
   const [openDialogServiceId, setOpenDialogServiceId] = useState<string | null>(null)
   const router = useRouter();
   const servicesElementRef = useRef<HTMLElement | null>(null)
+  const [isContactDialogOpen, setIsContactDialogOpen] = useState(false)
+  const [contactContext, setContactContext] = useState<string | undefined>(undefined)
+  const [contactDialogTitle, setContactDialogTitle] = useState<string | undefined>(undefined)
+  const [contactEmailType, setContactEmailType] = useState<string | undefined>(undefined)
   
   // Pagination state
   const ITEMS_PER_PAGE = 6
@@ -422,6 +427,13 @@ export default function DynamicServiceGrid({
 
   return (
     <div>
+      <MinimalContactDialog
+        isOpen={isContactDialogOpen}
+        onClose={() => setIsContactDialogOpen(false)}
+        title={contactDialogTitle}
+        context={contactContext}
+        emailType={contactEmailType}
+      />
       {error && <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6">{error}</div>}
 
       <div className="mb-6">
@@ -1021,14 +1033,10 @@ export default function DynamicServiceGrid({
                     <Button 
                       className="bg-green-600 hover:bg-green-700"
                       onClick={() => {
-                        // Add the service to selected services if not already selected
-                        if (!selectedServices.includes(service.id)) {
-                          setSelectedServices([...selectedServices, service.id]);
-                        }
-                        // Close the details dialog
-                        setOpenDialogServiceId(null);
-                        // Open the process view dialog
-                        setShowProcessView(true);
+                        setContactDialogTitle("Anfrage zu Angebot")
+                        setContactEmailType("Service")
+                        setContactContext(`Service: ${service.title}`)
+                        setIsContactDialogOpen(true)
                       }}
                     >
                       <ShoppingCart className="mr-2 h-4 w-4" />
