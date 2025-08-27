@@ -89,12 +89,25 @@ export default function ConsultingPhasesDisplay() {
     }
     setSubmitting(true)
     try {
-      // Create details for notification
+      // Build readable list of selected packages
+      const itemsHtml = `<ul>${chosen
+        .map((c) => {
+          const phaseTitle = data.phases.find((p) => p.id === c.phaseId)?.title || c.phaseId
+          return `<li>${phaseTitle}: ${c.title} — ${new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR" }).format(c.price)}</li>`
+        })
+        .join("")}</ul>`
+
+      // Create details for team notification
       const details: Record<string, string> = {
         Gesamtbetrag: `${new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR" }).format(totals.grand)}`,
         Unternehmen: customer.company || "-",
         Hinweise: customer.note || "-",
-        Auswahl: chosen.map((c) => `${c.title} (${c.phaseId}) – ${new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR" }).format(c.price)}`).join("; ")
+        Auswahl: chosen
+          .map((c) => {
+            const phaseTitle = data.phases.find((p) => p.id === c.phaseId)?.title || c.phaseId
+            return `${phaseTitle}: ${c.title} – ${new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR" }).format(c.price)}`
+          })
+          .join("; ")
       }
 
       // Send team notification and user confirmation mails
@@ -103,7 +116,9 @@ export default function ConsultingPhasesDisplay() {
         customer.email,
         customer.name,
         "Consulting-Angebot (Baukasten)",
-        `Vielen Dank für Ihre Anfrage zu unserem Beratungsbaukasten. Gesamtsumme: ${new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR" }).format(totals.grand)}.`
+        `Vielen Dank für Ihre Anfrage zu unserem Beratungsbaukasten.<br/>\
+        <br/>Ihre Auswahl:<br/>${itemsHtml}<br/>\
+        Gesamtsumme: ${new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR" }).format(totals.grand)}.`
       )
 
       alert("Vielen Dank! Ihre Anfrage wurde gesendet. Wir melden uns zeitnah bei Ihnen.")
