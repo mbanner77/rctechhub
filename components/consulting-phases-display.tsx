@@ -5,6 +5,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import type { ConsultingPhasesData, ConsultingPhase, ConsultingPhaseOffer } from "@/types/consulting-phases"
 import { CheckCircle2 } from "lucide-react"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 
 export default function ConsultingPhasesDisplay() {
   const [data, setData] = useState<ConsultingPhasesData | null>(null)
@@ -12,6 +20,7 @@ export default function ConsultingPhasesDisplay() {
   const [selected, setSelected] = useState<Record<string, boolean>>({})
   const [customer, setCustomer] = useState({ name: "", email: "", company: "", note: "" })
   const [submitting, setSubmitting] = useState(false)
+  const [ctaOpen, setCtaOpen] = useState(false)
   const configuratorRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
@@ -119,9 +128,37 @@ export default function ConsultingPhasesDisplay() {
         <h2 className="text-3xl font-bold mb-3">{data.introTitle}</h2>
         <p className="text-muted-foreground mb-6">{data.introText}</p>
         {data.ctaText && (
-          <Button variant="default" onClick={scrollToConfigurator}>{data.ctaText}</Button>
+          <Button variant="default" onClick={() => setCtaOpen(true)}>{data.ctaText}</Button>
         )}
       </div>
+
+      <Dialog open={ctaOpen} onOpenChange={setCtaOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{data.introTitle || "Beratungsbaukasten"}</DialogTitle>
+            <DialogDescription>
+              Wählen Sie die für Sie passenden Leistungen aus und stellen Sie Ihr individuelles Paket zusammen.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="text-sm text-muted-foreground">
+            • Markieren Sie die gewünschten Angebote je Phase.
+            <br />
+            • Füllen Sie Ihre Kontaktdaten aus und senden Sie die Anfrage ab.
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCtaOpen(false)}>Schließen</Button>
+            <Button
+              onClick={() => {
+                setCtaOpen(false)
+                // slight delay to ensure modal closes before scroll
+                setTimeout(() => scrollToConfigurator(), 50)
+              }}
+            >
+              Jetzt konfigurieren
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <div ref={configuratorRef} className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {data.phases.map((phase) => (

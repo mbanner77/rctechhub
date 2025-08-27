@@ -64,7 +64,7 @@ export default function SchulungenManager() {
         const response = await fetch('/api/schulungen');
         if (response.ok) {
           const data = await response.json();
-          
+
           // Check if there's a dev message from our API
           if (data._devMessage) {
             toast({
@@ -73,8 +73,14 @@ export default function SchulungenManager() {
               variant: "default",
             });
           }
-          
-          setSchulungen(data);
+
+          // Ensure each training has an id
+          const arr = Array.isArray(data) ? data : []
+          const withIds = arr.map((s: Schulung) => ({
+            ...s,
+            id: s.id && String(s.id).trim() ? String(s.id) : `schulung-${Math.random().toString(36).substr(2, 9)}`,
+          }))
+          setSchulungen(withIds);
         }
       } catch (error) {
         console.error("Error loading training courses:", error)
@@ -269,7 +275,12 @@ export default function SchulungenManager() {
       const response = await fetch('/api/schulungen');
       if (response.ok) {
         const data = await response.json();
-        setSchulungen(Array.isArray(data) ? data : []);
+        const arr = Array.isArray(data) ? data : []
+        const withIds = arr.map((s: Schulung) => ({
+          ...s,
+          id: s.id && String(s.id).trim() ? String(s.id) : `schulung-${Math.random().toString(36).substr(2, 9)}`,
+        }))
+        setSchulungen(withIds);
       }
     } catch (error) {
       console.error('Error resetting data:', error);
@@ -340,10 +351,10 @@ export default function SchulungenManager() {
             type="single"
             collapsible
             className="w-full"
-            defaultValue={schulungen.length === 1 ? schulungen[0].id : undefined}
+            defaultValue={schulungen.length === 1 ? (schulungen[0].id || `item-0`) : undefined}
           >
             {schulungen.map((schulung, index) => (
-              <AccordionItem key={schulung.id || index} value={schulung.id}>
+              <AccordionItem key={(schulung.id || `item-${index}`)} value={(schulung.id || `item-${index}`)}>
                 <AccordionTrigger className="hover:bg-gray-50 px-4 py-2 rounded">
                   <div className="flex items-center justify-between w-full">
                     <div className="flex items-center">
@@ -434,21 +445,24 @@ export default function SchulungenManager() {
                             </div>
                           </div>
                           <div className="space-y-2">
-                            <Label htmlFor={`price-${index}`}>Price (€)</Label>
+                            <Label htmlFor={`price-${index}`}>Price (EUR)</Label>
                             <Input
                               id={`price-${index}`}
                               type="number"
-                              value={schulung.price}
-                              onChange={(e) => handleSchulungChange(index, "price", parseFloat(e.target.value))}
-                              placeholder="Price in Euro"
                               step="0.01"
+                              value={Number.isFinite(schulung.price) ? schulung.price : 0}
+                              onChange={(e) => {
+                                const v = e.target.value.trim()
+                                handleSchulungChange(index, "price", v === "" ? 0 : parseFloat(v))
+                              }}
+                              placeholder="Price in Euro"
                             />
                           </div>
                           <div className="space-y-2">
                             <Label htmlFor={`unitId-${index}`}>Pathfinder Unit (optional)</Label>
                             <Select
                               value={schulung.unitId || ""}
-                              onValueChange={(value) => handleSchulungChange(index, "unitId", value || undefined)}
+                              onValueChange={(value) => handleSchulungChange(index, "unitId", value)}
                             >
                               <SelectTrigger id={`unitId-${index}`}>
                                 <SelectValue placeholder="Unit auswählen (optional)" />
