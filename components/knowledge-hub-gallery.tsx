@@ -494,7 +494,13 @@ export default function KnowledgeHubGallery() {
                       </div>
                       <div className="flex justify-between">
                         <span className="text-sm font-medium text-gray-500">Dauer:</span>
-                        <span>{schulung.duration}</span>
+                        <span>
+                          {typeof schulung.days === 'number' && schulung.days > 0
+                            ? `${schulung.days} ${schulung.days === 1 ? 'Tag' : 'Tage'}`
+                            : (typeof schulung.hours === 'number' && schulung.hours > 0
+                                ? `${Math.max(1, Math.ceil(schulung.hours / 8))} ${Math.max(1, Math.ceil(schulung.hours / 8)) === 1 ? 'Tag' : 'Tage'}`
+                                : (schulung.duration || ''))}
+                        </span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-sm font-medium text-gray-500">Preis:</span>
@@ -510,10 +516,19 @@ export default function KnowledgeHubGallery() {
                         handlePreview({
                           title: schulung.title,
                           description: `${schulung.title} - ${schulung.category}`,
+                          type: 'schulung',
+                          category: schulung.category,
+                          price: schulung.price,
+                          days: schulung.days,
+                          hours: schulung.hours,
                           tags: [
                             schulung.category,
-                            `Dauer: ${schulung.duration}`,
-                            schulung.price > 0 ? "Kostenpflichtig" : "Kostenlos",
+                            `Dauer: ${typeof schulung.days === 'number' && schulung.days > 0
+                              ? `${schulung.days} ${schulung.days === 1 ? 'Tag' : 'Tage'}`
+                              : (typeof schulung.hours === 'number' && schulung.hours > 0
+                                  ? `${Math.max(1, Math.ceil(schulung.hours / 8))} ${Math.max(1, Math.ceil(schulung.hours / 8)) === 1 ? 'Tag' : 'Tage'}`
+                                  : (schulung.duration || ''))}`,
+                            schulung.price > 0 ? 'Kostenpflichtig' : 'Kostenlos',
                           ],
                           image: schulung.image,
                           pdfDocument: schulung.pdfDocument,
@@ -576,6 +591,36 @@ export default function KnowledgeHubGallery() {
                   <h3 className="text-lg font-semibold mb-2">Beschreibung</h3>
                   <p className="text-gray-700">{selectedItem.description}</p>
                 </div>
+                {/* Structured details for Schulungen */}
+                {selectedItem.type === 'schulung' && (
+                  <div>
+                    <h3 className="text-lg font-semibold mb-2">Details</h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="flex justify-between">
+                        <span className="text-gray-500">Kategorie:</span>
+                        <span className="font-medium">{selectedItem.category}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-500">Dauer:</span>
+                        <span className="font-medium">
+                          {typeof selectedItem.days === 'number' && selectedItem.days > 0
+                            ? `${selectedItem.days} ${selectedItem.days === 1 ? 'Tag' : 'Tage'}`
+                            : (typeof selectedItem.hours === 'number' && selectedItem.hours > 0
+                                ? `${Math.max(1, Math.ceil(selectedItem.hours / 8))} ${Math.max(1, Math.ceil(selectedItem.hours / 8)) === 1 ? 'Tag' : 'Tage'}`
+                                : '')}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-500">Preis:</span>
+                        <span className="font-medium">
+                          {typeof selectedItem.price === 'number' && selectedItem.price > 0
+                            ? `${selectedItem.price} €`
+                            : 'Kostenlos'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
                 <div className={((selectedItem.pdfDocument?.fileUrl && selectedItem.pdfDocument.fileUrl.trim()) || (selectedItem.downloadUrl && selectedItem.downloadUrl.trim())) ? "" : "hidden"}>
                   <div className="flex justify-between items-center gap-4 pt-4">
                     <div className="flex items-center text-gray-500">
