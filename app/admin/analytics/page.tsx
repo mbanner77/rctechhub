@@ -62,6 +62,18 @@ export default function BesucheranalysenPage() {
 
   const totalPages = useMemo(() => data ? Math.max(1, Math.ceil(data.total / data.limit)) : 1, [data])
 
+  function ccToFlag(cc?: string | null) {
+    const code = (cc || '').toUpperCase();
+    if (!code || code.length !== 2) return '🏳️';
+    const A = 0x1F1E6;
+    const offset = (c: string) => (c.charCodeAt(0) - 65);
+    return String.fromCodePoint(A + offset(code[0]), A + offset(code[1]));
+  }
+
+  const Muted = ({children}:{children: any}) => (
+    <span className="text-muted-foreground">{children}</span>
+  )
+
   useEffect(() => {
     let cancelled = false
     async function load() {
@@ -80,18 +92,6 @@ export default function BesucheranalysenPage() {
           if (!cancelled) { setError(`Fehler beim Laden der Events (${res.status})`); setData({ page: 1, limit, total: 0, items: [] }) }
           return
         }
-
-  function ccToFlag(cc?: string | null) {
-    const code = (cc || '').toUpperCase();
-    if (!code || code.length !== 2) return '🏳️';
-    const A = 0x1F1E6;
-    const offset = (c: string) => (c.charCodeAt(0) - 65);
-    return String.fromCodePoint(A + offset(code[0]), A + offset(code[1]));
-  }
-
-  const Muted = ({children}:{children: any}) => (
-    <span className="text-muted-foreground">{children}</span>
-  )
         const json = await res.json().catch(() => null)
         if (!json) {
           if (!cancelled) { setError('Ungültige Server-Antwort für Events'); setData({ page: 1, limit, total: 0, items: [] }) }
