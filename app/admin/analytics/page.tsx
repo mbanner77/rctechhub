@@ -6,6 +6,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+// register Chart.js globally via side-effect module
+import "@/components/ui/chart";
+import { Chart as ReactChart } from "react-chartjs-2";
 
 type AnalyticsEvent = {
   id: number
@@ -42,6 +45,7 @@ export default function BesucheranalysenPage() {
   const [from, setFrom] = useState<string>("")
   const [to, setTo] = useState<string>("")
   const [summary, setSummary] = useState<any | null>(null)
+  const [series, setSeries] = useState<{ interval: string; items: { ts: string; total: number; unique_sessions: number }[] } | null>(null)
 
   const totalPages = useMemo(() => data ? Math.max(1, Math.ceil(data.total / data.limit)) : 1, [data])
 
@@ -118,6 +122,29 @@ export default function BesucheranalysenPage() {
     return () => { cancelled = true }
   }, [name, q, from, to])
 
+  useEffect(() => {
+    let cancelled = false
+    async function loadSeries() {
+      try {
+        const params = new URLSearchParams()
+        if (name.trim()) params.set('name', name.trim())
+        if (q.trim()) params.set('q', q.trim())
+        if (from) params.set('from', from)
+        if (to) params.set('to', to)
+        const res = await fetch(`/api/analytics/timeseries?${params.toString()}`, { cache: 'no-store' })
+        if (!res.ok) { if (!cancelled) setSeries(null); return }
+        const json = await res.json().catch(() => null)
+        if (!json) { if (!cancelled) setSeries(null); return }
+        if (!cancelled) setSeries(json)
+      } catch (e) {
+        console.error('Failed to load analytics timeseries', e)
+        if (!cancelled) setSeries(null)
+      }
+    }
+    loadSeries()
+    return () => { cancelled = true }
+  }, [name, q, from, to])
+
   function setPresetDays(days: number) {
     const end = new Date()
     const start = new Date()
@@ -168,6 +195,73 @@ export default function BesucheranalysenPage() {
         <div className="flex gap-2">
           <Button variant="outline" onClick={() => setPage(1)}>Neu laden</Button>
           <Button variant="outline" onClick={exportCsv}>CSV Export</Button>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="rounded-lg border p-4">
+          <div className="mb-2 font-medium">Besuche über Zeit</div>
+          {series && series.items.length > 0 ? (
+            <ReactChart
+              type="line"
+              data={{
+                labels: series.items.map(i => new Date(i.ts).toLocaleString()),
+                datasets: [
+                  {
+                    label: 'Events',
+                    data: series.items.map(i => i.total),
+                    borderColor: '#2563eb',
+                    backgroundColor: 'rgba(37,99,235,0.2)',
+                    tension: 0.3,
+                    fill: true,
+                  },
+                  {
+                    label: 'Eindeutige Sessions',
+                    data: series.items.map(i => i.unique_sessions),
+                    borderColor: '#16a34a',
+                    backgroundColor: 'rgba(22,163,74,0.2)',
+                    tension: 0.3,
+                    fill: true,
+                  },
+                ],
+              }}
+              options={{
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: true } },
+                scales: { x: { ticks: { autoSkip: true } }, y: { beginAtZero: true } },
+              }}
+              height={260}
+            />
+          ) : (
+            <div className="text-sm text-muted-foreground">Keine Daten im gewählten Zeitraum</div>
+          )}
+        </div>
+
+        <div className="rounded-lg border p-4">
+          <div className="mb-2 font-medium">Top Länder</div>
+          {summary?.top_countries?.length ? (
+            <ReactChart
+              type="bar"
+              data={{
+                labels: summary.top_countries.map((c: any) => c.label),
+                datasets: [{
+                  label: 'Anzahl',
+                  data: summary.top_countries.map((c: any) => c.c),
+                  backgroundColor: '#7c3aed'
+                }],
+              }}
+              options={{
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: { x: { ticks: { autoSkip: true } }, y: { beginAtZero: true } },
+              }}
+              height={260}
+            />
+          ) : (
+            <div className="text-sm text-muted-foreground">Noch keine Länderdaten</div>
+          )}
         </div>
       </div>
 
