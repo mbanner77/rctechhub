@@ -90,27 +90,60 @@ async function reverseDns(ip: string): Promise<string | null> {
 }
 
 async function fetchGeo(ip: string): Promise<{ country_code?: string; country_name?: string; org?: string; asn?: string; hostname?: string }> {
+  // Helper with timeout
+  const withTimeout = async (p: Promise<Response>, ms = 2000) => {
+    return Promise.race([
+      p,
+      (async () => { await delay(ms); throw new Error('timeout'); })(),
+    ]) as Promise<Response>;
+  };
+
   try {
     // Skip private/local addresses
     if (/^(10\.|192\.168\.|172\.(1[6-9]|2\d|3[0-1])\.|127\.|::1|fc00:|fd00:)/.test(ip)) {
       const hostname = await reverseDns(ip);
-      return {
-        country_code: 'ZZ',
-        country_name: 'Private/Local',
-        hostname: hostname || undefined,
-      };
+      return { country_code: 'ZZ', country_name: 'Private/Local', hostname: hostname || undefined };
     }
-    const res = await fetch(`https://ipapi.co/${encodeURIComponent(ip)}/json/`, { cache: 'no-store' });
-    if (!res.ok) throw new Error('geo http');
-    const j: any = await res.json();
+
+    // Provider 1: ipapi.co
+    try {
+      const res = await withTimeout(fetch(`https://ipapi.co/${encodeURIComponent(ip)}/json/`, { cache: 'no-store' }));
+      if (res.ok) {
+        const j: any = await res.json().catch(() => ({}));
+        if (j && (j.country || j.country_name || j.org || j.asn)) {
+          const hostname = await reverseDns(ip);
+          return {
+            country_code: j.country || undefined,
+            country_name: j.country_name || undefined,
+            org: j.org || j.org_name || undefined,
+            asn: j.asn || undefined,
+            hostname: hostname || undefined,
+          };
+        }
+      }
+    } catch {}
+
+    // Provider 2: ipwho.is (no key, generous free tier)
+    try {
+      const res2 = await withTimeout(fetch(`https://ipwho.is/${encodeURIComponent(ip)}`, { cache: 'no-store' }));
+      if (res2.ok) {
+        const j2: any = await res2.json().catch(() => ({}));
+        if (j2 && (j2.country_code || j2.country || j2.connection?.org || j2.connection?.asn)) {
+          const hostname = await reverseDns(ip);
+          return {
+            country_code: (j2.country_code || j2.country || '').toString() || undefined,
+            country_name: j2.country || undefined,
+            org: j2.connection?.org || undefined,
+            asn: j2.connection?.asn?.toString() || undefined,
+            hostname: hostname || undefined,
+          };
+        }
+      }
+    } catch {}
+
+    // Fallback: only reverse DNS
     const hostname = await reverseDns(ip);
-    return {
-      country_code: j?.country || undefined,
-      country_name: j?.country_name || undefined,
-      org: j?.org || j?.org_name || undefined,
-      asn: j?.asn || undefined,
-      hostname: hostname || undefined,
-    };
+    return { hostname: hostname || undefined };
   } catch {
     const hostname = await reverseDns(ip);
     return { hostname: hostname || undefined };

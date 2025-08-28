@@ -359,7 +359,13 @@ export default function BesucheranalysenPage() {
             <div className="text-sm font-medium mb-2">Top Länder / Organisationen</div>
             <ul className="text-sm space-y-1">
               {summary.top_countries?.map((c: any) => (
-                <li key={c.country_code + c.country_name} className="flex justify-between"><span>{c.country_code || '?'}</span><span className="tabular-nums">{c.c}</span></li>
+                <li key={(c.country_code || '') + (c.country_name || '')} className="flex justify-between">
+                  <span>
+                    <span className="mr-1">{ccToFlag(c.country_code)}</span>
+                    {c.country_name || c.country_code || 'Unbekannt'}
+                  </span>
+                  <span className="tabular-nums">{c.c}</span>
+                </li>
               ))}
             </ul>
             <div className="h-2" />
