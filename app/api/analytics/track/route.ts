@@ -62,6 +62,10 @@ function getClientIp(req: NextRequest): string | null {
     req.headers.get("cf-connecting-ip"),
     req.headers.get("x-client-ip"),
     req.headers.get("forwarded"),
+    req.headers.get("fly-client-ip"),
+    req.headers.get("x-vercel-forwarded-for"),
+    req.headers.get("true-client-ip"),
+    req.headers.get("fastly-client-ip"),
   ];
   for (const v of candidates) {
     if (!v) continue;

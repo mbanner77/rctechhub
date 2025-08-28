@@ -46,18 +46,21 @@ export async function GET(req: NextRequest) {
     );
 
     const topCountriesRes = await pool.query(
-      `SELECT COALESCE(COALESCE(e.country_name, i.country_name), COALESCE(e.country_code, i.country_code), 'Unbekannt') AS label, COUNT(*)::int AS c
+      `SELECT 
+         COALESCE(e.country_code, i.country_code) AS country_code,
+         COALESCE(e.country_name, i.country_name) AS country_name,
+         COUNT(*)::int AS c
        FROM analytics_events e
        LEFT JOIN analytics_ip_enrichment i ON e.ip = i.ip
        ${whereSql}
-       GROUP BY 1
+       GROUP BY 1,2
        ORDER BY c DESC
        LIMIT 10`,
       values
     );
 
     const topOrgsRes = await pool.query(
-      `SELECT COALESCE(COALESCE(e.org, i.org), 'Unbekannt') AS label, COUNT(*)::int AS c
+      `SELECT COALESCE(e.org, i.org) AS org, COUNT(*)::int AS c
        FROM analytics_events e
        LEFT JOIN analytics_ip_enrichment i ON e.ip = i.ip
        ${whereSql}
