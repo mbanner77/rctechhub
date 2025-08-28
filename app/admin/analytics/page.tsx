@@ -62,6 +62,11 @@ export default function BesucheranalysenPage() {
 
   const totalPages = useMemo(() => data ? Math.max(1, Math.ceil(data.total / data.limit)) : 1, [data])
 
+  // Compact chart sizing
+  const lineHeight = 220
+  const barCount = summary?.top_countries?.length ?? 0
+  const barHeight = Math.min(300, Math.max(160, (barCount || 5) * 22))
+
   function ccToFlag(cc?: string | null) {
     const code = (cc || '').toUpperCase();
     if (!code || code.length !== 2) return '🏳️';
@@ -241,21 +246,22 @@ export default function BesucheranalysenPage() {
               options={{
                 responsive: true,
                 maintainAspectRatio: false,
-                layout: { padding: 8 },
+                layout: { padding: 6 },
                 interaction: { mode: 'index' as const, intersect: false },
-                plugins: { legend: { display: true, position: 'top' }, tooltip: { enabled: true } },
+                plugins: { legend: { display: true, position: 'top', labels: { boxWidth: 10, boxHeight: 10 } }, tooltip: { enabled: true } },
                 scales: {
                   x: {
-                    ticks: { autoSkip: true, maxRotation: 0, maxTicksLimit: 10 },
+                    ticks: { autoSkip: true, maxRotation: 0, maxTicksLimit: 8, font: { size: 10 } },
                     grid: { color: 'rgba(0,0,0,0.06)' },
                   },
                   y: {
                     beginAtZero: true,
+                    ticks: { font: { size: 10 } },
                     grid: { color: 'rgba(0,0,0,0.06)' },
                   },
                 },
               }}
-              height={280}
+              height={lineHeight}
             />
           ) : (
             <div className="text-sm text-muted-foreground">Keine Daten im gewählten Zeitraum</div>
@@ -280,15 +286,15 @@ export default function BesucheranalysenPage() {
               options={{
                 responsive: true,
                 maintainAspectRatio: false,
-                layout: { padding: 8 },
+                layout: { padding: 6 },
                 plugins: { legend: { display: false }, tooltip: { enabled: true } },
                 indexAxis: 'y' as const,
                 scales: {
-                  x: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.06)' } },
-                  y: { grid: { display: false } },
+                  x: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.06)' }, ticks: { font: { size: 10 } } },
+                  y: { grid: { display: false }, ticks: { font: { size: 10 } } },
                 },
               }}
-              height={280}
+              height={barHeight}
             />
           ) : (
             <div className="text-sm text-muted-foreground">Noch keine Länderdaten</div>
