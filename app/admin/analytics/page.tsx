@@ -33,6 +33,7 @@ type ApiResponse = {
 export default function BesucheranalysenPage() {
   const [data, setData] = useState<ApiResponse | null>(null)
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string>("")
   const [page, setPage] = useState(1)
   const [limit, setLimit] = useState(50)
   const [name, setName] = useState<string>("")
@@ -55,12 +56,21 @@ export default function BesucheranalysenPage() {
         if (q.trim()) params.set('q', q.trim())
         if (from) params.set('from', from)
         if (to) params.set('to', to)
-        const res = await fetch(`/api/analytics/events?${params.toString()}`)
-        const json = await res.json()
-        if (!cancelled) setData(json)
+        const res = await fetch(`/api/analytics/events?${params.toString()}`, { cache: 'no-store' })
+        if (!res.ok) {
+          const text = await res.text().catch(() => '')
+          if (!cancelled) { setError(`Fehler beim Laden der Events (${res.status})`); setData({ page: 1, limit, total: 0, items: [] }) }
+          return
+        }
+        const json = await res.json().catch(() => null)
+        if (!json) {
+          if (!cancelled) { setError('Ungültige Server-Antwort für Events'); setData({ page: 1, limit, total: 0, items: [] }) }
+          return
+        }
+        if (!cancelled) { setError(''); setData(json) }
       } catch (e) {
         console.error('Failed to load analytics events', e)
-        if (!cancelled) setData({ page: 1, limit, total: 0, items: [] })
+        if (!cancelled) { setError('Netzwerkfehler beim Laden der Events'); setData({ page: 1, limit, total: 0, items: [] }) }
       } finally {
         if (!cancelled) setLoading(false)
       }
@@ -78,8 +88,13 @@ export default function BesucheranalysenPage() {
         if (q.trim()) params.set('q', q.trim())
         if (from) params.set('from', from)
         if (to) params.set('to', to)
-        const res = await fetch(`/api/analytics/summary?${params.toString()}`)
-        const json = await res.json()
+        const res = await fetch(`/api/analytics/summary?${params.toString()}`, { cache: 'no-store' })
+        if (!res.ok) {
+          if (!cancelled) setSummary(null)
+          return
+        }
+        const json = await res.json().catch(() => null)
+        if (!json) { if (!cancelled) setSummary(null); return }
         if (!cancelled) setSummary(json)
       } catch (e) {
         console.error('Failed to load analytics summary', e)
