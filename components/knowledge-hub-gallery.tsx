@@ -5,6 +5,7 @@ import { Card, CardContent, CardFooter } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Eye, FileText, Search } from "lucide-react"
+import Link from "next/link"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
@@ -52,9 +53,11 @@ const ContentItem = ({ item, onDownload, onPreview, onContact }: ContentItemProp
         <p className="text-gray-600 text-sm mb-4">{item.description}</p>
         <div className="flex flex-wrap gap-2 mb-4">
           {(item.tags || []).slice(0, 3).map((tag: string) => (
-            <Badge key={tag} variant="secondary" className="text-xs">
-              {tag}
-            </Badge>
+            <Link key={tag} href={`/home?tag=${encodeURIComponent(tag)}#hackathon`}>
+              <Badge variant="secondary" className="text-xs cursor-pointer hover:bg-secondary/80">
+                {tag}
+              </Badge>
+            </Link>
           ))}
         </div>
         <div className="flex items-center text-sm text-gray-500">
@@ -592,9 +595,11 @@ export default function KnowledgeHubGallery() {
                   <h3 className="text-lg font-semibold mb-2">{selectedItem.type === 'schulung' ? 'Kursinformationen' : 'Tags'}</h3>
                   <div className="flex flex-wrap gap-2">
                     {(selectedItem.tags || []).map((tag: string) => (
-                      <Badge key={tag} variant="secondary">
-                        {tag}
-                      </Badge>
+                      <Link key={tag} href={`/home?tag=${encodeURIComponent(tag)}#hackathon`}>
+                        <Badge variant="secondary" className="cursor-pointer hover:bg-secondary/80">
+                          {tag}
+                        </Badge>
+                      </Link>
                     ))}
                   </div>
                 </div>

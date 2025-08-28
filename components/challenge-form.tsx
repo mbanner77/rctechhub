@@ -2,7 +2,8 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
+import { useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -14,6 +15,7 @@ import { sendFormConfirmationEmail, sendTeamNotificationEmail } from "@/lib/send
 import { getMailConfig } from "@/lib/mail-config-service"
 
 export default function ChallengeForm() {
+  const searchParams = useSearchParams()
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -28,6 +30,20 @@ export default function ChallengeForm() {
     const { name, value } = e.target
     setFormData((prev) => ({ ...prev, [name]: value }))
   }
+
+  // Prefill from tag query (?tag=...)
+  useEffect(() => {
+    const tag = searchParams?.get("tag")
+    if (tag) {
+      setFormData((prev) => ({
+        ...prev,
+        challenge: prev.challenge && !prev.challenge.startsWith("Tag:")
+          ? `${prev.challenge}\n\nTag: ${tag}`
+          : `Tag: ${tag}`
+      }))
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

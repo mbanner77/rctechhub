@@ -16,7 +16,7 @@ import InnovationFactory from "@/components/innovation-factory"
 import KnowledgeHubGallery from "@/components/knowledge-hub-gallery"
 import DigitalMaturityAssessment from "@/components/digital-maturity-assessment"
 import ChallengeForm from "@/components/challenge-form"
-import { useRef, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import AssessmentDialog from "@/components/assessment-dialog"
 import WorkshopBookingDialog from "@/components/workshop-booking-dialog"
 import PackageBuilderDialog from "@/components/package-builder-dialog"
@@ -79,6 +79,23 @@ export default function Home() {
 
   // Refs für die Scroll-Funktionalität
   const servicesRef = useRef<HTMLDivElement>(null)
+  
+  // Auto-scroll to hackathon if arriving with hash
+  useEffect(() => {
+    const hash = typeof window !== 'undefined' ? window.location.hash.toLowerCase() : ''
+    if (hash === '#hackathon' || hash === '#hackaton') {
+      const scrollToHackathon = () => {
+        const el = document.getElementById('hackathon')
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth' })
+        }
+      }
+      // Try immediately and again shortly after to account for late mount
+      scrollToHackathon()
+      const t = setTimeout(scrollToHackathon, 300)
+      return () => clearTimeout(t)
+    }
+  }, [])
 
   const handleWorkshopClick = (title: string, duration: string, price: number) => {
     analytics.dialogOpen('workshop-booking', title)
