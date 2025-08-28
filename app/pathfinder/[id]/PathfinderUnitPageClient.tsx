@@ -690,7 +690,16 @@ export default function PathfinderUnitPageClient() {
                                 <div key={stepIndex} className="border-t border-gray-100 pt-8">
                                   <div className="flex items-start">
                                     <div className={`rounded-full text-white w-10 h-10 flex items-center justify-center text-xl font-bold bg-gradient-to-r ${unit.gradient} mr-5`}>
-                                      {stepIndex + 1}
+                                      {
+                                        (
+                                          (unit.approach
+                                            ? unit.approach
+                                                .slice(0, index)
+                                                .reduce((sum: number, a: Approach) => sum + (a.steps ? a.steps.length : 0), 0)
+                                            : 0
+                                          ) + stepIndex + 1
+                                        )
+                                      }
                                     </div>
                                     <div className="flex-1">
                                       <h3 className="text-xl font-bold mb-4">{step.title}</h3>
