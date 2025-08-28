@@ -141,6 +141,24 @@ async function fetchGeo(ip: string): Promise<{ country_code?: string; country_na
       }
     } catch {}
 
+    // Provider 3: ip-api.com (no key)
+    try {
+      const res3 = await withTimeout(fetch(`http://ip-api.com/json/${encodeURIComponent(ip)}?fields=status,country,countryCode,org,as`, { cache: 'no-store' }), 2000);
+      if (res3.ok) {
+        const j3: any = await res3.json().catch(() => ({}));
+        if (j3 && j3.status === 'success') {
+          const hostname = await reverseDns(ip);
+          return {
+            country_code: j3.countryCode || undefined,
+            country_name: j3.country || undefined,
+            org: j3.org || undefined,
+            asn: (j3.as || '').replace(/^AS/i, '') || undefined,
+            hostname: hostname || undefined,
+          };
+        }
+      }
+    } catch {}
+
     // Fallback: only reverse DNS
     const hostname = await reverseDns(ip);
     return { hostname: hostname || undefined };
@@ -150,7 +168,7 @@ async function fetchGeo(ip: string): Promise<{ country_code?: string; country_na
   }
 }
 
-async function getIpEnrichment(ip: string) {
+export async function getIpEnrichment(ip: string) {
   const pool = getPool();
   const cached = await pool.query(
     `SELECT country_code, country_name, org, asn, hostname, updated_at FROM analytics_ip_enrichment WHERE ip = $1`,
