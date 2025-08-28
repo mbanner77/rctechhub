@@ -99,6 +99,9 @@ export default function BesucheranalysenPage() {
               <TableHead>Name</TableHead>
               <TableHead>Pfad</TableHead>
               <TableHead>Props</TableHead>
+              <TableHead>Land</TableHead>
+              <TableHead>Organisation</TableHead>
+              <TableHead>Hostname</TableHead>
               <TableHead>Referrer</TableHead>
               <TableHead>UA</TableHead>
               <TableHead>IP</TableHead>
@@ -112,7 +115,7 @@ export default function BesucheranalysenPage() {
             {!loading && data?.items.length === 0 && (
               <TableRow><TableCell colSpan={8}>Keine Einträge</TableCell></TableRow>
             )}
-            {data?.items.map((ev) => (
+            {data?.items.map((ev: any) => (
               <TableRow key={ev.id}>
                 <TableCell className="whitespace-nowrap">{new Date(ev.created_at).toLocaleString()}</TableCell>
                 <TableCell className="font-mono text-xs">{ev.name}</TableCell>
@@ -120,6 +123,9 @@ export default function BesucheranalysenPage() {
                 <TableCell className="truncate max-w-[320px]" title={JSON.stringify(ev.props)}>
                   <code className="text-xs">{JSON.stringify(ev.props)}</code>
                 </TableCell>
+                <TableCell title={ev.country_name || ''}>{ev.country_code || ''}</TableCell>
+                <TableCell className="truncate max-w-[220px]" title={ev.org || ''}>{ev.org}</TableCell>
+                <TableCell className="truncate max-w-[220px]" title={ev.hostname || ''}>{ev.hostname}</TableCell>
                 <TableCell className="truncate max-w-[220px]" title={ev.referrer || ''}>{ev.referrer}</TableCell>
                 <TableCell className="truncate max-w-[260px]" title={ev.user_agent || ''}>{ev.user_agent}</TableCell>
                 <TableCell>{ev.ip}</TableCell>

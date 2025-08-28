@@ -31,7 +31,9 @@ export async function GET(req: NextRequest) {
     const total = totalRes.rows[0]?.c || 0;
 
     const dataRes = await pool.query(
-      `SELECT id, name, props, path, referrer, user_agent, session_id, ip, created_at
+      `SELECT id, name, props, path, referrer, user_agent, session_id, ip,
+              country_code, country_name, org, asn, hostname,
+              created_at
        FROM analytics_events
        ${whereSql}
        ORDER BY created_at DESC
