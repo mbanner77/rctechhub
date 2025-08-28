@@ -162,6 +162,14 @@ export default function AdminPage() {
                 </Button>
               </Link>
             </div>
+            <div>
+              <Link href="/admin/analytics">
+                <Button className="w-full" variant="outline">
+                  <Settings className="mr-2 h-4 w-4" />
+                  Besucheranalysen
+                </Button>
+              </Link>
+            </div>
           </CardContent>
         </Card>
       </div>

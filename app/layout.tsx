@@ -3,9 +3,9 @@ import "quill/dist/quill.snow.css";
 import "@/styles/rich-text-editor.css";
 import { ReactNode, Suspense } from "react";
 import type { Metadata } from "next"
-import { Analytics } from "@vercel/analytics/next"
 
 import { Providers } from "@/components/providers"
+import { GlobalClickTracker } from "@/components/analytics/global-click-tracker"
 import ClientSideScrollRestorer from '@/components/client-side-scroll-restorer'
 import { aeonik } from './fonts'
 
@@ -24,8 +24,10 @@ export default function RootLayout({
   return (
     <html lang="de" className={aeonik.variable}>
       <body className={aeonik.className}>
-        <Providers>{children}</Providers>
-        <Analytics />
+        <Providers>
+          {children}
+        </Providers>
+        <GlobalClickTracker />
       </body>
       <Suspense>
         <ClientSideScrollRestorer/>
