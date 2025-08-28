@@ -4,6 +4,10 @@ import { getPool } from "@/lib/pg";
 import dns from "node:dns";
 import { setTimeout as delay } from "node:timers/promises";
 
+// Ensure Node.js runtime (dns module) and no static caching
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+
 async function ensureTable() {
   const pool = getPool();
   await pool.query(`
@@ -24,6 +28,12 @@ async function ensureTable() {
       created_at TIMESTAMPTZ DEFAULT NOW()
     );
   `);
+  // Backfill columns if table existed before
+  await pool.query(`ALTER TABLE analytics_events ADD COLUMN IF NOT EXISTS country_code TEXT`);
+  await pool.query(`ALTER TABLE analytics_events ADD COLUMN IF NOT EXISTS country_name TEXT`);
+  await pool.query(`ALTER TABLE analytics_events ADD COLUMN IF NOT EXISTS org TEXT`);
+  await pool.query(`ALTER TABLE analytics_events ADD COLUMN IF NOT EXISTS asn TEXT`);
+  await pool.query(`ALTER TABLE analytics_events ADD COLUMN IF NOT EXISTS hostname TEXT`);
   await pool.query(
     `CREATE INDEX IF NOT EXISTS idx_analytics_events_created_at ON analytics_events (created_at DESC)`
   );
@@ -45,12 +55,22 @@ async function ensureTable() {
 }
 
 function getClientIp(req: NextRequest): string | null {
-  const xff = req.headers.get("x-forwarded-for");
-  if (xff) {
-    const ip = xff.split(",")[0]?.trim();
-    return ip || null;
+  // Prefer standard proxy headers
+  const candidates = [
+    req.headers.get("x-forwarded-for"),
+    req.headers.get("x-real-ip"),
+    req.headers.get("cf-connecting-ip"),
+    req.headers.get("x-client-ip"),
+    req.headers.get("forwarded"),
+  ];
+  for (const v of candidates) {
+    if (!v) continue;
+    // x-forwarded-for can contain a list. forwarded header can be in key=value format
+    const first = v.split(",")[0].trim();
+    const ip = first.replace(/^for=/i, "").replace(/"/g, "");
+    if (ip) return ip;
   }
-  return req.ip ?? null;
+  return null;
 }
 
 async function reverseDns(ip: string): Promise<string | null> {
@@ -67,6 +87,11 @@ async function reverseDns(ip: string): Promise<string | null> {
 
 async function fetchGeo(ip: string): Promise<{ country_code?: string; country_name?: string; org?: string; asn?: string; hostname?: string }> {
   try {
+    // Skip private/local addresses
+    if (/^(10\.|192\.168\.|172\.(1[6-9]|2\d|3[0-1])\.|127\.|::1|fc00:|fd00:)/.test(ip)) {
+      const hostname = await reverseDns(ip);
+      return { hostname: hostname || undefined };
+    }
     const res = await fetch(`https://ipapi.co/${encodeURIComponent(ip)}/json/`, { cache: 'no-store' });
     if (!res.ok) throw new Error('geo http');
     const j: any = await res.json();
