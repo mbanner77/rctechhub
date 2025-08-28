@@ -241,10 +241,21 @@ export default function BesucheranalysenPage() {
               options={{
                 responsive: true,
                 maintainAspectRatio: false,
-                plugins: { legend: { display: true } },
-                scales: { x: { ticks: { autoSkip: true } }, y: { beginAtZero: true } },
+                layout: { padding: 8 },
+                interaction: { mode: 'index' as const, intersect: false },
+                plugins: { legend: { display: true, position: 'top' }, tooltip: { enabled: true } },
+                scales: {
+                  x: {
+                    ticks: { autoSkip: true, maxRotation: 0, maxTicksLimit: 10 },
+                    grid: { color: 'rgba(0,0,0,0.06)' },
+                  },
+                  y: {
+                    beginAtZero: true,
+                    grid: { color: 'rgba(0,0,0,0.06)' },
+                  },
+                },
               }}
-              height={260}
+              height={280}
             />
           ) : (
             <div className="text-sm text-muted-foreground">Keine Daten im gewählten Zeitraum</div>
@@ -257,20 +268,27 @@ export default function BesucheranalysenPage() {
             <ReactChart
               type="bar"
               data={{
-                labels: summary.top_countries.map((c: any) => c.label),
+                labels: summary.top_countries.slice(0, 12).map((c: any) => `${ccToFlag(c.country_code)} ${c.country_code || '??'}`),
                 datasets: [{
                   label: 'Anzahl',
-                  data: summary.top_countries.map((c: any) => c.c),
-                  backgroundColor: '#7c3aed'
+                  data: summary.top_countries.slice(0, 12).map((c: any) => c.c),
+                  backgroundColor: ['#6366F1','#22C55E','#F59E0B','#EF4444','#06B6D4','#84CC16','#A855F7','#14B8A6','#F43F5E','#3B82F6','#EAB308','#10B981'],
+                  borderRadius: 6,
+                  maxBarThickness: 26,
                 }],
               }}
               options={{
                 responsive: true,
                 maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
-                scales: { x: { ticks: { autoSkip: true } }, y: { beginAtZero: true } },
+                layout: { padding: 8 },
+                plugins: { legend: { display: false }, tooltip: { enabled: true } },
+                indexAxis: 'y' as const,
+                scales: {
+                  x: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.06)' } },
+                  y: { grid: { display: false } },
+                },
               }}
-              height={260}
+              height={280}
             />
           ) : (
             <div className="text-sm text-muted-foreground">Noch keine Länderdaten</div>
