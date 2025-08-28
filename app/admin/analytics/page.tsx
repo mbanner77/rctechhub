@@ -5,6 +5,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
 
 type AnalyticsEvent = {
   id: number
@@ -62,6 +63,18 @@ export default function BesucheranalysenPage() {
           if (!cancelled) { setError(`Fehler beim Laden der Events (${res.status})`); setData({ page: 1, limit, total: 0, items: [] }) }
           return
         }
+
+  function ccToFlag(cc?: string | null) {
+    const code = (cc || '').toUpperCase();
+    if (!code || code.length !== 2) return '🏳️';
+    const A = 0x1F1E6;
+    const offset = (c: string) => (c.charCodeAt(0) - 65);
+    return String.fromCodePoint(A + offset(code[0]), A + offset(code[1]));
+  }
+
+  const Muted = ({children}:{children: any}) => (
+    <span className="text-muted-foreground">{children}</span>
+  )
         const json = await res.json().catch(() => null)
         if (!json) {
           if (!cancelled) { setError('Ungültige Server-Antwort für Events'); setData({ page: 1, limit, total: 0, items: [] }) }
@@ -260,9 +273,19 @@ export default function BesucheranalysenPage() {
                 <TableCell className="truncate max-w-[320px]" title={JSON.stringify(ev.props)}>
                   <code className="text-xs">{JSON.stringify(ev.props)}</code>
                 </TableCell>
-                <TableCell title={ev.country_name || ''}>{ev.country_code || ''}</TableCell>
-                <TableCell className="truncate max-w-[220px]" title={ev.org || ''}>{ev.org}</TableCell>
-                <TableCell className="truncate max-w-[220px]" title={ev.hostname || ''}>{ev.hostname}</TableCell>
+                <TableCell title={ev.country_name || ''}>
+                  {ev.country_code ? (
+                    <Badge variant="secondary" title={ev.country_name || ''}>
+                      <span className="mr-1">{ccToFlag(ev.country_code)}</span>{ev.country_code}
+                    </Badge>
+                  ) : <Muted>—</Muted>}
+                </TableCell>
+                <TableCell className="truncate max-w-[220px]" title={ev.org || ''}>
+                  {ev.org ? <Badge variant="outline">{ev.org}</Badge> : <Muted>—</Muted>}
+                </TableCell>
+                <TableCell className="truncate max-w-[220px]" title={ev.hostname || ''}>
+                  {ev.hostname ? <Badge variant="outline">{ev.hostname}</Badge> : <Muted>—</Muted>}
+                </TableCell>
                 <TableCell className="truncate max-w-[220px]" title={ev.referrer || ''}>{ev.referrer}</TableCell>
                 <TableCell className="truncate max-w-[260px]" title={ev.user_agent || ''}>{ev.user_agent}</TableCell>
                 <TableCell>{ev.ip}</TableCell>

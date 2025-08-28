@@ -90,7 +90,11 @@ async function fetchGeo(ip: string): Promise<{ country_code?: string; country_na
     // Skip private/local addresses
     if (/^(10\.|192\.168\.|172\.(1[6-9]|2\d|3[0-1])\.|127\.|::1|fc00:|fd00:)/.test(ip)) {
       const hostname = await reverseDns(ip);
-      return { hostname: hostname || undefined };
+      return {
+        country_code: 'ZZ',
+        country_name: 'Private/Local',
+        hostname: hostname || undefined,
+      };
     }
     const res = await fetch(`https://ipapi.co/${encodeURIComponent(ip)}/json/`, { cache: 'no-store' });
     if (!res.ok) throw new Error('geo http');

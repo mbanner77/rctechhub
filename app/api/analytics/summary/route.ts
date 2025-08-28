@@ -18,44 +18,61 @@ export async function GET(req: NextRequest) {
     const values: any[] = [];
     let idx = 1;
 
-    if (name) {
-      where.push(`name = $${idx++}`);
-      values.push(name);
-    }
-    if (q) {
-      where.push(`(path ILIKE $${idx} OR referrer ILIKE $${idx} OR user_agent ILIKE $${idx} OR CAST(props AS TEXT) ILIKE $${idx})`);
-      values.push(`%${q}%`);
-      idx++;
-    }
-    if (from) {
-      where.push(`created_at >= $${idx++}`);
-      values.push(new Date(from));
-    }
-    if (to) {
-      where.push(`created_at <= $${idx++}`);
-      values.push(new Date(to));
-    }
+    if (name) { where.push(`e.name = $${idx++}`); values.push(name); }
+    if (q) { where.push(`(e.path ILIKE $${idx} OR e.referrer ILIKE $${idx} OR e.user_agent ILIKE $${idx} OR CAST(e.props AS TEXT) ILIKE $${idx})`); values.push(`%${q}%`); idx++; }
+    if (from) { where.push(`e.created_at >= $${idx++}`); values.push(new Date(from)); }
+    if (to) { where.push(`e.created_at <= $${idx++}`); values.push(new Date(to)); }
 
-    const whereSql = where.length ? `WHERE ${where.join(" AND ")}` : "";
+    const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : '';
 
-    const totalPromise = pool.query(`SELECT COUNT(*)::int AS c, COUNT(DISTINCT session_id) AS s, COUNT(DISTINCT ip) AS ips FROM analytics_events ${whereSql}`, values);
-    const topEventsPromise = pool.query(`SELECT name, COUNT(*)::int AS c FROM analytics_events ${whereSql} GROUP BY name ORDER BY c DESC LIMIT 10`, values);
-    const topCountriesPromise = pool.query(`SELECT COALESCE(country_code,'?') AS country_code, COALESCE(country_name,'Unbekannt') AS country_name, COUNT(*)::int AS c FROM analytics_events ${whereSql} GROUP BY country_code, country_name ORDER BY c DESC LIMIT 10`, values);
-    const topOrgsPromise = pool.query(`SELECT COALESCE(org,'Unbekannt') AS org, COUNT(*)::int AS c FROM analytics_events ${whereSql} GROUP BY org ORDER BY c DESC LIMIT 10`, values);
+    const totalsRes = await pool.query(
+      `SELECT
+         COUNT(*)::int AS total,
+         COUNT(DISTINCT e.session_id)::int AS unique_sessions,
+         COUNT(DISTINCT e.ip)::int AS unique_ips
+       FROM analytics_events e
+       ${whereSql}`,
+      values
+    );
 
-    const [totalRes, topEventsRes, topCountriesRes, topOrgsRes] = await Promise.all([
-      totalPromise,
-      topEventsPromise,
-      topCountriesPromise,
-      topOrgsPromise,
-    ]);
+    const topEventsRes = await pool.query(
+      `SELECT e.name, COUNT(*)::int AS c
+       FROM analytics_events e
+       ${whereSql}
+       GROUP BY 1
+       ORDER BY c DESC
+       LIMIT 10`,
+      values
+    );
 
-    const totals = totalRes.rows[0] || { c: 0, s: 0, ips: 0 };
+    const topCountriesRes = await pool.query(
+      `SELECT COALESCE(COALESCE(e.country_name, i.country_name), COALESCE(e.country_code, i.country_code), 'Unbekannt') AS label, COUNT(*)::int AS c
+       FROM analytics_events e
+       LEFT JOIN analytics_ip_enrichment i ON e.ip = i.ip
+       ${whereSql}
+       GROUP BY 1
+       ORDER BY c DESC
+       LIMIT 10`,
+      values
+    );
+
+    const topOrgsRes = await pool.query(
+      `SELECT COALESCE(COALESCE(e.org, i.org), 'Unbekannt') AS label, COUNT(*)::int AS c
+       FROM analytics_events e
+       LEFT JOIN analytics_ip_enrichment i ON e.ip = i.ip
+       ${whereSql}
+       GROUP BY 1
+       ORDER BY c DESC
+       LIMIT 10`,
+      values
+    );
+
+    const totals = totalsRes.rows[0] || { total: 0, unique_sessions: 0, unique_ips: 0 };
 
     return NextResponse.json({
-      total: totals.c || 0,
-      unique_sessions: parseInt(totals.s || 0, 10),
-      unique_ips: parseInt(totals.ips || 0, 10),
+      total: totals.total || 0,
+      unique_sessions: totals.unique_sessions || 0,
+      unique_ips: totals.unique_ips || 0,
       top_events: topEventsRes.rows,
       top_countries: topCountriesRes.rows,
       top_orgs: topOrgsRes.rows,

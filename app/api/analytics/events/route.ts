@@ -21,35 +21,40 @@ export async function GET(req: NextRequest) {
     let idx = 1;
 
     if (name) {
-      where.push(`name = $${idx++}`);
+      where.push(`e.name = $${idx++}`);
       values.push(name);
     }
     if (q) {
-      where.push(`(path ILIKE $${idx} OR referrer ILIKE $${idx} OR user_agent ILIKE $${idx} OR CAST(props AS TEXT) ILIKE $${idx})`);
+      where.push(`(e.path ILIKE $${idx} OR e.referrer ILIKE $${idx} OR e.user_agent ILIKE $${idx} OR CAST(e.props AS TEXT) ILIKE $${idx})`);
       values.push(`%${q}%`);
       idx++;
     }
     if (from) {
-      where.push(`created_at >= $${idx++}`);
+      where.push(`e.created_at >= $${idx++}`);
       values.push(new Date(from));
     }
     if (to) {
-      where.push(`created_at <= $${idx++}`);
+      where.push(`e.created_at <= $${idx++}`);
       values.push(new Date(to));
     }
 
     const whereSql = where.length ? `WHERE ${where.join(" AND ")}` : "";
 
-    const totalRes = await pool.query(`SELECT COUNT(*)::int AS c FROM analytics_events ${whereSql}`, values);
+    const totalRes = await pool.query(`SELECT COUNT(*)::int AS c FROM analytics_events e ${whereSql}`, values);
     const total = totalRes.rows[0]?.c || 0;
 
     const dataRes = await pool.query(
-      `SELECT id, name, props, path, referrer, user_agent, session_id, ip,
-              country_code, country_name, org, asn, hostname,
-              created_at
-       FROM analytics_events
+      `SELECT e.id, e.name, e.props, e.path, e.referrer, e.user_agent, e.session_id, e.ip,
+              COALESCE(e.country_code, i.country_code) AS country_code,
+              COALESCE(e.country_name, i.country_name) AS country_name,
+              COALESCE(e.org, i.org) AS org,
+              COALESCE(e.asn, i.asn) AS asn,
+              COALESCE(e.hostname, i.hostname) AS hostname,
+              e.created_at
+       FROM analytics_events e
+       LEFT JOIN analytics_ip_enrichment i ON e.ip = i.ip
        ${whereSql}
-       ORDER BY created_at DESC
+       ORDER BY e.created_at DESC
        LIMIT $${idx++} OFFSET $${idx++}`,
       [...values, limit, offset]
     );
