@@ -15,6 +15,11 @@ type AnalyticsEvent = {
   user_agent: string | null
   session_id: string | null
   ip: string | null
+  country_code?: string | null
+  country_name?: string | null
+  org?: string | null
+  asn?: string | null
+  hostname?: string | null
   created_at: string
 }
 
@@ -32,6 +37,9 @@ export default function BesucheranalysenPage() {
   const [limit, setLimit] = useState(50)
   const [name, setName] = useState<string>("")
   const [q, setQ] = useState<string>("")
+  const [from, setFrom] = useState<string>("")
+  const [to, setTo] = useState<string>("")
+  const [summary, setSummary] = useState<any | null>(null)
 
   const totalPages = useMemo(() => data ? Math.max(1, Math.ceil(data.total / data.limit)) : 1, [data])
 
@@ -45,6 +53,8 @@ export default function BesucheranalysenPage() {
         params.set('limit', String(limit))
         if (name.trim()) params.set('name', name.trim())
         if (q.trim()) params.set('q', q.trim())
+        if (from) params.set('from', from)
+        if (to) params.set('to', to)
         const res = await fetch(`/api/analytics/events?${params.toString()}`)
         const json = await res.json()
         if (!cancelled) setData(json)
@@ -57,7 +67,71 @@ export default function BesucheranalysenPage() {
     }
     load()
     return () => { cancelled = true }
-  }, [page, limit, name, q])
+  }, [page, limit, name, q, from, to])
+
+  useEffect(() => {
+    let cancelled = false
+    async function loadSummary() {
+      try {
+        const params = new URLSearchParams()
+        if (name.trim()) params.set('name', name.trim())
+        if (q.trim()) params.set('q', q.trim())
+        if (from) params.set('from', from)
+        if (to) params.set('to', to)
+        const res = await fetch(`/api/analytics/summary?${params.toString()}`)
+        const json = await res.json()
+        if (!cancelled) setSummary(json)
+      } catch (e) {
+        console.error('Failed to load analytics summary', e)
+        if (!cancelled) setSummary(null)
+      }
+    }
+    loadSummary()
+    return () => { cancelled = true }
+  }, [name, q, from, to])
+
+  function setPresetDays(days: number) {
+    const end = new Date()
+    const start = new Date()
+    start.setDate(end.getDate() - (days - 1))
+    setFrom(start.toISOString().slice(0,10))
+    setTo(end.toISOString().slice(0,10))
+    setPage(1)
+  }
+
+  function exportCsv() {
+    const rows = (data?.items || [])
+    const header = [
+      'created_at','name','path','referrer','user_agent','ip','country_code','country_name','org','asn','hostname','session_id','props'
+    ]
+    const lines = [header.join(',')]
+    for (const ev of rows as any[]) {
+      const vals = [
+        ev.created_at,
+        ev.name,
+        ev.path || '',
+        ev.referrer || '',
+        ev.user_agent || '',
+        ev.ip || '',
+        ev.country_code || '',
+        ev.country_name || '',
+        ev.org || '',
+        ev.asn || '',
+        ev.hostname || '',
+        ev.session_id || '',
+        JSON.stringify(ev.props || {})
+      ].map(v => '"' + String(v).replaceAll('"','""') + '"')
+      lines.push(vals.join(','))
+    }
+    const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    const stamp = new Date().toISOString().slice(0,19).replaceAll(':','-')
+    a.download = `analytics-export-${stamp}.csv`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -65,10 +139,11 @@ export default function BesucheranalysenPage() {
         <h1 className="text-2xl font-bold">Besucheranalysen</h1>
         <div className="flex gap-2">
           <Button variant="outline" onClick={() => setPage(1)}>Neu laden</Button>
+          <Button variant="outline" onClick={exportCsv}>CSV Export</Button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-3 mb-4">
+      <div className="grid grid-cols-1 md:grid-cols-6 gap-3 mb-4">
         <div className="col-span-1">
           <label className="text-sm text-muted-foreground">Event-Name</label>
           <Input placeholder="z.B. navigation_click" value={name} onChange={(e) => setName(e.target.value)} />
@@ -76,6 +151,14 @@ export default function BesucheranalysenPage() {
         <div className="col-span-2">
           <label className="text-sm text-muted-foreground">Volltextsuche</label>
           <Input placeholder="Pfad, Referrer, User Agent, Props" value={q} onChange={(e) => setQ(e.target.value)} />
+        </div>
+        <div>
+          <label className="text-sm text-muted-foreground">Von</label>
+          <Input type="date" value={from} onChange={(e) => { setFrom(e.target.value); setPage(1) }} />
+        </div>
+        <div>
+          <label className="text-sm text-muted-foreground">Bis</label>
+          <Input type="date" value={to} onChange={(e) => { setTo(e.target.value); setPage(1) }} />
         </div>
         <div className="col-span-1">
           <label className="text-sm text-muted-foreground">Einträge pro Seite</label>
@@ -90,6 +173,45 @@ export default function BesucheranalysenPage() {
           </Select>
         </div>
       </div>
+
+      <div className="flex flex-wrap gap-2 mb-6">
+        <Button variant="outline" onClick={() => setPresetDays(1)}>Heute</Button>
+        <Button variant="outline" onClick={() => setPresetDays(7)}>Letzte 7 Tage</Button>
+        <Button variant="outline" onClick={() => setPresetDays(30)}>Letzte 30 Tage</Button>
+        <Button variant="outline" onClick={() => { setFrom(''); setTo(''); setPage(1) }}>Alle</Button>
+      </div>
+
+      {summary && (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <div className="border rounded-md p-4">
+            <div className="text-sm text-muted-foreground">Events gesamt</div>
+            <div className="text-2xl font-semibold">{summary.total}</div>
+            <div className="text-sm text-muted-foreground mt-2">Unique Sessions: {summary.unique_sessions} • Unique IPs: {summary.unique_ips}</div>
+          </div>
+          <div className="border rounded-md p-4">
+            <div className="text-sm font-medium mb-2">Top Events</div>
+            <ul className="text-sm space-y-1">
+              {summary.top_events?.map((e: any) => (
+                <li key={e.name} className="flex justify-between"><span className="truncate max-w-[70%]" title={e.name}>{e.name}</span><span className="tabular-nums">{e.c}</span></li>
+              ))}
+            </ul>
+          </div>
+          <div className="border rounded-md p-4">
+            <div className="text-sm font-medium mb-2">Top Länder / Organisationen</div>
+            <ul className="text-sm space-y-1">
+              {summary.top_countries?.map((c: any) => (
+                <li key={c.country_code + c.country_name} className="flex justify-between"><span>{c.country_code || '?'}</span><span className="tabular-nums">{c.c}</span></li>
+              ))}
+            </ul>
+            <div className="h-2" />
+            <ul className="text-sm space-y-1">
+              {summary.top_orgs?.map((o: any) => (
+                <li key={o.org} className="flex justify-between"><span className="truncate max-w-[70%]" title={o.org}>{o.org}</span><span className="tabular-nums">{o.c}</span></li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      )}
 
       <div className="border rounded-md">
         <Table>
@@ -110,10 +232,10 @@ export default function BesucheranalysenPage() {
           </TableHeader>
           <TableBody>
             {loading && (
-              <TableRow><TableCell colSpan={8}>Lade Daten…</TableCell></TableRow>
+              <TableRow><TableCell colSpan={11}>Lade Daten…</TableCell></TableRow>
             )}
             {!loading && data?.items.length === 0 && (
-              <TableRow><TableCell colSpan={8}>Keine Einträge</TableCell></TableRow>
+              <TableRow><TableCell colSpan={11}>Keine Einträge</TableCell></TableRow>
             )}
             {data?.items.map((ev: any) => (
               <TableRow key={ev.id}>

@@ -10,6 +10,8 @@ export async function GET(req: NextRequest) {
     const offset = (page - 1) * limit;
     const name = searchParams.get("name") || undefined;
     const q = searchParams.get("q") || undefined;
+    const from = searchParams.get("from") || undefined; // ISO date
+    const to = searchParams.get("to") || undefined;     // ISO date
 
     const where: string[] = [];
     const values: any[] = [];
@@ -23,6 +25,14 @@ export async function GET(req: NextRequest) {
       where.push(`(path ILIKE $${idx} OR referrer ILIKE $${idx} OR user_agent ILIKE $${idx} OR CAST(props AS TEXT) ILIKE $${idx})`);
       values.push(`%${q}%`);
       idx++;
+    }
+    if (from) {
+      where.push(`created_at >= $${idx++}`);
+      values.push(new Date(from));
+    }
+    if (to) {
+      where.push(`created_at <= $${idx++}`);
+      values.push(new Date(to));
     }
 
     const whereSql = where.length ? `WHERE ${where.join(" AND ")}` : "";
