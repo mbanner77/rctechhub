@@ -63,9 +63,9 @@ export default function BesucheranalysenPage() {
   const totalPages = useMemo(() => data ? Math.max(1, Math.ceil(data.total / data.limit)) : 1, [data])
 
   // Compact chart sizing
-  const lineHeight = 220
+  const lineHeight = 180
   const barCount = summary?.top_countries?.length ?? 0
-  const barHeight = Math.min(300, Math.max(160, (barCount || 5) * 22))
+  const barHeight = Math.min(220, Math.max(140, (barCount || 5) * 20))
 
   function ccToFlag(cc?: string | null) {
     const code = (cc || '').toUpperCase();
@@ -217,7 +217,7 @@ export default function BesucheranalysenPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="rounded-lg border p-4">
+        <div className="rounded-lg border p-4 max-h-[240px]">
           <div className="mb-2 font-medium">Besuche über Zeit</div>
           {series && series.items.length > 0 ? (
             <ReactChart
@@ -268,7 +268,7 @@ export default function BesucheranalysenPage() {
           )}
         </div>
 
-        <div className="rounded-lg border p-4">
+        <div className="rounded-lg border p-4 max-h-[260px] overflow-hidden">
           <div className="mb-2 font-medium">Top Länder</div>
           {summary?.top_countries?.length ? (
             <ReactChart
