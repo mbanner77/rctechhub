@@ -221,6 +221,20 @@ export default function BesucheranalysenPage() {
         let LCP = 0, CLS = 0, FID = 0, count = 0
         for (const it of items) {
           const p = it.props || {}
+          // Support two shapes:
+          // 1) { metric: 'LCP'|'CLS'|'FID', value: number }
+          // 2) { LCP?: number, CLS?: number, FID?: number }
+          if (p && typeof p.metric === 'string' && p.value != null) {
+            const m = String(p.metric).toUpperCase()
+            const v = Number(p.value)
+            if (Number.isFinite(v)) {
+              if (m === 'LCP') LCP += v
+              if (m === 'CLS') CLS += v
+              if (m === 'FID') FID += v
+              count++
+            }
+            continue
+          }
           const l = Number(p.LCP)
           const c = Number(p.CLS)
           const f = Number(p.FID)
