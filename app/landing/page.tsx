@@ -141,6 +141,17 @@ export default function LandingPage() {
           }
         }, 100)
       }
+
+      // If the hash is #pathfinder, scroll to it as well
+      if (window.location.hash === '#pathfinder') {
+        setTimeout(() => {
+          const el = document.getElementById('pathfinder')
+          if (el) {
+            console.log("[LANDING] Scrolling to pathfinder section")
+            el.scrollIntoView({ behavior: 'smooth' })
+          }
+        }, 100)
+      }
     }
 
     // Set up hash change listener
@@ -443,6 +454,7 @@ export default function LandingPage() {
       <StarterPackages />
 
       {/* Pathfinder Units Section */}
+      <div id="pathfinder" className="sr-only" />
       <PathfinderUnits />
 
       {/* Success Stories */}
