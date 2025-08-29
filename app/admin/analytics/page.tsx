@@ -173,6 +173,76 @@ export default function BesucheranalysenPage() {
     return () => { cancelled = true }
   }, [name, q, from, to])
 
+  // Load dedicated series: page_view, outbound_click, form_submit
+  useEffect(() => {
+    let cancelled = false
+    async function fetchSeriesFor(eventName: string) {
+      try {
+        const params = new URLSearchParams()
+        params.set('name', eventName)
+        if (from) params.set('from', from)
+        if (to) params.set('to', to)
+        const res = await fetch(`/api/analytics/timeseries?${params.toString()}`, { cache: 'no-store' })
+        if (!res.ok) return null
+        return await res.json().catch(() => null)
+      } catch { return null }
+    }
+    ;(async () => {
+      const [pv, oc, fs] = await Promise.all([
+        fetchSeriesFor('page_view'),
+        fetchSeriesFor('outbound_click'),
+        fetchSeriesFor('form_submit'),
+      ])
+      if (!cancelled) {
+        setPvSeries(pv)
+        setOcSeries(oc)
+        setFsSeries(fs)
+      }
+    })()
+    return () => { cancelled = true }
+  }, [from, to])
+
+  // Load Web Vitals averages
+  useEffect(() => {
+    let cancelled = false
+    async function loadWebVitals() {
+      try {
+        const params = new URLSearchParams()
+        params.set('name', 'web_vitals')
+        // fetch a reasonable amount for averaging
+        params.set('limit', '1000')
+        if (from) params.set('from', from)
+        if (to) params.set('to', to)
+        const res = await fetch(`/api/analytics/events?${params.toString()}`, { cache: 'no-store' })
+        if (!res.ok) { if (!cancelled) setWvAvg(null); return }
+        const json = await res.json().catch(() => null)
+        if (!json?.items?.length) { if (!cancelled) setWvAvg(null); return }
+        const items = json.items as Array<{ props: any }>
+        let LCP = 0, CLS = 0, FID = 0, count = 0
+        for (const it of items) {
+          const p = it.props || {}
+          const l = Number(p.LCP)
+          const c = Number(p.CLS)
+          const f = Number(p.FID)
+          if (Number.isFinite(l) || Number.isFinite(c) || Number.isFinite(f)) {
+            if (Number.isFinite(l)) LCP += l
+            if (Number.isFinite(c)) CLS += c
+            if (Number.isFinite(f)) FID += f
+            count++
+          }
+        }
+        if (!cancelled) {
+          if (count > 0) setWvAvg({ LCP: LCP / count || 0, CLS: CLS / count || 0, FID: FID / count || 0, count })
+          else setWvAvg(null)
+        }
+      } catch (e) {
+        if (!cancelled) setWvAvg(null)
+      }
+    }
+    loadWebVitals()
+    return () => { cancelled = true }
+  }, [from, to])
+
   function setPresetDays(days: number) {
     const end = new Date()
     const start = new Date()
