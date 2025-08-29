@@ -1,11 +1,29 @@
 // Lightweight analytics client: send events to our API
+function getClientCtx() {
+  if (typeof window === 'undefined') return {};
+  try {
+    const d = document;
+    const w = window;
+    const ctx: Record<string, any> = {
+      vp_w: w.innerWidth,
+      vp_h: w.innerHeight,
+      lang: (navigator.languages && navigator.languages[0]) || navigator.language,
+      tz: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      title: d.title,
+    };
+    return ctx;
+  } catch {
+    return {};
+  }
+}
+
 async function postEvent(name: string, props?: Record<string, any>) {
   try {
     // fire-and-forget; do not await in callers
     await fetch('/api/analytics/track', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, props }),
+      body: JSON.stringify({ name, props: { ...(props || {}), ...getClientCtx() } }),
       keepalive: true,
     });
   } catch (e) {
@@ -18,6 +36,15 @@ async function postEvent(name: string, props?: Record<string, any>) {
 
 // Analytics helper for tracking user interactions
 export const analytics = {
+  // Page views and sessions
+  pageView: (path: string, extra?: Record<string, any>) => {
+    postEvent('page_view', { path, ...(extra || {}) });
+  },
+
+  firstVisit: () => {
+    postEvent('first_visit');
+  },
+
   // Service interactions
   serviceClick: (serviceName: string, category?: string) => {
     postEvent('service_click', { service: serviceName, ...(category && { category }) });

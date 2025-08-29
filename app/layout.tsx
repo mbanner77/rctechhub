@@ -6,6 +6,7 @@ import type { Metadata } from "next"
 
 import { Providers } from "@/components/providers"
 import { GlobalClickTracker } from "@/components/analytics/global-click-tracker"
+import { RouteTracker } from "@/components/analytics/route-tracker"
 import ClientSideScrollRestorer from '@/components/client-side-scroll-restorer'
 import { aeonik } from './fonts'
 
@@ -28,6 +29,7 @@ export default function RootLayout({
           {children}
         </Providers>
         <GlobalClickTracker />
+        <RouteTracker />
       </body>
       <Suspense>
         <ClientSideScrollRestorer/>
