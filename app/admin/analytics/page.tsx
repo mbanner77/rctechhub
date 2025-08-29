@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 // register Chart.js globally via side-effect module
@@ -22,6 +23,7 @@ ChartJS.register(
   Filler,
 );
 import { Chart as ReactChart } from "react-chartjs-2";
+import { analytics } from "@/lib/analytics";
 
 type AnalyticsEvent = {
   id: number
@@ -59,6 +61,14 @@ export default function BesucheranalysenPage() {
   const [to, setTo] = useState<string>("")
   const [summary, setSummary] = useState<any | null>(null)
   const [series, setSeries] = useState<{ interval: string; items: { ts: string; total: number; unique_sessions: number }[] } | null>(null)
+
+  // Dedicated series for common events
+  const [pvSeries, setPvSeries] = useState<{ items: { ts: string; total: number }[] } | null>(null)
+  const [ocSeries, setOcSeries] = useState<{ items: { ts: string; total: number }[] } | null>(null)
+  const [fsSeries, setFsSeries] = useState<{ items: { ts: string; total: number }[] } | null>(null)
+  // Web Vitals aggregates
+  const [wvAvg, setWvAvg] = useState<{ LCP: number; CLS: number; FID: number; count: number } | null>(null)
+  const [activeTab, setActiveTab] = useState<string>("page_view")
 
   const totalPages = useMemo(() => data ? Math.max(1, Math.ceil(data.total / data.limit)) : 1, [data])
 
@@ -214,6 +224,92 @@ export default function BesucheranalysenPage() {
           <Button variant="outline" onClick={() => setPage(1)}>Neu laden</Button>
           <Button variant="outline" onClick={exportCsv}>CSV Export</Button>
         </div>
+      </div>
+
+      {/* Key Metrics Tabs */}
+      <div className="mb-6">
+        <Tabs value={activeTab} onValueChange={(v) => { setActiveTab(v); analytics.serviceClick('admin-analytics-tab', v) }}>
+          <TabsList>
+            <TabsTrigger value="page_view">Page Views</TabsTrigger>
+            <TabsTrigger value="outbound_click">Outbound Clicks</TabsTrigger>
+            <TabsTrigger value="form_submit">Form Submits</TabsTrigger>
+            <TabsTrigger value="web_vitals">Web Vitals</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="page_view">
+            <div className="rounded-lg border p-4">
+              <div className="mb-2 font-medium">Page Views über Zeit</div>
+              {pvSeries?.items?.length ? (
+                <ReactChart
+                  type="line"
+                  data={{
+                    labels: pvSeries.items.map(i => new Date(i.ts).toLocaleString()),
+                    datasets: [{ label: 'page_view', data: pvSeries.items.map(i => i.total), borderColor: '#3B82F6', backgroundColor: 'rgba(59,130,246,0.2)', fill: true, tension: 0.3 }],
+                  }}
+                  options={{ responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } } }}
+                  height={180}
+                />
+              ) : <div className="text-sm text-muted-foreground">Keine Daten</div>}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="outbound_click">
+            <div className="rounded-lg border p-4">
+              <div className="mb-2 font-medium">Outbound Clicks über Zeit</div>
+              {ocSeries?.items?.length ? (
+                <ReactChart
+                  type="line"
+                  data={{
+                    labels: ocSeries.items.map(i => new Date(i.ts).toLocaleString()),
+                    datasets: [{ label: 'outbound_click', data: ocSeries.items.map(i => i.total), borderColor: '#10B981', backgroundColor: 'rgba(16,185,129,0.2)', fill: true, tension: 0.3 }],
+                  }}
+                  options={{ responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } } }}
+                  height={180}
+                />
+              ) : <div className="text-sm text-muted-foreground">Keine Daten</div>}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="form_submit">
+            <div className="rounded-lg border p-4">
+              <div className="mb-2 font-medium">Form Submits über Zeit</div>
+              {fsSeries?.items?.length ? (
+                <ReactChart
+                  type="line"
+                  data={{
+                    labels: fsSeries.items.map(i => new Date(i.ts).toLocaleString()),
+                    datasets: [{ label: 'form_submit', data: fsSeries.items.map(i => i.total), borderColor: '#F59E0B', backgroundColor: 'rgba(245,158,11,0.2)', fill: true, tension: 0.3 }],
+                  }}
+                  options={{ responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } } }}
+                  height={180}
+                />
+              ) : <div className="text-sm text-muted-foreground">Keine Daten</div>}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="web_vitals">
+            <div className="rounded-lg border p-4">
+              <div className="mb-2 font-medium">Web Vitals (Durchschnitt)</div>
+              {wvAvg ? (
+                <ReactChart
+                  type="bar"
+                  data={{
+                    labels: ['LCP (ms)', 'CLS', 'FID (ms)'],
+                    datasets: [{
+                      label: `Ø basierend auf ${wvAvg.count} Events`,
+                      data: [Math.round(wvAvg.LCP), Number(wvAvg.CLS.toFixed(3)), Math.round(wvAvg.FID)],
+                      backgroundColor: ['#6366F1', '#EF4444', '#06B6D4'],
+                      borderRadius: 6,
+                      maxBarThickness: 40,
+                    }],
+                  }}
+                  options={{ responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } } }}
+                  height={200}
+                />
+              ) : <div className="text-sm text-muted-foreground">Keine Web‑Vitals Daten</div>}
+            </div>
+          </TabsContent>
+        </Tabs>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

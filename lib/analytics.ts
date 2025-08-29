@@ -149,5 +149,10 @@ export const analytics = {
       filter_type: filterType, 
       ...(context && { context }) 
     });
+  },
+
+  // Bulk filters change snapshot
+  filtersChange: (filters: string[]) => {
+    postEvent('filter_change', { filters, count: filters?.length || 0 });
   }
 };

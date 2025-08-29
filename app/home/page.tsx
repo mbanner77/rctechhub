@@ -96,16 +96,6 @@ export default function Home() {
       const t = setTimeout(doScroll, 300)
       return () => clearTimeout(t)
     }
-
-    // BTP-Konfigurator: open dialog and scroll to anchor
-    if (hash === '#btp-konfigurator' || hash === '#btp-konfigurator'.toLowerCase()) {
-      // open dialog shortly after mount to ensure component tree is ready
-      const openT = setTimeout(() => setIsPackageBuilderDialogOpen(true), 50)
-      const doScroll = () => smoothScrollById('BTP-Konfigurator')
-      doScroll()
-      const t = setTimeout(doScroll, 300)
-      return () => { clearTimeout(t); clearTimeout(openT) }
-    }
   }, [])
 
   const handleWorkshopClick = (title: string, duration: string, price: number) => {
@@ -125,6 +115,23 @@ export default function Home() {
     setSelectedBestPractice({ title, category })
     setIsLearnMoreDialogOpen(true)
   }
+
+  // Emit debounced analytics for search and filters
+  useEffect(() => {
+    const t = setTimeout(() => {
+      if ((query || '').trim().length) {
+        analytics.search(query)
+      }
+    }, 400)
+    return () => clearTimeout(t)
+  }, [query])
+
+  useEffect(() => {
+    const t = setTimeout(() => {
+      analytics.filtersChange(activeFilters)
+    }, 300)
+    return () => clearTimeout(t)
+  }, [activeFilters])
 
   // Funktion zum Scrollen zu einem bestimmten Abschnitt
   const scrollToSection = (sectionRef: React.RefObject<HTMLDivElement | null>) => {
@@ -423,27 +430,6 @@ export default function Home() {
             onCategoriesChange={setAvailableCategories}
           />
 
-          {/* Easy-Starting Package / BTP-Konfigurator Anchor */}
-          <div id="BTP-Konfigurator" className="mt-20 mb-16">
-            <div className="max-w-4xl mx-auto text-center mb-6">
-              <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-3">
-                Unser Easy-Starting Package für erste Schritte in der BTP
-              </h2>
-              <p className="text-lg text-gray-600">
-                Stellen Sie Ihr Paket in wenigen Klicks zusammen – maßgeschneidert für Ihren Einstieg in die SAP BTP.
-              </p>
-            </div>
-            <div className="flex justify-center">
-              <Button
-                data-analytics-id="btp-konfigurator-start"
-                size="lg"
-                className="bg-green-600 hover:bg-green-700 text-white"
-                onClick={() => setIsPackageBuilderDialogOpen(true)}
-              >
-                BTP‑Konfigurator starten
-              </Button>
-            </div>
-          </div>
 
           <div id="assessment" className="mt-20 mb-16">
             <div className="max-w-4xl mx-auto text-center mb-12">
