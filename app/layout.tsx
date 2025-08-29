@@ -29,7 +29,9 @@ export default function RootLayout({
           {children}
         </Providers>
         <GlobalClickTracker />
-        <RouteTracker />
+        <Suspense fallback={null}>
+          <RouteTracker />
+        </Suspense>
       </body>
       <Suspense>
         <ClientSideScrollRestorer/>
