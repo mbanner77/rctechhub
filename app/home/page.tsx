@@ -461,7 +461,7 @@ export default function Home() {
             </div>
 
             <DynamicWorkshopGrid />
-            <div id="btp-konfigurator" className="mt-8">
+            <div id="btp-konfigurator" className="mt-16">
               <ConsultingPhasesDisplay />
             </div>
           </div>
