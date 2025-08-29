@@ -96,6 +96,14 @@ export default function Home() {
       const t = setTimeout(doScroll, 300)
       return () => clearTimeout(t)
     }
+
+    // Consulting Phases anchor (btp-konfigurator)
+    if (hash === '#btp-konfigurator') {
+      const doScroll = () => smoothScrollById('btp-konfigurator')
+      doScroll()
+      const t = setTimeout(doScroll, 300)
+      return () => clearTimeout(t)
+    }
   }, [])
 
   const handleWorkshopClick = (title: string, duration: string, price: number) => {
@@ -453,7 +461,7 @@ export default function Home() {
             </div>
 
             <DynamicWorkshopGrid />
-            <div className="mt-8">
+            <div id="btp-konfigurator" className="mt-8">
               <ConsultingPhasesDisplay />
             </div>
           </div>
