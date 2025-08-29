@@ -17,7 +17,19 @@ function getClientCtx() {
   }
 }
 
+function canTrack() {
+  if (typeof window === 'undefined') return true; // allow on server-side API
+  try {
+    const dnt = (navigator as any).doNotTrack === '1' || (window as any).doNotTrack === '1';
+    const optOut = localStorage.getItem('rc_analytics_opt_out') === '1';
+    return !dnt && !optOut;
+  } catch {
+    return true;
+  }
+}
+
 async function postEvent(name: string, props?: Record<string, any>) {
+  if (!canTrack()) return;
   try {
     // fire-and-forget; do not await in callers
     await fetch('/api/analytics/track', {
@@ -36,6 +48,11 @@ async function postEvent(name: string, props?: Record<string, any>) {
 
 // Analytics helper for tracking user interactions
 export const analytics = {
+  // Consent controls
+  optOut: () => { try { localStorage.setItem('rc_analytics_opt_out', '1'); } catch {} },
+  optIn: () => { try { localStorage.removeItem('rc_analytics_opt_out'); } catch {} },
+  isOptedOut: (): boolean => { try { return localStorage.getItem('rc_analytics_opt_out') === '1'; } catch { return false } },
+
   // Page views and sessions
   pageView: (path: string, extra?: Record<string, any>) => {
     postEvent('page_view', { path, ...(extra || {}) });
@@ -43,6 +60,27 @@ export const analytics = {
 
   firstVisit: () => {
     postEvent('first_visit');
+  },
+
+  // Engagement
+  scrollDepth: (percent: number) => {
+    postEvent('scroll_depth', { percent: Math.max(0, Math.min(100, Math.round(percent))) });
+  },
+  heartbeat: (msActive: number) => {
+    postEvent('heartbeat', { ms_active: Math.max(0, Math.round(msActive)) });
+  },
+  pageLeave: (msTotal: number) => {
+    postEvent('page_leave', { ms_total: Math.max(0, Math.round(msTotal)) });
+  },
+
+  // Web vitals (LCP, CLS, FID)
+  webVitals: (metric: { name: string; value: number; id?: string }) => {
+    postEvent('web_vitals', { metric: metric.name, value: metric.value, id: metric.id });
+  },
+
+  // Forms
+  formSubmit: (id: string, status: 'success' | 'error', extra?: Record<string, any>) => {
+    postEvent('form_submit', { id, status, ...(extra || {}) });
   },
 
   // Service interactions
