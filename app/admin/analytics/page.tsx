@@ -307,7 +307,7 @@ export default function BesucheranalysenPage() {
           </TabsList>
 
           <TabsContent value="page_view">
-            <div className="rounded-lg border p-4">
+            <div className="rounded-lg border p-4 max-h-[220px] overflow-hidden">
               <div className="mb-2 font-medium">Page Views über Zeit</div>
               {pvSeries?.items?.length ? (
                 <ReactChart
@@ -316,15 +316,15 @@ export default function BesucheranalysenPage() {
                     labels: pvSeries.items.map(i => new Date(i.ts).toLocaleString()),
                     datasets: [{ label: 'page_view', data: pvSeries.items.map(i => i.total), borderColor: '#3B82F6', backgroundColor: 'rgba(59,130,246,0.2)', fill: true, tension: 0.3 }],
                   }}
-                  options={{ responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } } }}
-                  height={180}
+                  options={{ responsive: true, maintainAspectRatio: false, layout: { padding: 6 }, scales: { y: { beginAtZero: true } } }}
+                  height={160}
                 />
               ) : <div className="text-sm text-muted-foreground">Keine Daten</div>}
             </div>
           </TabsContent>
 
           <TabsContent value="outbound_click">
-            <div className="rounded-lg border p-4">
+            <div className="rounded-lg border p-4 max-h-[220px] overflow-hidden">
               <div className="mb-2 font-medium">Outbound Clicks über Zeit</div>
               {ocSeries?.items?.length ? (
                 <ReactChart
@@ -333,15 +333,15 @@ export default function BesucheranalysenPage() {
                     labels: ocSeries.items.map(i => new Date(i.ts).toLocaleString()),
                     datasets: [{ label: 'outbound_click', data: ocSeries.items.map(i => i.total), borderColor: '#10B981', backgroundColor: 'rgba(16,185,129,0.2)', fill: true, tension: 0.3 }],
                   }}
-                  options={{ responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } } }}
-                  height={180}
+                  options={{ responsive: true, maintainAspectRatio: false, layout: { padding: 6 }, scales: { y: { beginAtZero: true } } }}
+                  height={160}
                 />
               ) : <div className="text-sm text-muted-foreground">Keine Daten</div>}
             </div>
           </TabsContent>
 
           <TabsContent value="form_submit">
-            <div className="rounded-lg border p-4">
+            <div className="rounded-lg border p-4 max-h-[220px] overflow-hidden">
               <div className="mb-2 font-medium">Form Submits über Zeit</div>
               {fsSeries?.items?.length ? (
                 <ReactChart
@@ -350,15 +350,15 @@ export default function BesucheranalysenPage() {
                     labels: fsSeries.items.map(i => new Date(i.ts).toLocaleString()),
                     datasets: [{ label: 'form_submit', data: fsSeries.items.map(i => i.total), borderColor: '#F59E0B', backgroundColor: 'rgba(245,158,11,0.2)', fill: true, tension: 0.3 }],
                   }}
-                  options={{ responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } } }}
-                  height={180}
+                  options={{ responsive: true, maintainAspectRatio: false, layout: { padding: 6 }, scales: { y: { beginAtZero: true } } }}
+                  height={160}
                 />
               ) : <div className="text-sm text-muted-foreground">Keine Daten</div>}
             </div>
           </TabsContent>
 
           <TabsContent value="web_vitals">
-            <div className="rounded-lg border p-4">
+            <div className="rounded-lg border p-4 max-h-[240px] overflow-hidden">
               <div className="mb-2 font-medium">Web Vitals (Durchschnitt)</div>
               {wvAvg ? (
                 <ReactChart
@@ -373,8 +373,8 @@ export default function BesucheranalysenPage() {
                       maxBarThickness: 40,
                     }],
                   }}
-                  options={{ responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } } }}
-                  height={200}
+                  options={{ responsive: true, maintainAspectRatio: false, layout: { padding: 6 }, scales: { y: { beginAtZero: true } } }}
+                  height={170}
                 />
               ) : <div className="text-sm text-muted-foreground">Keine Web‑Vitals Daten</div>}
             </div>
