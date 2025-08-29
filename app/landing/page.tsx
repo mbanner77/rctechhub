@@ -125,47 +125,41 @@ export default function LandingPage() {
     }
   }
 
-  // Debug function for tracking hash changes and scroll events
+  // Hash-based smooth scrolling with retries for dynamically mounted sections
   useEffect(() => {
-    // Track hash changes
-    const handleHashChange = () => {
-      console.log("[LANDING] Hash changed:", window.location.hash)
-      
-      // If the hash is #contact, make sure we scroll to it properly
-      if (window.location.hash === '#contact') {
-        setTimeout(() => {
-          const contactElement = document.getElementById('contact')
-          if (contactElement) {
-            console.log("[LANDING] Scrolling to contact section")
-            contactElement.scrollIntoView({ behavior: 'smooth' })
-          }
-        }, 100)
-      }
-
-      // If the hash is #pathfinder, scroll to it as well
-      if (window.location.hash === '#pathfinder') {
-        setTimeout(() => {
-          const el = document.getElementById('pathfinder')
-          if (el) {
-            console.log("[LANDING] Scrolling to pathfinder section")
-            el.scrollIntoView({ behavior: 'smooth' })
-          }
-        }, 100)
-      }
+    const scrollWithOffset = (el: HTMLElement) => {
+      const header = document.querySelector('header') as HTMLElement | null
+      const headerH = header?.offsetHeight ?? 88
+      const y = el.getBoundingClientRect().top + window.scrollY - (headerH + 8)
+      window.scrollTo({ top: y, behavior: 'smooth' })
     }
 
-    // Set up hash change listener
+    const scrollToId = (id: string) => {
+      const attempts = [0, 150, 400, 800]
+      attempts.forEach((delay) => {
+        setTimeout(() => {
+          const el = document.getElementById(id)
+          if (el) {
+            console.log(`[LANDING] Scrolling to #${id} (delay ${delay}ms)`) 
+            scrollWithOffset(el)
+          }
+        }, delay)
+      })
+    }
+
+    const handleHashChange = () => {
+      const hash = window.location.hash
+      console.log("[LANDING] Hash changed:", hash)
+      if (hash === '#contact') scrollToId('contact')
+      if (hash === '#pathfinder') scrollToId('pathfinder')
+    }
+
     window.addEventListener('hashchange', handleHashChange)
-    
-    // Check hash on initial load
     if (window.location.hash) {
       console.log("[LANDING] Initial hash:", window.location.hash)
       handleHashChange()
     }
-
-    return () => {
-      window.removeEventListener('hashchange', handleHashChange)
-    }
+    return () => window.removeEventListener('hashchange', handleHashChange)
   }, [])
 
   const loadLandingPage = useCallback(async () => {
@@ -454,7 +448,6 @@ export default function LandingPage() {
       <StarterPackages />
 
       {/* Pathfinder Units Section */}
-      <div id="pathfinder" className="sr-only" />
       <PathfinderUnits />
 
       {/* Success Stories */}
