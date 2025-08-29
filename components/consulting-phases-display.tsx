@@ -150,8 +150,12 @@ export default function ConsultingPhasesDisplay() {
   return (
     <div className="space-y-10">
       <div className="max-w-3xl mx-auto text-center">
-        <h2 className="text-3xl font-bold mb-3">Unser Easy-Starting Package für erste Schritte in der BTP</h2>
-        <p className="text-muted-foreground mb-6">Mit unserem modularen Starterbaukasten können Sie schnell erste Erfahrungen und schnelle Erfolge in der BTP generieren. Sie können erste Apps und Schnittstellen unter unserer Anleitung erstellen. Wir sorgen für den Know-How Transfer und richten gemeinsam mit Ihnen Ihre Systemlandschaft produktionsfähig ein, so dass Sie danach direkt mit Ihren weiteren Projekten starten können. Risikiofrei, Unkompliziert, Festpreise</p>
+        <h2 className="text-3xl font-bold mb-3">{data.introTitle || "Beratungsbaukasten"}</h2>
+        {data.introText ? (
+          <div className="text-muted-foreground mb-6" dangerouslySetInnerHTML={{ __html: data.introText }} />
+        ) : (
+          <p className="text-muted-foreground mb-6">Stellen Sie Ihr individuelles Angebot aus unseren Phasen zusammen.</p>
+        )}
         {data.ctaText && (
           <Button variant="default" onClick={() => setCtaOpen(true)}>{data.ctaText}</Button>
         )}
