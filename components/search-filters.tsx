@@ -57,9 +57,10 @@ export default function SearchFilters({
 
 
   const handleSearchInputChange = (value: string) => {
-    const sanitized = value.replace(/[^\w\säöüßÄÖÜ]/gi, "")
-    setTypedValue(sanitized)
-    // onSearchQueryChange?.(sanitized) I dont want to call it every time to prevent lags
+    // Allow common special characters (e.g., '/', '-', '+', '.') and keep user intent.
+    // We only trim excessive whitespace later during matching.
+    setTypedValue(value)
+    // onSearchQueryChange?.(value) // debounced below to avoid UI lags
   }
 
   const addFilter = (filter: string) => {

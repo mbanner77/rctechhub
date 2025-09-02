@@ -183,6 +183,14 @@ export default function DynamicServiceGrid({
   };
 
   const normalizedQuery = searchQuery.trim().toLowerCase()
+  // Canonicalize strings for robust matching across separators and diacritics
+  const canonicalize = (s: string): string =>
+    (s || "")
+      .toLowerCase()
+      .normalize('NFKD')
+      // remove all non-letters/digits (unicode aware), e.g., '/', spaces
+      .replace(/[^\p{L}\p{N}]+/gu, '')
+      .trim()
  
   // Ensure search matches visible text by stripping HTML from rich descriptions
   const stripHtml = (html: string): string => {
@@ -224,10 +232,20 @@ export default function DynamicServiceGrid({
     }
     // User is searching for something special
     if (normalizedQuery) {
-      const title = service.title?.toLowerCase() || ""
-      const descriptionText = stripHtml(service.description || "").toLowerCase()
+      const titleRaw = service.title || ""
+      const descRaw = stripHtml(service.description || "")
 
-      const matchesSearch = title.includes(normalizedQuery) || descriptionText.includes(normalizedQuery)
+      const title = titleRaw.toLowerCase()
+      const descriptionText = descRaw.toLowerCase()
+
+      const queryCanon = canonicalize(normalizedQuery)
+      const titleCanon = canonicalize(titleRaw)
+      const descCanon = canonicalize(descRaw)
+
+      const matchesSearch =
+        title.includes(normalizedQuery) ||
+        descriptionText.includes(normalizedQuery) ||
+        (queryCanon.length > 0 && (titleCanon.includes(queryCanon) || descCanon.includes(queryCanon)))
 
       if (!matchesSearch) {
         return false
