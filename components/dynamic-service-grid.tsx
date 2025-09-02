@@ -183,6 +183,18 @@ export default function DynamicServiceGrid({
   };
 
   const normalizedQuery = searchQuery.trim().toLowerCase()
+ 
+  // Ensure search matches visible text by stripping HTML from rich descriptions
+  const stripHtml = (html: string): string => {
+    if (!html) return ""
+    // Fallback for SSR: remove tags with regex
+    if (typeof window === "undefined") {
+      return html.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim()
+    }
+    const div = document.createElement("div")
+    div.innerHTML = html
+    return (div.textContent || div.innerText || "").replace(/\s+/g, " ").trim()
+  }
 
   const filteredServices = services.filter((service) => {
     // console.log("Filter: ", filters);
@@ -213,9 +225,9 @@ export default function DynamicServiceGrid({
     // User is searching for something special
     if (normalizedQuery) {
       const title = service.title?.toLowerCase() || ""
-      const description = service.description?.toLowerCase() || ""
+      const descriptionText = stripHtml(service.description || "").toLowerCase()
 
-      const matchesSearch = title.includes(normalizedQuery) || description.includes(normalizedQuery)
+      const matchesSearch = title.includes(normalizedQuery) || descriptionText.includes(normalizedQuery)
 
       if (!matchesSearch) {
         return false
