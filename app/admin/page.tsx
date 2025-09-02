@@ -24,6 +24,7 @@ import {
   Library,
   Briefcase,
   LayoutDashboard,
+  Database,
 } from "lucide-react";
 
 // Metadata is moved to layout.tsx since this is a client component
@@ -167,6 +168,14 @@ export default function AdminPage() {
                 <Button className="w-full" variant="outline">
                   <Settings className="mr-2 h-4 w-4" />
                   Besucheranalysen
+                </Button>
+              </Link>
+            </div>
+            <div>
+              <Link href="/admin/postgres">
+                <Button className="w-full" variant="outline">
+                  <Database className="mr-2 h-4 w-4" />
+                  PostgreSQL Verwaltung
                 </Button>
               </Link>
             </div>
