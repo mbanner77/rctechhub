@@ -2,9 +2,8 @@ import { UnitCard, Advantage, Challenge } from "@/types/unit-cards";
 
 export async function getUnitCards(): Promise<UnitCard[]> {
   try {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || ''}/api/data/unit-cards`, { 
-      cache: 'no-store',
-      next: { revalidate: 60 } // Revalidate every 60 seconds
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || ''}/api/data/unit-cards`, {
+      cache: 'no-store'
     });
     
     if (!res.ok) {
@@ -58,9 +57,21 @@ export function mapUnitCardToPathfinderUnit(unitCard: UnitCard) {
     }
   };
 
-  // Get color scheme based on category, default to blue if not found
-  const scheme = colorSchemes[unitCard.category as keyof typeof colorSchemes] || 
-    colorSchemes['core-systems'];
+  // Normalize API/category display names to UI slug IDs used by filters
+  const normalizeCategory = (raw?: string, fallbackTitle?: string) => {
+    const v = (raw || fallbackTitle || "").toLowerCase();
+    if (v.includes("digital core")) return "core-systems";
+    if (v.includes("integration")) return "integration"; // Adaptive Integration
+    if (v.includes("data-driven") || v.includes("analytics")) return "data-analytics";
+    if (v.includes("platform elevation") || v.includes("cloud")) return "cloud-platform";
+    if (v.includes("business simplified") || v.includes("xaas") || v.includes("transformation")) return "transformation";
+    // Default
+    return "core-systems";
+  };
+
+  // Get color scheme based on normalized category
+  const normalizedCategory = normalizeCategory(unitCard.category, unitCard.title);
+  const scheme = colorSchemes[normalizedCategory as keyof typeof colorSchemes] || colorSchemes['core-systems'];
 
   // Store the original numeric ID
   const originalId = unitCard.id;
@@ -161,7 +172,7 @@ export function mapUnitCardToPathfinderUnit(unitCard: UnitCard) {
     approach: unitCard.approach || [],
     expertiseAreas: expertiseAreas,
     keyTechnologies: keyTechnologies,
-    category: unitCard.category,
+    category: normalizedCategory,
     // Map expert and contact person settings
     expertIds: unitCard.expertIds || [],
     contactPersonIds: (unitCard as any).contactPersonIds || [],
