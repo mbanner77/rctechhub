@@ -2,6 +2,7 @@
 
 import type { Metadata } from "next";
 import Link from "next/link";
+import Image from "next/image";
 import {
   Card,
   CardHeader,
@@ -10,8 +11,6 @@ import {
   CardContent,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
-import { Info } from "lucide-react";
 import {
   Users,
   Mail,
@@ -33,7 +32,10 @@ export default function AdminPage() {
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold">Admin Dashboard</h1>
+        <div className="flex items-center gap-3">
+          <Image src="/images/realcore-logo.png" alt="Logo" width={36} height={36} priority />
+          <h1 className="text-3xl font-bold">Admin Dashboard</h1>
+        </div>
         <Button 
           variant="outline" 
           onClick={() => {
@@ -46,14 +48,6 @@ export default function AdminPage() {
           Abmelden
         </Button>
       </div>
-      
-      <Alert className="mb-6 border-amber-200 bg-amber-50 text-amber-800">
-        <Info className="h-4 w-4" />
-        <AlertDescription>
-          Info: Die Speicherung von Texten kann bis zu 60 Sekunden dauern! Begründung ist, dass zur Zeit keine
-          Datenbank, sondern ein Blob Storage verwendet wird. Das wird sich in Zukunft (bei Priorität) ändern.
-        </AlertDescription>
-      </Alert>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Inhalte verwalten */}
