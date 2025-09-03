@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
 import { Card, CardContent, CardFooter } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Eye, FileText, Search } from "lucide-react"
+import { Eye, FileText, Search, Euro, Clock, Calendar, Users } from "lucide-react"
 import Link from "next/link"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
@@ -564,13 +564,14 @@ export default function KnowledgeHubGallery() {
       {/* Detail Dialog */}
       {selectedItem && (
         <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto p-0">
-            <div className="sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
-              <div className="flex items-center justify-between p-4">
+          <DialogContent className="md:max-w-5xl w-[95vw] max-h-[90vh] overflow-y-auto rounded-2xl p-0 border shadow-2xl">
+            {/* Sticky Header */}
+            <div className="sticky top-0 z-10 bg-background/85 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
+              <div className="flex items-center justify-between px-5 py-3">
                 <div>
-                  <DialogTitle>{selectedItem.title}</DialogTitle>
+                  <DialogTitle className="text-xl font-semibold tracking-tight">{selectedItem.title}</DialogTitle>
                   {selectedItem.type !== 'schulung' && (
-                    <DialogDescription>{selectedItem.description}</DialogDescription>
+                    <DialogDescription className="text-muted-foreground">{selectedItem.description}</DialogDescription>
                   )}
                 </div>
                 {selectedItem.type === 'schulung' && (
@@ -581,69 +582,82 @@ export default function KnowledgeHubGallery() {
               </div>
             </div>
 
-            <div className="mt-4">
-              <div className={selectedItem.image ? "relative h-64 mb-6 bg-gray-100 overflow-hidden rounded-md" : "hidden"}>
-                <img
-                  src={selectedItem.image}
-                  alt={selectedItem.title}
-                  className="w-full h-full object-cover"
-                />
+            {/* Hero for Schulungen */}
+            {selectedItem.type === 'schulung' && selectedItem.image && (
+              <div className="relative h-64 md:h-72 bg-gray-100 overflow-hidden rounded-none">
+                <img src={selectedItem.image} alt={selectedItem.title} className="w-full h-full object-cover" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
+                <div className="absolute bottom-4 left-4 right-4 text-white flex flex-wrap items-end justify-between gap-3">
+                  <div className="inline-flex items-center rounded-full bg-white/15 px-2 py-0.5 text-[11px] font-medium backdrop-blur">
+                    {selectedItem.category}
+                  </div>
+                  <div className="inline-flex items-center rounded-full bg-white/90 px-3 py-1 text-sm font-medium text-gray-900">
+                    <Euro className="h-4 w-4 mr-1" />
+                    {typeof selectedItem.price === 'number' && selectedItem.price > 0
+                      ? new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(selectedItem.price)
+                      : 'Kostenlos'}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div className="p-5 space-y-6">
+              {/* Tags or Kurzinfo */}
+              <div>
+                <h3 className="text-base font-semibold mb-2">{selectedItem.type === 'schulung' ? 'Kursinformationen' : 'Tags'}</h3>
+                <div className="flex flex-wrap gap-2">
+                  {(selectedItem.tags || []).map((tag: string) => (
+                    <Link key={tag} href={`/home?tag=${encodeURIComponent(tag)}#hackathon`}>
+                      <Badge variant="secondary" className="cursor-pointer hover:bg-secondary/80">
+                        {tag}
+                      </Badge>
+                    </Link>
+                  ))}
+                </div>
               </div>
 
-              <div className="space-y-6">
-                <div>
-                  <h3 className="text-lg font-semibold mb-2">{selectedItem.type === 'schulung' ? 'Kursinformationen' : 'Tags'}</h3>
-                  <div className="flex flex-wrap gap-2">
-                    {(selectedItem.tags || []).map((tag: string) => (
-                      <Link key={tag} href={`/home?tag=${encodeURIComponent(tag)}#hackathon`}>
-                        <Badge variant="secondary" className="cursor-pointer hover:bg-secondary/80">
-                          {tag}
-                        </Badge>
-                      </Link>
-                    ))}
-                  </div>
-                </div>
+              {/* Beschreibung */}
+              <div>
+                <h3 className="text-base font-semibold mb-2">Beschreibung</h3>
+                {selectedItem.type === 'schulung' ? (
+                  <div className="prose prose-sm max-w-none text-gray-700 leading-relaxed" dangerouslySetInnerHTML={{ __html: selectedItem.description || '' }} />
+                ) : (
+                  <p className="text-gray-700 leading-relaxed">{selectedItem.description}</p>
+                )}
+              </div>
 
-                <div>
-                  <h3 className="text-lg font-semibold mb-2">Beschreibung</h3>
-                  {selectedItem.type === 'schulung' ? (
-                    <div
-                      className="prose prose-sm max-w-none text-gray-700 leading-relaxed"
-                      dangerouslySetInnerHTML={{ __html: selectedItem.description || '' }}
-                    />
-                  ) : (
-                    <p className="text-gray-700 leading-relaxed">{selectedItem.description}</p>
-                  )}
-                </div>
-                {selectedItem.type === 'schulung' && selectedItem.scope && (
-                  <div className="pt-4 border-t">
-                    <h3 className="text-lg font-semibold mb-2">Leistungsumfang</h3>
-                    <div
-                      className="prose prose-sm max-w-none text-gray-700 leading-relaxed"
-                      dangerouslySetInnerHTML={{ __html: selectedItem.scope }}
-                    />
-                  </div>
-                )}
-                {selectedItem.type === 'schulung' && selectedItem.procedure && (
-                  <div className="pt-4 border-t">
-                    <h3 className="text-lg font-semibold mb-2">Ablauf</h3>
-                    <div
-                      className="prose prose-sm max-w-none text-gray-700 leading-relaxed"
-                      dangerouslySetInnerHTML={{ __html: selectedItem.procedure }}
-                    />
-                  </div>
-                )}
-                {/* Structured details for Schulungen */}
-                {selectedItem.type === 'schulung' && (
-                  <div className="pt-4 border-t">
-                    <h3 className="text-lg font-semibold mb-2">Details</h3>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div className="flex justify-between">
-                        <span className="text-gray-500">Kategorie:</span>
-                        <span className="font-medium">{selectedItem.category}</span>
+              {/* Details for Schulungen */}
+              {selectedItem.type === 'schulung' && (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div className="md:col-span-2 space-y-6">
+                    {/* Umfang */}
+                    {selectedItem.scope && (
+                      <div className="pt-4 border rounded-md p-4">
+                        <h3 className="text-base font-semibold mb-2">Leistungsumfang</h3>
+                        <div className="prose prose-sm max-w-none text-gray-700 leading-relaxed" dangerouslySetInnerHTML={{ __html: selectedItem.scope }} />
                       </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-500">Dauer:</span>
+                    )}
+                    {/* Ablauf */}
+                    {selectedItem.procedure && (
+                      <div className="pt-4 border rounded-md p-4">
+                        <h3 className="text-base font-semibold mb-2">Ablauf</h3>
+                        <div className="prose prose-sm max-w-none text-gray-700 leading-relaxed" dangerouslySetInnerHTML={{ __html: selectedItem.procedure }} />
+                      </div>
+                    )}
+                  </div>
+                  {/* Sticky Summary Card */}
+                  <div className="md:col-span-1">
+                    <div className="sticky top-16 border rounded-lg p-4 shadow-sm space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-gray-600">Preis</span>
+                        <span className="font-semibold">
+                          {typeof selectedItem.price === 'number' && selectedItem.price > 0
+                            ? new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(selectedItem.price)
+                            : 'Kostenlos'}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-gray-600 inline-flex items-center"><Clock className="h-4 w-4 mr-1" />Dauer</span>
                         <span className="font-medium">
                           {typeof selectedItem.days === 'number' && selectedItem.days > 0
                             ? `${selectedItem.days} ${selectedItem.days === 1 ? 'Tag' : 'Tage'}`
@@ -652,40 +666,26 @@ export default function KnowledgeHubGallery() {
                                 : (selectedItem.duration || ''))}
                         </span>
                       </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-500">Preis:</span>
-                        <span className="font-medium">
-                          {typeof selectedItem.price === 'number' && selectedItem.price > 0
-                            ? new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(selectedItem.price)
-                            : 'Kostenlos'}
-                        </span>
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-gray-600 inline-flex items-center"><Users className="h-4 w-4 mr-1" />Teilnehmer</span>
+                        <span className="font-medium">{selectedItem.participants || '—'}</span>
                       </div>
+                      <Button className="w-full mt-2" onClick={() => handleContact(selectedItem)}>Anfragen</Button>
                     </div>
                   </div>
-                )}
-                <div className={((selectedItem.pdfDocument?.fileUrl && selectedItem.pdfDocument.fileUrl.trim()) || (selectedItem.downloadUrl && selectedItem.downloadUrl.trim())) ? "" : "hidden"}>
-                  <div className="flex justify-between items-center gap-4 pt-4">
-                    <div className="flex items-center text-gray-500">
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="h-4 w-4 mr-1"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"
-                        />
-                      </svg>
-                      <span>{selectedItem.downloads || 0} Downloads</span>
-                    </div>
-                    <Button onClick={() => handleContact(selectedItem)}>
-                      Anfragen
-                    </Button>
+                </div>
+              )}
+
+              {/* Downloads/CTA Row */}
+              <div className={((selectedItem.pdfDocument?.fileUrl && selectedItem.pdfDocument.fileUrl.trim()) || (selectedItem.downloadUrl && selectedItem.downloadUrl.trim())) ? "" : "hidden"}>
+                <div className="flex justify-between items-center gap-4 pt-2">
+                  <div className="flex items-center text-gray-500">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
+                    </svg>
+                    <span>{selectedItem.downloads || 0} Downloads</span>
                   </div>
+                  <Button onClick={() => handleContact(selectedItem)}>Anfragen</Button>
                 </div>
               </div>
             </div>

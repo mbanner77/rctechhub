@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardFooter } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Calendar, Clock, Euro, Users, Download, Search, ChevronLeft, CheckCircle2 } from "lucide-react"
+import { Calendar, Clock, Euro, Users, Download, Search, ChevronLeft, CheckCircle2, Star, ArrowRight } from "lucide-react"
 import { Textarea } from "@/components/ui/textarea"
 import Image from "next/image"
 
@@ -176,7 +176,7 @@ export default function TrainingCatalogDialog({ isOpen, onClose }: TrainingCatal
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto rounded-xl shadow-2xl p-0 border">
+      <DialogContent className="md:max-w-6xl w-[95vw] max-h-[90vh] overflow-y-auto rounded-2xl shadow-2xl p-0 border bg-white">
         {!selectedCourse ? (
           <>
             <DialogHeader>
@@ -205,7 +205,7 @@ export default function TrainingCatalogDialog({ isOpen, onClose }: TrainingCatal
               </div>
 
               <Tabs defaultValue="all">
-                <TabsList className="mb-4 w-full overflow-x-auto">
+                <TabsList className="mb-4 w-full overflow-x-auto bg-muted/40 rounded-lg p-1">
                   <TabsTrigger value="all">Alle Kurse</TabsTrigger>
                   <TabsTrigger value="grundlagen">Grundlagen</TabsTrigger>
                   <TabsTrigger value="entwicklung">Entwicklung</TabsTrigger>
@@ -213,40 +213,40 @@ export default function TrainingCatalogDialog({ isOpen, onClose }: TrainingCatal
                 </TabsList>
 
                 <TabsContent value="all">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                     {filteredCourses.map((course) => (
                       <Card
                         key={course.id}
-                        className={`overflow-hidden transition-shadow hover:shadow-lg ${course.featured ? "border-amber-400 border-2" : ""}`}
+                        className={`group overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-0.5 border ${course.featured ? "border-amber-300" : "border-gray-200"}`}
                       >
-                        <div className="relative h-40 bg-gray-200">
+                        <div className="relative h-44 bg-gray-100">
                           {course.featured && (
-                            <div className="absolute left-3 top-3 z-10 inline-flex items-center gap-1 rounded-full bg-amber-500/90 px-2 py-1 text-xs font-medium text-white shadow-sm">
-                              <CheckCircle2 className="h-3.5 w-3.5" /> Empfohlen
+                            <div className="absolute left-3 top-3 z-10 inline-flex items-center gap-1 rounded-full bg-amber-500/95 px-2.5 py-1 text-xs font-medium text-white shadow-sm">
+                              <Star className="h-3.5 w-3.5" /> Empfohlen
                             </div>
                           )}
                           <Image
                             src={course.image || "/placeholder.svg"}
                             alt={course.title}
                             fill
-                            className="object-cover transition-transform hover:scale-105"
+                            className="object-cover transition-transform duration-300 group-hover:scale-[1.03]"
                           />
-                          <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/30 via-black/0 to-transparent" />
+                          <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/40 via-black/0 to-transparent" />
                         </div>
-                        <CardContent className="p-4">
+                        <CardContent className="p-5">
                           <div className="flex justify-between items-start mb-2">
-                            <h3 className="text-lg font-semibold tracking-tight">{course.title}</h3>
-                            <div className="inline-flex items-center rounded-full bg-gray-50 px-2 py-0.5 text-xs font-medium text-gray-700">
+                            <h3 className="text-lg font-semibold tracking-tight leading-snug">{course.title}</h3>
+                            <div className="inline-flex items-center rounded-full bg-gray-50 px-2.5 py-0.5 text-xs font-medium text-gray-700 ring-1 ring-gray-200">
                               <Euro className="h-3.5 w-3.5 mr-1" />
                               {course.price === 0 ? "Kostenlos" : `${course.price} €`}
                             </div>
                           </div>
 
                           <div className="flex items-center mb-2">
-                            <Badge variant="outline" className="bg-green-50 mr-2">
+                            <Badge variant="outline" className="bg-green-50 mr-2 border-green-200 text-green-800">
                               {course.type}
                             </Badge>
-                            <Badge variant="outline" className="bg-blue-50">
+                            <Badge variant="outline" className="bg-blue-50 border-blue-200 text-blue-800">
                               {course.level}
                             </Badge>
                           </div>
@@ -269,9 +269,9 @@ export default function TrainingCatalogDialog({ isOpen, onClose }: TrainingCatal
                             <div />
                           </div>
                         </CardContent>
-                        <CardFooter className="p-4 pt-0 flex justify-between">
-                          <Button size="sm" variant="outline" onClick={() => showCourseDetails(course)}>
-                            Details
+                        <CardFooter className="px-5 pb-5 pt-0 flex justify-between">
+                          <Button size="sm" variant="outline" className="gap-1" onClick={() => showCourseDetails(course)}>
+                            Details <ArrowRight className="h-3.5 w-3.5" />
                           </Button>
                           <Button
                             size="sm"
@@ -323,7 +323,7 @@ export default function TrainingCatalogDialog({ isOpen, onClose }: TrainingCatal
           </>
         ) : (
           <div>
-            <div className="flex justify-between items-center gap-2 mb-4 sticky top-0 bg-white/70 backdrop-blur supports-[backdrop-filter]:bg-white/60 py-2 z-10">
+            <div className="flex justify-between items-center gap-2 mb-4 sticky top-0 bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/60 py-3 px-1 z-10 border-b">
               <Button variant="ghost" size="sm" onClick={closeCourseDetails} className="inline-flex items-center gap-1">
                 <ChevronLeft className="h-4 w-4" /> Zurück zur Übersicht
               </Button>
@@ -336,73 +336,102 @@ export default function TrainingCatalogDialog({ isOpen, onClose }: TrainingCatal
 
             {!isRegistering && !registrationSuccess ? (
               <div>
-                <div className="relative h-56 mb-6 bg-gray-200 overflow-hidden rounded-lg">
+                <div className="relative h-72 mb-8 bg-gray-200 overflow-hidden rounded-xl">
                   <Image
                     src={selectedCourse.image || "/placeholder.svg"}
                     alt={selectedCourse.title}
                     fill
                     className="object-cover scale-105"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-r from-black/40 via-black/10 to-transparent" />
-                  <div className="absolute bottom-3 left-3 text-white">
-                    <div className="inline-flex items-center rounded-full bg-white/15 px-2 py-0.5 text-xs font-medium backdrop-blur">
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
+                  <div className="absolute bottom-4 left-4 right-4 text-white">
+                    <div className="mb-2 inline-flex items-center rounded-full bg-white/15 px-2 py-0.5 text-[11px] font-medium backdrop-blur">
                       {selectedCourse.category}
+                    </div>
+                    <div className="flex flex-wrap items-end justify-between gap-3">
+                      <h2 className="text-3xl font-semibold tracking-tight drop-shadow-sm">{selectedCourse.title}</h2>
+                      <div className="inline-flex items-center rounded-full bg-white/90 px-3 py-1 text-sm font-medium text-gray-900">
+                        <Euro className="h-4 w-4 mr-1" />
+                        {selectedCourse.price === 0 ? "Kostenlos" : `${selectedCourse.price} €`}
+                      </div>
                     </div>
                   </div>
                 </div>
 
-                <h2 className="text-2xl font-semibold tracking-tight mb-2">{selectedCourse.title}</h2>
-
-                <div className="flex flex-wrap gap-2 mb-4">
-                  <Badge variant="outline" className="bg-blue-50">
+                <div className="flex flex-wrap gap-2 mb-6">
+                  <Badge variant="outline" className="bg-blue-50 border-blue-200 text-blue-800">
                     {selectedCourse.category}
                   </Badge>
-                  <Badge variant="outline" className="bg-green-50">
+                  <Badge variant="outline" className="bg-green-50 border-green-200 text-green-800">
                     {selectedCourse.type}
                   </Badge>
-                  <Badge variant="outline" className="bg-purple-50">
+                  <Badge variant="outline" className="bg-purple-50 border-purple-200 text-purple-800">
                     {selectedCourse.level}
                   </Badge>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
                   <div>
                     <h3 className="text-lg font-semibold mb-2">Kursbeschreibung</h3>
                     <p className="text-gray-700 leading-relaxed">{selectedCourse.description}</p>
                   </div>
 
-                  <div>
-                    <Card>
+                  <div className="md:col-span-2">
+                    <Card className="border-gray-200 shadow-sm">
                       <CardContent className="p-6">
                         <h3 className="text-lg font-semibold mb-4">Kursdetails</h3>
 
-                        <div className="space-y-4">
-                          <div className="flex justify-between">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <div className="flex items-center justify-between">
                             <span className="text-gray-500">Dauer:</span>
                             <span className="font-medium">{selectedCourse.duration}</span>
                           </div>
-                          <div className="flex justify-between">
+                          <div className="flex items-center justify-between">
                             <span className="text-gray-500">Teilnehmer:</span>
                             <span className="font-medium">{selectedCourse.participants}</span>
                           </div>
-                          <div className="flex justify-between">
+                          <div className="flex items-center justify-between">
                             <span className="text-gray-500">Preis:</span>
                             <span className="font-medium">
                               {selectedCourse.price === 0 ? "Kostenlos" : `${selectedCourse.price} €`}
                             </span>
                           </div>
-
-                          <div className="pt-4 border-t">
-                            <h4 className="font-medium mb-2">Verfügbare Termine:</h4>
-                            <div className="flex flex-wrap gap-2">
-                              {selectedCourse.dates.map((date: string, index: number) => (
-                                <Badge key={index} variant="outline" className="bg-gray-50">
-                                  {date}
-                                </Badge>
-                              ))}
-                            </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-gray-500">Nächster Termin:</span>
+                            <span className="font-medium">{selectedCourse.dates[0]}</span>
                           </div>
                         </div>
+
+                        <div className="pt-5 mt-5 border-t">
+                          <h4 className="font-medium mb-2">Verfügbare Termine</h4>
+                          <div className="flex flex-wrap gap-2">
+                            {selectedCourse.dates.map((date: string, index: number) => (
+                              <Badge key={index} variant="outline" className="bg-gray-50">
+                                {date}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  <div className="md:col-span-1 md:row-span-2 md:order-last">
+                    <Card className="sticky top-16 border-gray-200 shadow-md">
+                      <CardContent className="p-6 space-y-4">
+                        <div className="flex items-center justify-between">
+                          <span className="text-gray-600">Preis</span>
+                          <span className="text-xl font-semibold">{selectedCourse.price === 0 ? "Kostenlos" : `${selectedCourse.price} €`}</span>
+                        </div>
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-gray-600">Dauer</span>
+                          <span className="font-medium">{selectedCourse.duration}</span>
+                        </div>
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-gray-600">Teilnehmer</span>
+                          <span className="font-medium">{selectedCourse.participants}</span>
+                        </div>
+                        <Button className="w-full" onClick={startRegistration}>Jetzt anmelden</Button>
                       </CardContent>
                     </Card>
                   </div>

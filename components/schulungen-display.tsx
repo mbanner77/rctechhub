@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { BookOpen } from "lucide-react"
 import { Schulung } from "@/types/schulung"
+import TrainingCatalogDialog from "@/components/training-catalog-dialog"
 
 interface SchulungenDisplayProps {
   maxItems?: number; // Maximal anzuzeigende Elemente, bevor "Alle anzeigen" Button erscheint
@@ -15,6 +16,7 @@ export default function SchulungenDisplay({ maxItems = 4, unitId }: SchulungenDi
   const [schulungen, setSchulungen] = useState<Schulung[]>([])
   const [showAll, setShowAll] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
+  const [isCatalogOpen, setIsCatalogOpen] = useState(false)
 
   useEffect(() => {
     const fetchData = async () => {
@@ -96,7 +98,7 @@ export default function SchulungenDisplay({ maxItems = 4, unitId }: SchulungenDi
               </div>
             </CardContent>
             <CardFooter>
-              <Button variant="outline" className="w-full">
+              <Button variant="outline" className="w-full" onClick={() => setIsCatalogOpen(true)}>
                 Details anzeigen
               </Button>
             </CardFooter>
@@ -111,6 +113,8 @@ export default function SchulungenDisplay({ maxItems = 4, unitId }: SchulungenDi
           </Button>
         </div>
       )}
+      {/* Enhanced Schulungskatalog Dialog */}
+      <TrainingCatalogDialog isOpen={isCatalogOpen} onClose={() => setIsCatalogOpen(false)} />
     </div>
   )
 }
