@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardFooter } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Calendar, Clock, Euro, Users, Download, Search, ChevronLeft, CheckCircle2, Star, ArrowRight } from "lucide-react"
+import { Calendar, Clock, Euro, Download, Search, ChevronLeft, CheckCircle2, Star, ArrowRight } from "lucide-react"
 import { Textarea } from "@/components/ui/textarea"
 import Image from "next/image"
 
@@ -259,14 +259,9 @@ export default function TrainingCatalogDialog({ isOpen, onClose }: TrainingCatal
                               {course.duration}
                             </div>
                             <div className="flex items-center text-sm text-gray-500">
-                              <Users className="h-4 w-4 mr-1" />
-                              {course.participants}
-                            </div>
-                            <div className="flex items-center text-sm text-gray-500">
                               <Calendar className="h-4 w-4 mr-1" />
                               Nächster Termin: {course.dates[0]}
                             </div>
-                            <div />
                           </div>
                         </CardContent>
                         <CardFooter className="px-5 pb-5 pt-0 flex justify-between">
@@ -387,8 +382,8 @@ export default function TrainingCatalogDialog({ isOpen, onClose }: TrainingCatal
                             <span className="font-medium">{selectedCourse.duration}</span>
                           </div>
                           <div className="flex items-center justify-between">
-                            <span className="text-gray-500">Teilnehmer:</span>
-                            <span className="font-medium">{selectedCourse.participants}</span>
+                            <span className="text-gray-500">Format:</span>
+                            <span className="font-medium">{selectedCourse.type}</span>
                           </div>
                           <div className="flex items-center justify-between">
                             <span className="text-gray-500">Preis:</span>
@@ -428,8 +423,8 @@ export default function TrainingCatalogDialog({ isOpen, onClose }: TrainingCatal
                           <span className="font-medium">{selectedCourse.duration}</span>
                         </div>
                         <div className="flex items-center justify-between text-sm">
-                          <span className="text-gray-600">Teilnehmer</span>
-                          <span className="font-medium">{selectedCourse.participants}</span>
+                          <span className="text-gray-600">Format</span>
+                          <span className="font-medium">{selectedCourse.type}</span>
                         </div>
                         <Button className="w-full" onClick={startRegistration}>Jetzt anmelden</Button>
                       </CardContent>
