@@ -72,7 +72,7 @@ export async function GET(request: NextRequest) {
       const q = `select * from "${schema}"."${table}"${whereSql}${orderSql} limit $${pIndex} offset $${pIndex + 1}`;
       params.push(limit, offset);
       const res = await client.query(q, params);
-      const columns = res.fields.map((f) => f.name);
+      const columns = res.fields.map((f: any) => f.name);
 
       // total count
       let total: number | null = null;

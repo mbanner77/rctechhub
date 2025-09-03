@@ -70,7 +70,7 @@ export async function GET(request: NextRequest) {
       params.push(cap);
 
       const res = await client.query(q, params);
-      const columns = res.fields.map((f) => f.name);
+      const columns = res.fields.map((f: any) => f.name);
 
       // Build CSV
       const escape = (val: any) => {
@@ -82,8 +82,8 @@ export async function GET(request: NextRequest) {
       };
       const header = columns.join(",");
       const lines: string[] = [header];
-      for (const row of res.rows) {
-        const line = columns.map((c) => escape((row as any)[c])).join(",");
+      for (const row of res.rows as any[]) {
+        const line = columns.map((c: string) => escape((row as any)[c])).join(",");
         lines.push(line);
       }
       const csv = lines.join("\n");

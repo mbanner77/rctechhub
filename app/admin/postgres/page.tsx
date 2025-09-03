@@ -17,6 +17,16 @@ interface TableInfo {
   name: string
 }
 
+interface ColumnMeta {
+  name: string
+  type: string
+  nullable: boolean
+  position: number
+  isPrimaryKey?: boolean
+}
+
+import type React from 'react'
+
 export default function PostgresAdminPage() {
   const [status, setStatus] = useState<DbStatus | null>(null)
   const [loading, setLoading] = useState(true)
@@ -42,6 +52,13 @@ export default function PostgresAdminPage() {
     total: number | null
   } | null>(null)
   const [pageLimit, setPageLimit] = useState(50)
+
+  // Schema, sorting, filters
+  const [columnsMeta, setColumnsMeta] = useState<ColumnMeta[] | null>(null)
+  const [sortBy, setSortBy] = useState<string | undefined>(undefined)
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
+  type Filter = { col: string; op: string; val: string }
+  const [filters, setFilters] = useState<Filter[]>([])
 
   useEffect(() => {
     const run = async () => {
@@ -84,6 +101,9 @@ export default function PostgresAdminPage() {
       setRowsError(null)
       setRowsResult(null)
       const params = new URLSearchParams({ schema, table: name, limit: String(pageLimit), offset: String(offset) })
+      if (sortBy) params.set('sortBy', sortBy)
+      if (sortDir) params.set('sortDir', sortDir)
+      if (filters.length) params.set('filters', JSON.stringify(filters))
       const res = await fetch(`/api/admin/db/table-rows?${params.toString()}`, { cache: "no-store" })
       const body = await res.json()
       if (!res.ok) throw new Error(body?.error || `HTTP ${res.status}`)
@@ -92,6 +112,22 @@ export default function PostgresAdminPage() {
       setRowsError(e?.message || "Fehler beim Laden der Tabellendaten")
     } finally {
       setRowsLoading(false)
+    }
+  }
+
+  const loadSchema = async (schema: string, name: string) => {
+    try {
+      setColumnsMeta(null)
+      const params = new URLSearchParams({ schema, table: name })
+      const res = await fetch(`/api/admin/db/table-schema?${params.toString()}`, { cache: 'no-store' })
+      const body = await res.json()
+      if (!res.ok) throw new Error(body?.error || `HTTP ${res.status}`)
+      setColumnsMeta(body.columns as ColumnMeta[])
+      // Initialize sortBy if empty
+      if (!sortBy && (body.columns?.[0]?.name)) setSortBy(String(body.columns[0].name))
+    } catch (e) {
+      // non-fatal
+      setColumnsMeta([])
     }
   }
 
@@ -160,7 +196,7 @@ export default function PostgresAdminPage() {
                 <div className="p-3 text-sm text-red-600">{tablesError}</div>
               ) : (
                 <ul>
-                  {tables.map((t) => {
+                  {tables.map((t: TableInfo) => {
                     const key = `${t.schema}.${t.name}`
                     const active = selected && selected.schema === t.schema && selected.name === t.name
                     return (
@@ -170,6 +206,11 @@ export default function PostgresAdminPage() {
                           onClick={() => {
                             setSelected(t)
                             setRowsResult(null)
+                            // reset sort/filters when switching table
+                            setSortBy(undefined)
+                            setSortDir('asc')
+                            setFilters([])
+                            loadSchema(t.schema, t.name)
                             loadRows(t.schema, t.name, 0)
                           }}
                         >
@@ -200,12 +241,125 @@ export default function PostgresAdminPage() {
                       min={1}
                       max={200}
                       value={pageLimit}
-                      onChange={(e) => setPageLimit(Math.max(1, Math.min(200, Number(e.target.value) || 50)))}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPageLimit(Math.max(1, Math.min(200, Number(e.target.value) || 50)))}
                     />
                   </div>
                 </div>
               ) : (
                 <div className="text-sm text-muted-foreground">Bitte eine Tabelle links auswählen</div>
+              )}
+
+              {selected && (
+                <div className="space-y-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <div className="text-xs text-muted-foreground">Sortierung:</div>
+                    <select
+                      className="border rounded px-2 py-1 text-sm"
+                      value={sortBy || ''}
+                      onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setSortBy(e.target.value || undefined)}
+                    >
+                      <option value="">(keine)</option>
+                      {(columnsMeta || rowsResult?.columns || []).map((c: any) => {
+                        const name = typeof c === 'string' ? c : c.name
+                        return <option key={name} value={name}>{name}</option>
+                      })}
+                    </select>
+                    <select
+                      className="border rounded px-2 py-1 text-sm"
+                      value={sortDir}
+                      onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setSortDir(e.target.value as 'asc' | 'desc')}
+                    >
+                      <option value="asc">asc</option>
+                      <option value="desc">desc</option>
+                    </select>
+                    <Button
+                      variant="outline"
+                      onClick={() => selected && loadRows(selected.schema, selected.name, 0)}
+                      disabled={rowsLoading}
+                    >Anwenden</Button>
+
+                    <div className="ml-auto flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          if (!selected) return
+                          const params = new URLSearchParams({ schema: selected.schema, table: selected.name })
+                          if (sortBy) params.set('sortBy', sortBy)
+                          if (sortDir) params.set('sortDir', sortDir)
+                          if (filters.length) params.set('filters', JSON.stringify(filters))
+                          params.set('cap', '10000')
+                          window.location.href = `/api/admin/db/export-csv?${params.toString()}`
+                        }}
+                      >CSV Export</Button>
+                    </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <div className="text-xs text-muted-foreground">Filter:</div>
+                    {(filters.length ? filters : [{ col: '', op: '=', val: '' }]).map((f: Filter, idx: number) => (
+                      <div key={idx} className="flex items-center gap-2">
+                        <select
+                          className="border rounded px-2 py-1 text-sm"
+                          value={f.col}
+                          onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
+                            const next = [...filters]
+                            if (!next[idx]) next[idx] = { col: '', op: '=', val: '' }
+                            next[idx].col = e.target.value
+                            setFilters(next)
+                          }}
+                        >
+                          <option value="">Spalte…</option>
+                          {(columnsMeta || rowsResult?.columns || []).map((c: any) => {
+                            const name = typeof c === 'string' ? c : c.name
+                            return <option key={name} value={name}>{name}</option>
+                          })}
+                        </select>
+                        <select
+                          className="border rounded px-2 py-1 text-sm"
+                          value={f.op}
+                          onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
+                            const next = [...filters]
+                            if (!next[idx]) next[idx] = { col: '', op: '=', val: '' }
+                            next[idx].op = e.target.value
+                            setFilters(next)
+                          }}
+                        >
+                          {['=', '<>', '<', '>', '<=', '>=', 'LIKE', 'ILIKE'].map((op) => (
+                            <option key={op} value={op}>{op}</option>
+                          ))}
+                        </select>
+                        <Input
+                          className="h-8"
+                          value={f.val}
+                          onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                            const next = [...filters]
+                            if (!next[idx]) next[idx] = { col: '', op: '=', val: '' }
+                            next[idx].val = e.target.value
+                            setFilters(next)
+                          }}
+                        />
+                        <Button
+                          variant="outline"
+                          onClick={() => {
+                            const next = filters.filter((_v: Filter, i: number) => i !== idx)
+                            setFilters(next)
+                          }}
+                        >Entfernen</Button>
+                      </div>
+                    ))}
+                    <div className="flex gap-2">
+                      <Button
+                        variant="secondary"
+                        onClick={() => setFilters([...filters, { col: '', op: '=', val: '' }])}
+                      >Filter hinzufügen</Button>
+                      <Button
+                        variant="outline"
+                        onClick={() => selected && loadRows(selected.schema, selected.name, 0)}
+                        disabled={rowsLoading}
+                      >Filter anwenden</Button>
+                    </div>
+                  </div>
+                </div>
               )}
 
               {rowsError && <div className="text-red-600 text-sm">{rowsError}</div>}
@@ -216,15 +370,15 @@ export default function PostgresAdminPage() {
                     <table className="w-full text-sm">
                       <thead>
                         <tr>
-                          {rowsResult.columns.map((c) => (
+                          {rowsResult.columns.map((c: string) => (
                             <th key={c} className="text-left px-2 py-1 border-b bg-muted">{c}</th>
                           ))}
                         </tr>
                       </thead>
                       <tbody>
-                        {rowsResult.rows.map((row, idx) => (
+                        {rowsResult.rows.map((row: any, idx: number) => (
                           <tr key={idx} className="odd:bg-muted/30">
-                            {rowsResult.columns.map((c) => (
+                            {rowsResult.columns.map((c: string) => (
                               <td key={c} className="px-2 py-1 align-top border-b">
                                 <pre className="whitespace-pre-wrap break-words">{JSON.stringify(row[c])}</pre>
                               </td>
@@ -278,7 +432,7 @@ export default function PostgresAdminPage() {
           <div className="text-sm text-muted-foreground">
             Nur SELECT-Statements sind erlaubt. Ergebnis auf 200 Zeilen begrenzt.
           </div>
-          <Textarea value={sql} onChange={(e) => setSql(e.target.value)} rows={6} />
+          <Textarea value={sql} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setSql(e.target.value)} rows={6} />
           <div className="flex gap-2">
             <Button onClick={runQuery} disabled={queryLoading}>Ausführen</Button>
           </div>
