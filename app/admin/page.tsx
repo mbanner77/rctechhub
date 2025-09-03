@@ -33,7 +33,7 @@ export default function AdminPage() {
     <div className="container mx-auto px-4 py-8">
       <div className="flex justify-between items-center mb-8">
         <div className="flex items-center gap-3">
-          <Image src="/images/realcore-logo.png" alt="Logo" width={36} height={36} priority />
+          <Image src="https://realcore.info/bilder/rc-logo.png" alt="Realcore Logo" width={180} height={36} priority />
           <h1 className="text-3xl font-bold">Admin Dashboard</h1>
         </div>
         <Button 
