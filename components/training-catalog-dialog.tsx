@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardFooter } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Calendar, Clock, Euro, Users, Download, Search } from "lucide-react"
+import { Calendar, Clock, Euro, Users, Download, Search, ChevronLeft, CheckCircle2 } from "lucide-react"
 import { Textarea } from "@/components/ui/textarea"
 import Image from "next/image"
 
@@ -176,12 +176,12 @@ export default function TrainingCatalogDialog({ isOpen, onClose }: TrainingCatal
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto rounded-xl shadow-2xl p-0 border">
         {!selectedCourse ? (
           <>
             <DialogHeader>
-              <DialogTitle className="text-2xl">Schulungskatalog</DialogTitle>
-              <DialogDescription>
+              <DialogTitle className="text-2xl tracking-tight">Schulungskatalog</DialogTitle>
+              <DialogDescription className="text-muted-foreground">
                 Entdecken Sie unser umfangreiches Angebot an Schulungen und Workshops rund um die SAP Business
                 Technology Platform.
               </DialogDescription>
@@ -205,7 +205,7 @@ export default function TrainingCatalogDialog({ isOpen, onClose }: TrainingCatal
               </div>
 
               <Tabs defaultValue="all">
-                <TabsList className="mb-4">
+                <TabsList className="mb-4 w-full overflow-x-auto">
                   <TabsTrigger value="all">Alle Kurse</TabsTrigger>
                   <TabsTrigger value="grundlagen">Grundlagen</TabsTrigger>
                   <TabsTrigger value="entwicklung">Entwicklung</TabsTrigger>
@@ -217,20 +217,29 @@ export default function TrainingCatalogDialog({ isOpen, onClose }: TrainingCatal
                     {filteredCourses.map((course) => (
                       <Card
                         key={course.id}
-                        className={`overflow-hidden ${course.featured ? "border-amber-400 border-2" : ""}`}
+                        className={`overflow-hidden transition-shadow hover:shadow-lg ${course.featured ? "border-amber-400 border-2" : ""}`}
                       >
                         <div className="relative h-40 bg-gray-200">
-                          {/* Replace icon with image */}
+                          {course.featured && (
+                            <div className="absolute left-3 top-3 z-10 inline-flex items-center gap-1 rounded-full bg-amber-500/90 px-2 py-1 text-xs font-medium text-white shadow-sm">
+                              <CheckCircle2 className="h-3.5 w-3.5" /> Empfohlen
+                            </div>
+                          )}
                           <Image
                             src={course.image || "/placeholder.svg"}
                             alt={course.title}
                             fill
                             className="object-cover transition-transform hover:scale-105"
                           />
+                          <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/30 via-black/0 to-transparent" />
                         </div>
                         <CardContent className="p-4">
                           <div className="flex justify-between items-start mb-2">
-                            <h3 className="text-lg font-bold">{course.title}</h3>
+                            <h3 className="text-lg font-semibold tracking-tight">{course.title}</h3>
+                            <div className="inline-flex items-center rounded-full bg-gray-50 px-2 py-0.5 text-xs font-medium text-gray-700">
+                              <Euro className="h-3.5 w-3.5 mr-1" />
+                              {course.price === 0 ? "Kostenlos" : `${course.price} €`}
+                            </div>
                           </div>
 
                           <div className="flex items-center mb-2">
@@ -257,10 +266,7 @@ export default function TrainingCatalogDialog({ isOpen, onClose }: TrainingCatal
                               <Calendar className="h-4 w-4 mr-1" />
                               Nächster Termin: {course.dates[0]}
                             </div>
-                            <div className="flex items-center text-sm font-medium">
-                              <Euro className="h-4 w-4 mr-1" />
-                              {course.price === 0 ? "Kostenlos" : `${course.price} €`}
-                            </div>
+                            <div />
                           </div>
                         </CardContent>
                         <CardFooter className="p-4 pt-0 flex justify-between">
@@ -317,9 +323,9 @@ export default function TrainingCatalogDialog({ isOpen, onClose }: TrainingCatal
           </>
         ) : (
           <div>
-            <div className="flex justify-between items-center mb-4">
-              <Button variant="ghost" size="sm" onClick={closeCourseDetails}>
-                ← Zurück zur Übersicht
+            <div className="flex justify-between items-center gap-2 mb-4 sticky top-0 bg-white/70 backdrop-blur supports-[backdrop-filter]:bg-white/60 py-2 z-10">
+              <Button variant="ghost" size="sm" onClick={closeCourseDetails} className="inline-flex items-center gap-1">
+                <ChevronLeft className="h-4 w-4" /> Zurück zur Übersicht
               </Button>
               {!isRegistering && !registrationSuccess && (
                 <Button size="sm" onClick={startRegistration}>
@@ -330,17 +336,22 @@ export default function TrainingCatalogDialog({ isOpen, onClose }: TrainingCatal
 
             {!isRegistering && !registrationSuccess ? (
               <div>
-                <div className="relative h-48 mb-6 bg-gray-200">
-                  {/* Replace icon with image */}
+                <div className="relative h-56 mb-6 bg-gray-200 overflow-hidden rounded-lg">
                   <Image
                     src={selectedCourse.image || "/placeholder.svg"}
                     alt={selectedCourse.title}
                     fill
-                    className="object-cover"
+                    className="object-cover scale-105"
                   />
+                  <div className="absolute inset-0 bg-gradient-to-r from-black/40 via-black/10 to-transparent" />
+                  <div className="absolute bottom-3 left-3 text-white">
+                    <div className="inline-flex items-center rounded-full bg-white/15 px-2 py-0.5 text-xs font-medium backdrop-blur">
+                      {selectedCourse.category}
+                    </div>
+                  </div>
                 </div>
 
-                <h2 className="text-2xl font-bold mb-2">{selectedCourse.title}</h2>
+                <h2 className="text-2xl font-semibold tracking-tight mb-2">{selectedCourse.title}</h2>
 
                 <div className="flex flex-wrap gap-2 mb-4">
                   <Badge variant="outline" className="bg-blue-50">
@@ -357,7 +368,7 @@ export default function TrainingCatalogDialog({ isOpen, onClose }: TrainingCatal
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                   <div>
                     <h3 className="text-lg font-semibold mb-2">Kursbeschreibung</h3>
-                    <p className="text-gray-700">{selectedCourse.description}</p>
+                    <p className="text-gray-700 leading-relaxed">{selectedCourse.description}</p>
                   </div>
 
                   <div>
@@ -398,7 +409,7 @@ export default function TrainingCatalogDialog({ isOpen, onClose }: TrainingCatal
                 </div>
 
                 <div className="flex justify-center mt-8">
-                  <Button size="lg" onClick={startRegistration}>
+                  <Button size="lg" onClick={startRegistration} className="px-8">
                     Jetzt für diesen Kurs anmelden
                   </Button>
                 </div>
@@ -407,7 +418,7 @@ export default function TrainingCatalogDialog({ isOpen, onClose }: TrainingCatal
               <div>
                 {!registrationSuccess ? (
                   <div>
-                    <h2 className="text-2xl font-bold mb-6">Anmeldung für: {selectedCourse.title}</h2>
+                    <h2 className="text-2xl font-semibold tracking-tight mb-6">Anmeldung für: {selectedCourse.title}</h2>
 
                     <form onSubmit={completeRegistration}>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
@@ -464,7 +475,7 @@ export default function TrainingCatalogDialog({ isOpen, onClose }: TrainingCatal
                         />
                       </div>
 
-                      <div className="bg-gray-50 p-4 rounded-md mb-6">
+                      <div className="bg-gray-50 p-4 rounded-md mb-6 border">
                         <h3 className="font-semibold mb-2">Kursdetails</h3>
                         <div className="grid grid-cols-2 gap-2">
                           <div>
@@ -499,15 +510,7 @@ export default function TrainingCatalogDialog({ isOpen, onClose }: TrainingCatal
                 ) : (
                   <div className="text-center py-8">
                     <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-100 mb-4">
-                      <svg
-                        className="w-8 h-8 text-green-600"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                        xmlns="http://www.w3.org/2000/svg"
-                      >
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
-                      </svg>
+                      <CheckCircle2 className="w-8 h-8 text-green-600" />
                     </div>
                     <h2 className="text-2xl font-bold mb-2">Anmeldung erfolgreich!</h2>
                     <p className="text-gray-600 mb-6">
