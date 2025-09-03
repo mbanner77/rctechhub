@@ -16,11 +16,10 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const schema = searchParams.get("schema") || "public";
     const table = searchParams.get("table");
-    const limitParam = Number(searchParams.get("limit") || 50);
-    const offsetParam = Number(searchParams.get("offset") || 0);
     const sortBy = searchParams.get("sortBy") || undefined;
     const sortDir = (searchParams.get("sortDir") || "asc").toLowerCase();
     const filtersRaw = searchParams.get("filters");
+    const capParam = Number(searchParams.get("cap") || 5000);
 
     if (!table) {
       return NextResponse.json({ error: "Parameter 'table' fehlt" }, { status: 400 });
@@ -49,12 +48,11 @@ export async function GET(request: NextRequest) {
           }
         }
       } catch {
-        // ignore bad filters
+        // ignore
       }
     }
 
-    const limit = Math.min(Math.max(1, isFinite(limitParam) ? limitParam : 50), 200);
-    const offset = Math.max(0, isFinite(offsetParam) ? offsetParam : 0);
+    const cap = Math.min(Math.max(1, isFinite(capParam) ? capParam : 5000), 100000);
 
     const pool = getPool();
     const client = await pool.connect();
@@ -68,30 +66,40 @@ export async function GET(request: NextRequest) {
       }
       const whereSql = whereParts.length ? ` where ${whereParts.join(" and ")}` : "";
       const orderSql = sortBy ? ` order by "${schema}"."${table}"."${sortBy}" ${sortDir}` : "";
+      const q = `select * from "${schema}"."${table}"${whereSql}${orderSql} limit $${pIndex}`;
+      params.push(cap);
 
-      const q = `select * from "${schema}"."${table}"${whereSql}${orderSql} limit $${pIndex} offset $${pIndex + 1}`;
-      params.push(limit, offset);
       const res = await client.query(q, params);
       const columns = res.fields.map((f) => f.name);
 
-      // total count
-      let total: number | null = null;
-      try {
-        const cnt = await client.query(
-          `select count(*)::int as cnt from "${schema}"."${table}"${whereSql}`,
-          params.slice(0, params.length - 2)
-        );
-        total = (cnt.rows[0]?.cnt as any) ?? null;
-      } catch {
-        total = null;
+      // Build CSV
+      const escape = (val: any) => {
+        if (val == null) return "";
+        const s = typeof val === "string" ? val : JSON.stringify(val);
+        const needsQuotes = /[",\n\r]/.test(s);
+        const esc = s.replace(/"/g, '""');
+        return needsQuotes ? `"${esc}"` : esc;
+      };
+      const header = columns.join(",");
+      const lines: string[] = [header];
+      for (const row of res.rows) {
+        const line = columns.map((c) => escape((row as any)[c])).join(",");
+        lines.push(line);
       }
+      const csv = lines.join("\n");
 
-      return NextResponse.json({ columns, rows: res.rows, limit, offset, total });
+      return new NextResponse(csv, {
+        headers: {
+          "Content-Type": "text/csv; charset=utf-8",
+          "Content-Disposition": `attachment; filename=${schema}.${table}.csv`,
+          "Cache-Control": "no-store",
+        },
+      });
     } finally {
       client.release();
     }
   } catch (err: any) {
-    console.error("DB table-rows error:", err);
-    return NextResponse.json({ error: err?.message || "DB table-rows error" }, { status: 500 });
+    console.error("DB export-csv error:", err);
+    return NextResponse.json({ error: err?.message || "DB export-csv error" }, { status: 500 });
   }
 }
