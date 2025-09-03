@@ -57,7 +57,11 @@ export default function PostgresAdminPage() {
   const [columnsMeta, setColumnsMeta] = useState<ColumnMeta[] | null>(null)
   const [sortBy, setSortBy] = useState<string | undefined>(undefined)
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
-  type Filter = { col: string; op: string; val: string }
+  // JSON-path sorting (if sortBy is empty)
+  const [sortJsonBase, setSortJsonBase] = useState<string | undefined>(undefined)
+  const [sortJsonPathStr, setSortJsonPathStr] = useState<string>("")
+  const [sortJsonText, setSortJsonText] = useState<boolean>(true)
+  type Filter = { col?: string; op: string; val: string; isJson?: boolean; jsonBase?: string; jsonPathStr?: string; text?: boolean }
   const [filters, setFilters] = useState<Filter[]>([])
 
   useEffect(() => {
@@ -103,7 +107,25 @@ export default function PostgresAdminPage() {
       const params = new URLSearchParams({ schema, table: name, limit: String(pageLimit), offset: String(offset) })
       if (sortBy) params.set('sortBy', sortBy)
       if (sortDir) params.set('sortDir', sortDir)
-      if (filters.length) params.set('filters', JSON.stringify(filters))
+      // JSON sort (optional). Backend prefers sortBy if present.
+      if (sortJsonBase) params.set('sortJsonBase', sortJsonBase)
+      if (sortJsonPathStr) params.set('sortJsonPath', sortJsonPathStr)
+      params.set('sortJsonText', String(sortJsonText))
+      if (filters.length) {
+        const sendFilters = filters.map((f: Filter) => {
+          if (f.isJson) {
+            return {
+              jsonBase: f.jsonBase || '',
+              jsonPath: (f.jsonPathStr || '').split(',').map((s: string) => s.trim()).filter(Boolean),
+              text: f.text !== false,
+              op: f.op,
+              val: f.val,
+            }
+          }
+          return { col: f.col || '', op: f.op, val: f.val }
+        })
+        params.set('filters', JSON.stringify(sendFilters))
+      }
       const res = await fetch(`/api/admin/db/table-rows?${params.toString()}`, { cache: "no-store" })
       const body = await res.json()
       if (!res.ok) throw new Error(body?.error || `HTTP ${res.status}`)
@@ -210,6 +232,9 @@ export default function PostgresAdminPage() {
                             setSortBy(undefined)
                             setSortDir('asc')
                             setFilters([])
+                            setSortJsonBase(undefined)
+                            setSortJsonPathStr("")
+                            setSortJsonText(true)
                             loadSchema(t.schema, t.name)
                             loadRows(t.schema, t.name, 0)
                           }}
@@ -272,6 +297,27 @@ export default function PostgresAdminPage() {
                       <option value="asc">asc</option>
                       <option value="desc">desc</option>
                     </select>
+                    <div className="flex items-center gap-2 ml-2 text-xs text-muted-foreground">JSON Sort (falls Spalte leer):</div>
+                    <select
+                      className="border rounded px-2 py-1 text-sm"
+                      value={sortJsonBase || ''}
+                      onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setSortJsonBase(e.target.value || undefined)}
+                    >
+                      <option value="">JSON-Spalte…</option>
+                      {(columnsMeta || []).filter(c => typeof c !== 'string' && /json/i.test((c as any).type)).map((c: any) => (
+                        <option key={c.name} value={c.name}>{c.name}</option>
+                      ))}
+                    </select>
+                    <Input
+                      className="h-8 w-48"
+                      placeholder="Pfad, z.B. ip,address"
+                      value={sortJsonPathStr}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSortJsonPathStr(e.target.value)}
+                    />
+                    <label className="flex items-center gap-1 text-xs">
+                      <input type="checkbox" checked={sortJsonText} onChange={(e) => setSortJsonText(e.target.checked)} />
+                      <span>als Text ({"->>"})</span>
+                    </label>
                     <Button
                       variant="outline"
                       onClick={() => selected && loadRows(selected.schema, selected.name, 0)}
@@ -286,7 +332,24 @@ export default function PostgresAdminPage() {
                           const params = new URLSearchParams({ schema: selected.schema, table: selected.name })
                           if (sortBy) params.set('sortBy', sortBy)
                           if (sortDir) params.set('sortDir', sortDir)
-                          if (filters.length) params.set('filters', JSON.stringify(filters))
+                          if (sortJsonBase) params.set('sortJsonBase', sortJsonBase)
+                          if (sortJsonPathStr) params.set('sortJsonPath', sortJsonPathStr)
+                          params.set('sortJsonText', String(sortJsonText))
+                          if (filters.length) {
+                            const sendFilters = filters.map((f: Filter) => {
+                              if (f.isJson) {
+                                return {
+                                  jsonBase: f.jsonBase || '',
+                                  jsonPath: (f.jsonPathStr || '').split(',').map((s: string) => s.trim()).filter(Boolean),
+                                  text: f.text !== false,
+                                  op: f.op,
+                                  val: f.val,
+                                }
+                              }
+                              return { col: f.col || '', op: f.op, val: f.val }
+                            })
+                            params.set('filters', JSON.stringify(sendFilters))
+                          }
                           params.set('cap', '10000')
                           window.location.href = `/api/admin/db/export-csv?${params.toString()}`
                         }}
@@ -298,22 +361,91 @@ export default function PostgresAdminPage() {
                     <div className="text-xs text-muted-foreground">Filter:</div>
                     {(filters.length ? filters : [{ col: '', op: '=', val: '' }]).map((f: Filter, idx: number) => (
                       <div key={idx} className="flex items-center gap-2">
-                        <select
-                          className="border rounded px-2 py-1 text-sm"
-                          value={f.col}
-                          onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
-                            const next = [...filters]
-                            if (!next[idx]) next[idx] = { col: '', op: '=', val: '' }
-                            next[idx].col = e.target.value
-                            setFilters(next)
-                          }}
-                        >
-                          <option value="">Spalte…</option>
-                          {(columnsMeta || rowsResult?.columns || []).map((c: any) => {
-                            const name = typeof c === 'string' ? c : c.name
-                            return <option key={name} value={name}>{name}</option>
-                          })}
-                        </select>
+                        <label className="flex items-center gap-1 text-xs">
+                          <input
+                            type="checkbox"
+                            checked={!!f.isJson}
+                            onChange={(e) => {
+                              const next = [...filters]
+                              if (!next[idx]) next[idx] = { op: '=', val: '' }
+                              next[idx].isJson = e.target.checked
+                              // reset fields when toggling
+                              if (e.target.checked) {
+                                next[idx].col = undefined
+                                next[idx].jsonBase = ''
+                                next[idx].jsonPathStr = ''
+                                next[idx].text = true
+                              } else {
+                                next[idx].col = ''
+                                next[idx].jsonBase = undefined
+                                next[idx].jsonPathStr = undefined
+                                next[idx].text = undefined
+                              }
+                              setFilters(next)
+                            }}
+                          />
+                          <span>JSON</span>
+                        </label>
+                        {f.isJson ? (
+                          <>
+                            <select
+                              className="border rounded px-2 py-1 text-sm"
+                              value={f.jsonBase || ''}
+                              onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
+                                const next = [...filters]
+                                if (!next[idx]) next[idx] = { op: '=', val: '' }
+                                next[idx].jsonBase = e.target.value
+                                setFilters(next)
+                              }}
+                            >
+                              <option value="">JSON-Spalte…</option>
+                              {(columnsMeta || []).filter(c => typeof c !== 'string' && /json/i.test((c as any).type)).map((c: any) => (
+                                <option key={c.name} value={c.name}>{c.name}</option>
+                              ))}
+                            </select>
+                            <Input
+                              className="h-8 w-44"
+                              placeholder="Pfad z.B. ip,address"
+                              value={f.jsonPathStr || ''}
+                              onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                                const next = [...filters]
+                                if (!next[idx]) next[idx] = { op: '=', val: '' }
+                                next[idx].jsonPathStr = e.target.value
+                                setFilters(next)
+                              }}
+                            />
+                            <label className="flex items-center gap-1 text-xs">
+                              <input
+                                type="checkbox"
+                                checked={f.text !== false}
+                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                                  const next = [...filters]
+                                  if (!next[idx]) next[idx] = { op: '=', val: '' }
+                                  next[idx].text = e.target.checked
+                                  setFilters(next)
+                                }}
+                              />
+                              <span>als Text ({"->>"})</span>
+                            </label>
+                          </>
+                        ) : (
+                          <select
+                            className="border rounded px-2 py-1 text-sm"
+                            value={f.col || ''}
+                            onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
+                              const next = [...filters]
+                              if (!next[idx]) next[idx] = { col: '', op: '=', val: '' }
+                              next[idx].col = e.target.value
+                              setFilters(next)
+                            }}
+                          >
+                            <option value="">Spalte…</option>
+                            {(columnsMeta || rowsResult?.columns || []).map((c: any) => {
+                              const name = typeof c === 'string' ? c : c.name
+                              return <option key={name} value={name}>{name}</option>
+                            })}
+                          </select>
+                        )}
                         <select
                           className="border rounded px-2 py-1 text-sm"
                           value={f.op}
