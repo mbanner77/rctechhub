@@ -60,20 +60,11 @@ export function useAllSchulungen() {
     async function fetchSchulungen() {
       try {
         setLoading(true);
-        // Get all schulungen
-        const response = await fetch('/api/schulungen/by-unit');
-        
+        // Load all Schulungen from Admin Schulungsmanager backend
+        const response = await fetch('/api/schulungen');
         if (!response.ok) {
-          // Fallback to the main endpoint if the dedicated endpoint fails
-          const fallbackResponse = await fetch('/api/schulungen');
-          if (!fallbackResponse.ok) {
-            throw new Error(`Failed to fetch schulungen: ${fallbackResponse.statusText}`);
-          }
-          const data = await fallbackResponse.json();
-          setSchulungen(data);
-          return;
+          throw new Error(`Failed to fetch schulungen: ${response.statusText}`);
         }
-        
         const data = await response.json();
         setSchulungen(data);
         setError(null);

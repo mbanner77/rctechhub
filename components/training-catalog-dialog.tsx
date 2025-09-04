@@ -3,6 +3,8 @@
 import type React from "react"
 
 import { useState } from "react"
+import { useAllSchulungen } from "@/hooks/use-schulungen"
+import type { Schulung } from "@/types/schulung"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -10,97 +12,19 @@ import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardFooter } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Calendar, Clock, Euro, Download, Search, ChevronLeft, CheckCircle2, Star, ArrowRight } from "lucide-react"
+import { Clock, Euro, Download, Search, ChevronLeft, CheckCircle2, Star, ArrowRight } from "lucide-react"
 import { Textarea } from "@/components/ui/textarea"
 import Image from "next/image"
 
-// Simplified training courses data
-const trainingCourses = [
-  {
-    id: 1,
-    title: "SAP BTP Grundlagen",
-    description: "Dieser Kurs bietet eine umfassende Einführung in die SAP Business Technology Platform.",
-    type: "Online-Kurs",
-    duration: "4 Stunden",
-    price: 490,
-    category: "Grundlagen",
-    level: "Anfänger",
-    dates: ["15.06.2023", "22.07.2023", "10.08.2023"],
-    participants: "Unbegrenzt",
-    featured: true,
-    image: "/images/btp-architecture.png",
-  },
-  {
-    id: 2,
-    title: "SAP CAP Entwicklung",
-    description: "Hands-on Training zur Entwicklung mit dem SAP Cloud Application Programming Model.",
-    type: "Workshop",
-    duration: "2 Tage",
-    price: 1490,
-    category: "Entwicklung",
-    level: "Fortgeschritten",
-    dates: ["05.06.2023", "12.07.2023", "20.08.2023"],
-    participants: "Max. 12",
-    featured: true,
-    image: "/images/cap-implementation.png",
-  },
-  {
-    id: 3,
-    title: "SAP Integration Suite",
-    description: "Überblick über die Integrationsszenarien und -tools der SAP Integration Suite.",
-    type: "Webinar",
-    duration: "2 Stunden",
-    price: 0,
-    category: "Integration",
-    level: "Anfänger",
-    dates: ["10.06.2023", "17.07.2023", "15.08.2023"],
-    participants: "Unbegrenzt",
-    featured: true,
-    image: "/images/integration-suite.png",
-  },
-  {
-    id: 4,
-    title: "SAP Fiori Elements",
-    description: "Entwicklung von Fiori-Anwendungen mit Fiori Elements und OData-Services.",
-    type: "Workshop",
-    duration: "3 Tage",
-    price: 1990,
-    category: "Entwicklung",
-    level: "Fortgeschritten",
-    dates: ["20.06.2023", "25.07.2023", "22.08.2023"],
-    participants: "Max. 10",
-    featured: false,
-    image: "/images/fiori-development.png",
-  },
-  {
-    id: 5,
-    title: "BTP Security & Compliance",
-    description: "Sicherheitskonzepte und Best Practices für SAP BTP-Anwendungen.",
-    type: "Workshop",
-    duration: "2 Tage",
-    price: 1490,
-    category: "Sicherheit",
-    level: "Fortgeschritten",
-    dates: ["25.06.2023", "30.07.2023", "28.08.2023"],
-    participants: "Max. 8",
-    featured: false,
-    image: "/images/btp-security.png",
-  },
-  {
-    id: 6,
-    title: "BTP Monitoring & Operations",
-    description: "Überwachung und Betrieb von SAP BTP-Anwendungen.",
-    type: "Online-Kurs",
-    duration: "6 Stunden",
-    price: 690,
-    category: "Operations",
-    level: "Fortgeschritten",
-    dates: ["18.06.2023", "20.07.2023", "25.08.2023"],
-    participants: "Max. 15",
-    featured: false,
-    image: "/images/btp-monitoring.png",
-  },
-]
+// We will load live data using useAllSchulungen()
+
+interface RegistrationData {
+  firstName: string
+  lastName: string
+  email: string
+  company: string
+  notes: string
+}
 
 interface TrainingCatalogDialogProps {
   isOpen: boolean
@@ -109,10 +33,10 @@ interface TrainingCatalogDialogProps {
 
 export default function TrainingCatalogDialog({ isOpen, onClose }: TrainingCatalogDialogProps) {
   const [searchTerm, setSearchTerm] = useState("")
-  const [selectedCourse, setSelectedCourse] = useState<any | null>(null)
+  const [selectedCourse, setSelectedCourse] = useState<Partial<Schulung> & { dates?: string[] } | null>(null)
   const [isRegistering, setIsRegistering] = useState(false)
   const [registrationSuccess, setRegistrationSuccess] = useState(false)
-  const [registrationData, setRegistrationData] = useState({
+  const [registrationData, setRegistrationData] = useState<RegistrationData>({
     firstName: "",
     lastName: "",
     email: "",
@@ -120,11 +44,14 @@ export default function TrainingCatalogDialog({ isOpen, onClose }: TrainingCatal
     notes: "",
   })
 
+  const { schulungen, loading, error } = useAllSchulungen()
+  const courses: Schulung[] = schulungen || []
+
   // Filter courses based on search term
-  const filteredCourses = trainingCourses.filter(
+  const filteredCourses = courses.filter(
     (course) =>
       course.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      course.description.toLowerCase().includes(searchTerm.toLowerCase()),
+      (course.description || "").toLowerCase().includes(searchTerm.toLowerCase()),
   )
 
   // Handle course selection
@@ -163,7 +90,7 @@ export default function TrainingCatalogDialog({ isOpen, onClose }: TrainingCatal
   // Handle registration data changes
   const handleRegistrationDataChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
-    setRegistrationData((prev) => ({
+    setRegistrationData((prev: RegistrationData) => ({
       ...prev,
       [name]: value,
     }))
@@ -195,7 +122,7 @@ export default function TrainingCatalogDialog({ isOpen, onClose }: TrainingCatal
                     className="pl-8"
                     placeholder="Nach Schulungen suchen..."
                     value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchTerm(e.target.value)}
                   />
                 </div>
                 <Button variant="outline" className="flex items-center gap-2 text-[#2F7D1A] border-[#BEE9B4] hover:bg-[#E9F8E4]" onClick={downloadCatalog}>
@@ -217,10 +144,10 @@ export default function TrainingCatalogDialog({ isOpen, onClose }: TrainingCatal
                     {filteredCourses.map((course) => (
                       <Card
                         key={course.id}
-                        className={`group overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-0.5 border ${course.featured ? "border-[#BEE9B4]" : "border-gray-200"}`}
+                        className={`group overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-0.5 border ${course.price === 0 ? "border-[#BEE9B4]" : "border-gray-200"}`}
                       >
                         <div className="relative h-44 bg-gray-100">
-                          {course.featured && (
+                          {course.price === 0 && (
                             <div className="absolute left-3 top-3 z-10 inline-flex items-center gap-1 rounded-full bg-[#66C63A]/95 px-2.5 py-1 text-xs font-medium text-white shadow-sm">
                               <Star className="h-3.5 w-3.5" /> Empfohlen
                             </div>
@@ -244,23 +171,16 @@ export default function TrainingCatalogDialog({ isOpen, onClose }: TrainingCatal
 
                           <div className="flex items-center mb-2">
                             <Badge variant="outline" className="bg-[#E9F8E4] mr-2 border-[#BEE9B4] text-[#2B6B16]">
-                              {course.type}
-                            </Badge>
-                            <Badge variant="outline" className="bg-[#E9F8E4] border-[#BEE9B4] text-[#2B6B16]">
-                              {course.level}
+                              {course.category}
                             </Badge>
                           </div>
 
                           <p className="text-gray-600 text-sm mb-4 line-clamp-2">{course.description}</p>
 
-                          <div className="grid grid-cols-2 gap-2 mb-4">
+                          <div className="grid grid-cols-1 gap-2 mb-4">
                             <div className="flex items-center text-sm text-gray-500">
                               <Clock className="h-4 w-4 mr-1" />
-                              {course.duration}
-                            </div>
-                            <div className="flex items-center text-sm text-gray-500">
-                              <Calendar className="h-4 w-4 mr-1" />
-                              Nächster Termin: {course.dates[0]}
+                              {course.duration || (course.days ? `${course.days} Tage` : course.hours ? `${course.hours} Stunden` : "Auf Anfrage")}
                             </div>
                           </div>
                         </CardContent>
@@ -272,22 +192,32 @@ export default function TrainingCatalogDialog({ isOpen, onClose }: TrainingCatal
                             size="sm"
                             className="bg-[#66C63A] hover:bg-[#58B533] text-white"
                             onClick={() => {
-                              showCourseDetails(course)
+                              showCourseDetails(course as any)
                               startRegistration()
                             }}
                           >
-                            Anmelden
+                            Anfragen
                           </Button>
                         </CardFooter>
                       </Card>
                     ))}
                   </div>
 
-                  {filteredCourses.length === 0 && (
+                  {(!loading && filteredCourses.length === 0) && (
                     <div className="text-center py-8">
                       <p className="text-gray-500">
                         Keine Schulungen gefunden. Bitte passen Sie Ihre Suchkriterien an.
                       </p>
+                    </div>
+                  )}
+                  {loading && (
+                    <div className="text-center py-8">
+                      <p className="text-gray-500">Lade Schulungen…</p>
+                    </div>
+                  )}
+                  {error && (
+                    <div className="text-center py-8">
+                      <p className="text-gray-500">Fehler beim Laden der Schulungen.</p>
                     </div>
                   )}
                 </TabsContent>
@@ -319,131 +249,11 @@ export default function TrainingCatalogDialog({ isOpen, onClose }: TrainingCatal
           </>
         ) : (
           <div>
-            <div className="flex justify-between items-center gap-2 mb-4 sticky top-0 bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/60 py-3 px-1 z-10 border-b">
-              <Button variant="ghost" size="sm" onClick={closeCourseDetails} className="inline-flex items-center gap-1">
-                <ChevronLeft className="h-4 w-4" /> Zurück zur Übersicht
-              </Button>
-              {!isRegistering && !registrationSuccess && (
-                <Button size="sm" className="bg-[#66C63A] hover:bg-[#58B533] text-white" onClick={startRegistration}>
-                  Jetzt anmelden
-                </Button>
-              )}
-            </div>
-
-            {!isRegistering && !registrationSuccess ? (
-              <div>
-                <div className="relative h-72 mb-8 bg-gray-200 overflow-hidden rounded-xl">
-                  <Image
-                    src={selectedCourse.image || "/placeholder.svg"}
-                    alt={selectedCourse.title}
-                    fill
-                    className="object-cover scale-105"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
-                  <div className="absolute bottom-4 left-4 right-4 text-white">
-                    <div className="mb-2 inline-flex items-center rounded-full bg-white/15 px-2 py-0.5 text-[11px] font-medium backdrop-blur">
-                      {selectedCourse.category}
-                    </div>
-                    <div className="flex flex-wrap items-end justify-between gap-3">
-                      <h2 className="text-3xl font-semibold tracking-tight drop-shadow-sm">{selectedCourse.title}</h2>
-                      <div className="inline-flex items-center rounded-full bg-[#66C63A] text-white px-3 py-1 text-sm font-medium shadow">
-                        <Euro className="h-4 w-4 mr-1" />
-                        {selectedCourse.price === 0 ? "Kostenlos" : `${selectedCourse.price} €`}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex flex-wrap gap-2 mb-6">
-                  <Badge variant="outline" className="bg-[#E9F8E4] border-[#BEE9B4] text-[#2B6B16]">
-                    {selectedCourse.category}
-                  </Badge>
-                  <Badge variant="outline" className="bg-[#E9F8E4] border-[#BEE9B4] text-[#2B6B16]">
-                    {selectedCourse.type}
-                  </Badge>
-                  <Badge variant="outline" className="bg-[#E9F8E4] border-[#BEE9B4] text-[#2B6B16]">
-                    {selectedCourse.level}
-                  </Badge>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
-                  <div>
-                    <h3 className="text-lg font-semibold mb-2">Kursbeschreibung</h3>
-                    <p className="text-gray-700 leading-relaxed">{selectedCourse.description}</p>
-                  </div>
-
-                  <div className="md:col-span-2">
-                    <Card className="border-gray-200 shadow-sm">
-                      <CardContent className="p-6">
-                        <h3 className="text-lg font-semibold mb-4">Kursdetails</h3>
-
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                          <div className="flex items-center justify-between">
-                            <span className="text-gray-500">Dauer:</span>
-                            <span className="font-medium">{selectedCourse.duration}</span>
-                          </div>
-                          <div className="flex items-center justify-between">
-                            <span className="text-gray-500">Format:</span>
-                            <span className="font-medium">{selectedCourse.type}</span>
-                          </div>
-                          <div className="flex items-center justify-between">
-                            <span className="text-gray-500">Preis:</span>
-                            <span className="font-medium">
-                              {selectedCourse.price === 0 ? "Kostenlos" : `${selectedCourse.price} €`}
-                            </span>
-                          </div>
-                          <div className="flex items-center justify-between">
-                            <span className="text-gray-500">Nächster Termin:</span>
-                            <span className="font-medium">{selectedCourse.dates[0]}</span>
-                          </div>
-                        </div>
-
-                        <div className="pt-5 mt-5 border-t">
-                          <h4 className="font-medium mb-2">Verfügbare Termine</h4>
-                          <div className="flex flex-wrap gap-2">
-                            {selectedCourse.dates.map((date: string, index: number) => (
-                              <Badge key={index} variant="outline" className="bg-gray-50">
-                                {date}
-                              </Badge>
-                            ))}
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </div>
-
-                  <div className="md:col-span-1 md:row-span-2 md:order-last">
-                    <Card className="sticky top-16 border-gray-200 shadow-md">
-                      <CardContent className="p-6 space-y-4">
-                        <div className="flex items-center justify-between">
-                          <span className="text-gray-600">Preis</span>
-                          <span className="text-xl font-semibold">{selectedCourse.price === 0 ? "Kostenlos" : `${selectedCourse.price} €`}</span>
-                        </div>
-                        <div className="flex items-center justify-between text-sm">
-                          <span className="text-gray-600">Dauer</span>
-                          <span className="font-medium">{selectedCourse.duration}</span>
-                        </div>
-                        <div className="flex items-center justify-between text-sm">
-                          <span className="text-gray-600">Format</span>
-                          <span className="font-medium">{selectedCourse.type}</span>
-                        </div>
-                        <Button className="w-full" onClick={startRegistration}>Jetzt anmelden</Button>
-                      </CardContent>
-                    </Card>
-                  </div>
-                </div>
-
-                <div className="flex justify-center mt-8">
-                  <Button size="lg" onClick={startRegistration} className="px-8 bg-[#66C63A] hover:bg-[#58B533] text-white">
-                    Jetzt für diesen Kurs anmelden
-                  </Button>
-                </div>
-              </div>
-            ) : (
+            {isRegistering ? (
               <div>
                 {!registrationSuccess ? (
                   <div>
-                    <h2 className="text-2xl font-semibold tracking-tight mb-6">Anmeldung für: {selectedCourse.title}</h2>
+                    <h2 className="text-2xl font-semibold tracking-tight mb-6">Anfrage für: {selectedCourse.title}</h2>
 
                     <form onSubmit={completeRegistration}>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
@@ -508,12 +318,12 @@ export default function TrainingCatalogDialog({ isOpen, onClose }: TrainingCatal
                             <span className="font-medium ml-2">{selectedCourse.title}</span>
                           </div>
                           <div>
-                            <span className="text-gray-500">Typ:</span>
-                            <span className="font-medium ml-2">{selectedCourse.type}</span>
+                            <span className="text-gray-500">Format:</span>
+                            <span className="font-medium ml-2">{selectedCourse.category}</span>
                           </div>
                           <div>
                             <span className="text-gray-500">Dauer:</span>
-                            <span className="font-medium ml-2">{selectedCourse.duration}</span>
+                            <span className="font-medium ml-2">{selectedCourse.duration || (selectedCourse.days ? `${selectedCourse.days} Tage` : selectedCourse.hours ? `${selectedCourse.hours} Stunden` : "Auf Anfrage")}</span>
                           </div>
                           <div>
                             <span className="text-gray-500">Preis:</span>
@@ -528,7 +338,7 @@ export default function TrainingCatalogDialog({ isOpen, onClose }: TrainingCatal
                         <Button type="button" variant="outline" className="text-[#2F7D1A] border-[#BEE9B4] hover:bg-[#E9F8E4]" onClick={closeCourseDetails}>
                           Abbrechen
                         </Button>
-                        <Button type="submit" className="bg-[#66C63A] hover:bg-[#58B533] text-white">Anmeldung absenden</Button>
+                        <Button type="submit" className="bg-[#66C63A] hover:bg-[#58B533] text-white">Anfrage absenden</Button>
                       </div>
                     </form>
                   </div>
@@ -537,14 +347,108 @@ export default function TrainingCatalogDialog({ isOpen, onClose }: TrainingCatal
                     <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-100 mb-4">
                       <CheckCircle2 className="w-8 h-8 text-green-600" />
                     </div>
-                    <h2 className="text-2xl font-bold mb-2">Anmeldung erfolgreich!</h2>
+                    <h2 className="text-2xl font-bold mb-2">Anfrage erfolgreich!</h2>
                     <p className="text-gray-600 mb-6">
-                      Vielen Dank für Ihre Anmeldung zum Kurs "{selectedCourse.title}". Wir haben Ihnen eine
-                      Bestätigungs-E-Mail mit allen Details gesendet.
+                      Vielen Dank für Ihre Anfrage zum Kurs "{selectedCourse.title}". Wir melden uns zeitnah mit weiteren Details bei Ihnen.
                     </p>
                     <Button onClick={closeCourseDetails}>Zurück zum Schulungskatalog</Button>
                   </div>
                 )}
+              </div>
+            ) : (
+              <div>
+                <div className="flex justify-between items-center gap-2 mb-4 sticky top-0 bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/60 py-3 px-1 z-10 border-b">
+                  <Button variant="ghost" size="sm" onClick={closeCourseDetails} className="inline-flex items-center gap-1">
+                    <ChevronLeft className="h-4 w-4" /> Zurück zur Übersicht
+                  </Button>
+                  {!registrationSuccess && (
+                    <Button size="sm" className="bg-[#66C63A] hover:bg-[#58B533] text-white" onClick={startRegistration}>
+                      Jetzt anfragen
+                    </Button>
+                  )}
+                </div>
+
+                <div className="relative h-72 mb-8 bg-gray-200 overflow-hidden rounded-xl">
+                  <Image
+                    src={selectedCourse.image || "/placeholder.svg"}
+                    alt={selectedCourse.title || "Kursbild"}
+                    fill
+                    className="object-cover"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
+                  <div className="absolute bottom-4 left-4 right-4 text-white">
+                    <div className="mb-2 inline-flex items-center rounded-full bg-white/15 px-2 py-0.5 text-[11px] font-medium backdrop-blur">
+                      {selectedCourse.category}
+                    </div>
+                    <div className="flex flex-wrap items-end justify-between gap-3">
+                      <h2 className="text-3xl font-semibold tracking-tight drop-shadow-sm">{selectedCourse.title}</h2>
+                      <div className="inline-flex items-center rounded-full bg-[#66C63A] text-white px-3 py-1 text-sm font-medium shadow">
+                        <Euro className="h-4 w-4 mr-1" />
+                        {selectedCourse.price === 0 ? "Kostenlos" : `${selectedCourse.price} €`}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
+                  <div>
+                    <h3 className="text-lg font-semibold mb-2">Kursbeschreibung</h3>
+                    <p className="text-gray-700 leading-relaxed">{selectedCourse.description}</p>
+                  </div>
+
+                  <div className="md:col-span-2">
+                    <Card className="border-gray-200 shadow-sm">
+                      <CardContent className="p-6">
+                        <h3 className="text-lg font-semibold mb-4">Kursdetails</h3>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <div className="flex items-center justify-between">
+                            <span className="text-gray-500">Dauer:</span>
+                            <span className="font-medium">{selectedCourse.duration || (selectedCourse.days ? `${selectedCourse.days} Tage` : selectedCourse.hours ? `${selectedCourse.hours} Stunden` : "Auf Anfrage")}</span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-gray-500">Format:</span>
+                            <span className="font-medium">{selectedCourse.category}</span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-gray-500">Preis:</span>
+                            <span className="font-medium">
+                              {selectedCourse.price === 0 ? "Kostenlos" : `${selectedCourse.price} €`}
+                            </span>
+                          </div>
+                          {/* Datum-Angaben entfernt */}
+                        </div>
+                        {/* Datum-Listen entfernt */}
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  <div className="md:col-span-1 md:row-span-2 md:order-last">
+                    <Card className="sticky top-16 border-gray-200 shadow-md">
+                      <CardContent className="p-6 space-y-4">
+                        <div className="flex items-center justify-between">
+                          <span className="text-gray-600">Preis</span>
+                          <span className="text-xl font-semibold">{selectedCourse.price === 0 ? "Kostenlos" : `${selectedCourse.price} €`}</span>
+                        </div>
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-gray-600">Dauer</span>
+                          <span className="font-medium">{selectedCourse.duration || (selectedCourse.days ? `${selectedCourse.days} Tage` : selectedCourse.hours ? `${selectedCourse.hours} Stunden` : "Auf Anfrage")}</span>
+                        </div>
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-gray-600">Format</span>
+                          <span className="font-medium">{selectedCourse.category}</span>
+                        </div>
+                        <Button className="w-full" onClick={startRegistration}>Jetzt anfragen</Button>
+                      </CardContent>
+                    </Card>
+                  </div>
+                </div>
+
+                <div className="flex justify-center mt-8">
+                  <Button size="lg" onClick={startRegistration} className="px-8 bg-[#66C63A] hover:bg-[#58B533] text-white">
+                    Jetzt für diesen Kurs anfragen
+                  </Button>
+                </div>
               </div>
             )}
           </div>
