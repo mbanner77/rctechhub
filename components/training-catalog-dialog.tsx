@@ -198,7 +198,7 @@ export default function TrainingCatalogDialog({ isOpen, onClose }: TrainingCatal
                     onChange={(e) => setSearchTerm(e.target.value)}
                   />
                 </div>
-                <Button variant="outline" className="flex items-center gap-2" onClick={downloadCatalog}>
+                <Button variant="outline" className="flex items-center gap-2 text-[#2F7D1A] border-[#BEE9B4] hover:bg-[#E9F8E4]" onClick={downloadCatalog}>
                   <Download className="h-4 w-4" />
                   Katalog herunterladen
                 </Button>
@@ -217,11 +217,11 @@ export default function TrainingCatalogDialog({ isOpen, onClose }: TrainingCatal
                     {filteredCourses.map((course) => (
                       <Card
                         key={course.id}
-                        className={`group overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-0.5 border ${course.featured ? "border-amber-300" : "border-gray-200"}`}
+                        className={`group overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-0.5 border ${course.featured ? "border-[#BEE9B4]" : "border-gray-200"}`}
                       >
                         <div className="relative h-44 bg-gray-100">
                           {course.featured && (
-                            <div className="absolute left-3 top-3 z-10 inline-flex items-center gap-1 rounded-full bg-amber-500/95 px-2.5 py-1 text-xs font-medium text-white shadow-sm">
+                            <div className="absolute left-3 top-3 z-10 inline-flex items-center gap-1 rounded-full bg-[#66C63A]/95 px-2.5 py-1 text-xs font-medium text-white shadow-sm">
                               <Star className="h-3.5 w-3.5" /> Empfohlen
                             </div>
                           )}
@@ -236,17 +236,17 @@ export default function TrainingCatalogDialog({ isOpen, onClose }: TrainingCatal
                         <CardContent className="p-5">
                           <div className="flex justify-between items-start mb-2">
                             <h3 className="text-lg font-semibold tracking-tight leading-snug">{course.title}</h3>
-                            <div className="inline-flex items-center rounded-full bg-gray-50 px-2.5 py-0.5 text-xs font-medium text-gray-700 ring-1 ring-gray-200">
+                            <div className="inline-flex items-center rounded-full bg-[#E9F8E4] px-2.5 py-0.5 text-xs font-medium text-[#2B6B16] ring-1 ring-[#BEE9B4]">
                               <Euro className="h-3.5 w-3.5 mr-1" />
                               {course.price === 0 ? "Kostenlos" : `${course.price} €`}
                             </div>
                           </div>
 
                           <div className="flex items-center mb-2">
-                            <Badge variant="outline" className="bg-green-50 mr-2 border-green-200 text-green-800">
+                            <Badge variant="outline" className="bg-[#E9F8E4] mr-2 border-[#BEE9B4] text-[#2B6B16]">
                               {course.type}
                             </Badge>
-                            <Badge variant="outline" className="bg-blue-50 border-blue-200 text-blue-800">
+                            <Badge variant="outline" className="bg-[#E9F8E4] border-[#BEE9B4] text-[#2B6B16]">
                               {course.level}
                             </Badge>
                           </div>
@@ -265,11 +265,12 @@ export default function TrainingCatalogDialog({ isOpen, onClose }: TrainingCatal
                           </div>
                         </CardContent>
                         <CardFooter className="px-5 pb-5 pt-0 flex justify-between">
-                          <Button size="sm" variant="outline" className="gap-1" onClick={() => showCourseDetails(course)}>
+                          <Button size="sm" variant="outline" className="gap-1 text-[#2F7D1A] border-[#BEE9B4] hover:bg-[#E9F8E4]" onClick={() => showCourseDetails(course)}>
                             Details <ArrowRight className="h-3.5 w-3.5" />
                           </Button>
                           <Button
                             size="sm"
+                            className="bg-[#66C63A] hover:bg-[#58B533] text-white"
                             onClick={() => {
                               showCourseDetails(course)
                               startRegistration()
@@ -323,7 +324,7 @@ export default function TrainingCatalogDialog({ isOpen, onClose }: TrainingCatal
                 <ChevronLeft className="h-4 w-4" /> Zurück zur Übersicht
               </Button>
               {!isRegistering && !registrationSuccess && (
-                <Button size="sm" onClick={startRegistration}>
+                <Button size="sm" className="bg-[#66C63A] hover:bg-[#58B533] text-white" onClick={startRegistration}>
                   Jetzt anmelden
                 </Button>
               )}
@@ -345,7 +346,7 @@ export default function TrainingCatalogDialog({ isOpen, onClose }: TrainingCatal
                     </div>
                     <div className="flex flex-wrap items-end justify-between gap-3">
                       <h2 className="text-3xl font-semibold tracking-tight drop-shadow-sm">{selectedCourse.title}</h2>
-                      <div className="inline-flex items-center rounded-full bg-white/90 px-3 py-1 text-sm font-medium text-gray-900">
+                      <div className="inline-flex items-center rounded-full bg-[#66C63A] text-white px-3 py-1 text-sm font-medium shadow">
                         <Euro className="h-4 w-4 mr-1" />
                         {selectedCourse.price === 0 ? "Kostenlos" : `${selectedCourse.price} €`}
                       </div>
@@ -354,13 +355,13 @@ export default function TrainingCatalogDialog({ isOpen, onClose }: TrainingCatal
                 </div>
 
                 <div className="flex flex-wrap gap-2 mb-6">
-                  <Badge variant="outline" className="bg-blue-50 border-blue-200 text-blue-800">
+                  <Badge variant="outline" className="bg-[#E9F8E4] border-[#BEE9B4] text-[#2B6B16]">
                     {selectedCourse.category}
                   </Badge>
-                  <Badge variant="outline" className="bg-green-50 border-green-200 text-green-800">
+                  <Badge variant="outline" className="bg-[#E9F8E4] border-[#BEE9B4] text-[#2B6B16]">
                     {selectedCourse.type}
                   </Badge>
-                  <Badge variant="outline" className="bg-purple-50 border-purple-200 text-purple-800">
+                  <Badge variant="outline" className="bg-[#E9F8E4] border-[#BEE9B4] text-[#2B6B16]">
                     {selectedCourse.level}
                   </Badge>
                 </div>
@@ -433,7 +434,7 @@ export default function TrainingCatalogDialog({ isOpen, onClose }: TrainingCatal
                 </div>
 
                 <div className="flex justify-center mt-8">
-                  <Button size="lg" onClick={startRegistration} className="px-8">
+                  <Button size="lg" onClick={startRegistration} className="px-8 bg-[#66C63A] hover:bg-[#58B533] text-white">
                     Jetzt für diesen Kurs anmelden
                   </Button>
                 </div>
@@ -524,10 +525,10 @@ export default function TrainingCatalogDialog({ isOpen, onClose }: TrainingCatal
                       </div>
 
                       <div className="flex justify-between">
-                        <Button type="button" variant="outline" onClick={closeCourseDetails}>
+                        <Button type="button" variant="outline" className="text-[#2F7D1A] border-[#BEE9B4] hover:bg-[#E9F8E4]" onClick={closeCourseDetails}>
                           Abbrechen
                         </Button>
-                        <Button type="submit">Anmeldung absenden</Button>
+                        <Button type="submit" className="bg-[#66C63A] hover:bg-[#58B533] text-white">Anmeldung absenden</Button>
                       </div>
                     </form>
                   </div>
