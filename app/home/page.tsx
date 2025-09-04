@@ -80,6 +80,20 @@ export default function Home() {
   // Refs für die Scroll-Funktionalität
   const servicesRef = useRef<HTMLDivElement>(null)
   
+  // Helper: Smooth scroll with retries to handle late layout shifts or delayed element readiness
+  const scrollToIdWithRetries = (id: string, attempts = 6, delay = 300) => {
+    if (typeof window === 'undefined') return
+    const el = document.getElementById(id)
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      if (attempts > 1) {
+        setTimeout(() => scrollToIdWithRetries(id, attempts - 1, delay), delay)
+      }
+    } else if (attempts > 0) {
+      setTimeout(() => scrollToIdWithRetries(id, attempts - 1, delay), delay)
+    }
+  }
+  
   // Auto-scroll to hackathon if arriving with hash
   useEffect(() => {
     const hashRaw = typeof window !== 'undefined' ? window.location.hash : ''
@@ -115,11 +129,23 @@ export default function Home() {
 
     // Knowledge Hub (Templates) anchor
     if (hash === '#templates') {
-      const doScroll = () => smoothScrollById('templates')
-      doScroll()
-      const t = setTimeout(doScroll, 300)
-      return () => clearTimeout(t)
+      scrollToIdWithRetries('templates', 6, 300)
     }
+  }, [])
+
+  // Also handle hash changes after initial mount (client-side navigation on the same page)
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+
+    const onHashChange = () => {
+      const hash = (window.location.hash || '').toLowerCase()
+      if (hash === '#templates') {
+        scrollToIdWithRetries('templates', 6, 300)
+      }
+    }
+
+    window.addEventListener('hashchange', onHashChange)
+    return () => window.removeEventListener('hashchange', onHashChange)
   }, [])
 
   // Open Training Catalog dialog if query parameter openTrainingskatalog=1 is present
@@ -519,7 +545,7 @@ export default function Home() {
             </div>
           </div>
 
-          <div id="templates" className="mt-20 mb-16">
+          <div id="templates" className="scroll-mt-28 md:scroll-mt-32 mt-20 mb-16">
             <div className="max-w-4xl mx-auto text-center mb-12">
               <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">Knowledge Hub</h2>
               <p className="text-lg text-gray-600">
