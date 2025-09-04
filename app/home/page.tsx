@@ -112,6 +112,14 @@ export default function Home() {
       const t = setTimeout(doScroll, 300)
       return () => clearTimeout(t)
     }
+
+    // Knowledge Hub (Templates) anchor
+    if (hash === '#templates') {
+      const doScroll = () => smoothScrollById('templates')
+      doScroll()
+      const t = setTimeout(doScroll, 300)
+      return () => clearTimeout(t)
+    }
   }, [])
 
   // Open Training Catalog dialog if query parameter openTrainingskatalog=1 is present
