@@ -168,6 +168,20 @@ export default function KnowledgeHubGallery() {
   }
 
   useEffect(() => {
+    // Initialize active tab from URL if provided, e.g., ?tab=schulungen
+    try {
+      const search = typeof window !== 'undefined' ? window.location.search : ''
+      if (search) {
+        const params = new URLSearchParams(search)
+        const tab = (params.get('tab') || '').toLowerCase()
+        if (tab === 'templates' || tab === 'best-practices' || tab === 'schulungen') {
+          setActiveTab(tab)
+        }
+      }
+    } catch (e) {
+      // noop
+    }
+
     const loadKnowledgeHubContent = async () => {
       setIsLoading(true);
       try {
