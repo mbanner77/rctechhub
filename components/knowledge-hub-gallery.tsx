@@ -444,6 +444,7 @@ export default function KnowledgeHubGallery() {
             <Button
               variant="outline"
               size="sm"
+              className="text-[#2F7D1A] border-[#BEE9B4] hover:bg-[#E9F8E4]"
               onClick={() => {
                 // Force refresh schulungen from API
                 fetch('/api/schulungen')
@@ -480,18 +481,18 @@ export default function KnowledgeHubGallery() {
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredSchulungen.length > 0 ? (
               filteredSchulungen.map((schulung: any) => (
-                <Card key={schulung.id} className="overflow-hidden hover:shadow-lg transition-shadow">
+                <Card key={schulung.id} className="overflow-hidden hover:shadow-lg transition-shadow border border-[#BEE9B4]">
                   <CardContent className="p-6">
                     <div className="flex items-center mb-4">
-                      <div className="rounded-full bg-blue-100 p-3 mr-3">
-                        <FileText className="h-6 w-6 text-blue-600" />
+                      <div className="rounded-full bg-[#E9F8E4] p-3 mr-3">
+                        <FileText className="h-6 w-6 text-[#2B6B16]" />
                       </div>
                       <h3 className="text-lg font-bold">{schulung.title}</h3>
                     </div>
                     <div className="space-y-3 mb-4">
                       <div className="flex justify-between">
                         <span className="text-sm font-medium text-gray-500">Kategorie:</span>
-                        <Badge variant="outline">{schulung.category}</Badge>
+                        <Badge variant="outline" className="bg-[#E9F8E4] border-[#BEE9B4] text-[#2B6B16]">{schulung.category}</Badge>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-sm font-medium text-gray-500">Dauer:</span>
@@ -505,7 +506,7 @@ export default function KnowledgeHubGallery() {
                       </div>
                       <div className="flex justify-between">
                         <span className="text-sm font-medium text-gray-500">Preis:</span>
-                        <span className="font-bold">{schulung.price > 0 ? `${schulung.price} €` : "Kostenlos"}</span>
+                        <span className="font-bold inline-flex items-center rounded-full bg-[#E9F8E4] px-2 py-0.5 text-xs text-[#2B6B16] ring-1 ring-[#BEE9B4]">{schulung.price > 0 ? `${schulung.price} €` : "Kostenlos"}</span>
                       </div>
                     </div>
                   </CardContent>
@@ -513,6 +514,7 @@ export default function KnowledgeHubGallery() {
                     <Button
                       variant="outline"
                       size="sm"
+                      className="text-[#2F7D1A] border-[#BEE9B4] hover:bg-[#E9F8E4]"
                       onClick={() =>
                         handlePreview({
                           title: schulung.title,
@@ -544,7 +546,7 @@ export default function KnowledgeHubGallery() {
                     </Button>
                     <Button
                       size="sm"
-                      className="bg-blue-600 hover:bg-blue-700"
+                      className="bg-[#66C63A] hover:bg-[#58B533] text-white"
                       onClick={() => handleContact(schulung)}
                     >
                       Anfragen
@@ -591,7 +593,7 @@ export default function KnowledgeHubGallery() {
                   <div className="inline-flex items-center rounded-full bg-white/15 px-2 py-0.5 text-[11px] font-medium backdrop-blur">
                     {selectedItem.category}
                   </div>
-                  <div className="inline-flex items-center rounded-full bg-white/90 px-3 py-1 text-sm font-medium text-gray-900">
+                  <div className="inline-flex items-center rounded-full bg-[#66C63A] px-3 py-1 text-sm font-medium text-white shadow">
                     <Euro className="h-4 w-4 mr-1" />
                     {typeof selectedItem.price === 'number' && selectedItem.price > 0
                       ? new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(selectedItem.price)
@@ -666,11 +668,7 @@ export default function KnowledgeHubGallery() {
                                 : (selectedItem.duration || ''))}
                         </span>
                       </div>
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-gray-600 inline-flex items-center"><Users className="h-4 w-4 mr-1" />Teilnehmer</span>
-                        <span className="font-medium">{selectedItem.participants || '—'}</span>
-                      </div>
-                      <Button className="w-full mt-2" onClick={() => handleContact(selectedItem)}>Anfragen</Button>
+                      <Button className="w-full mt-2 bg-[#66C63A] hover:bg-[#58B533] text-white" onClick={() => handleContact(selectedItem)}>Anfragen</Button>
                     </div>
                   </div>
                 </div>
