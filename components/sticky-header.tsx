@@ -95,6 +95,14 @@ export function StickyHeader() {
                 Pathfinder
               </Button>
             </Link>
+            <Link href="/home?openTrainingskatalog=1#templates">
+              <Button
+                variant="ghost"
+                className={`${isScrolled ? "text-gray-700 hover:text-gray-900" : isLandingPage || isHomePage ? "text-white" : "text-black"}`}
+              >
+                Trainingskatalog
+              </Button>
+            </Link>
             {/*<Link href="/unsere-experten">
               <Button
                 variant="ghost"
@@ -163,6 +171,11 @@ export function StickyHeader() {
               <Link href="/unsere-experten">
                 <Button variant="ghost" className="w-full justify-start text-black" onClick={() => setMobileMenuOpen(false)}>
                   Unsere Experten
+                </Button>
+              </Link>
+              <Link href="/home?openTrainingskatalog=1#templates">
+                <Button variant="ghost" className="w-full justify-start text-black" onClick={() => setMobileMenuOpen(false)}>
+                  Trainingskatalog
                 </Button>
               </Link>
             </nav>

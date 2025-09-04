@@ -114,6 +114,18 @@ export default function Home() {
     }
   }, [])
 
+  // Open Training Catalog dialog if query parameter openTrainingskatalog=1 is present
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const search = window.location.search || ''
+    if (!search) return
+    const params = new URLSearchParams(search)
+    const open = params.get('openTrainingskatalog')
+    if (open === '1') {
+      setIsTrainingCatalogDialogOpen(true)
+    }
+  }, [])
+
   const handleWorkshopClick = (title: string, duration: string, price: number) => {
     analytics.dialogOpen('workshop-booking', title)
     setSelectedWorkshop({ title, duration, price })
