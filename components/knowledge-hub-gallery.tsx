@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
 import { Card, CardContent, CardFooter } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -107,7 +108,14 @@ const ContentItem = ({ item, onDownload, onPreview, onContact }: ContentItemProp
 
 export default function KnowledgeHubGallery() {
   const { toast } = useToast()
-  const [activeTab, setActiveTab] = useState("templates")
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  // Initialize activeTab from URL on first render to avoid initial flash of default tab
+  const initialTab = (() => {
+    const tab = (searchParams?.get('tab') || '').toLowerCase()
+    return (tab === 'templates' || tab === 'best-practices' || tab === 'schulungen') ? tab : 'templates'
+  })()
+  const [activeTab, setActiveTab] = useState(initialTab)
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedItem, setSelectedItem] = useState<any | null>(null)
@@ -168,18 +176,13 @@ export default function KnowledgeHubGallery() {
   }
 
   useEffect(() => {
-    // Initialize active tab from URL if provided, e.g., ?tab=schulungen
-    try {
-      const search = typeof window !== 'undefined' ? window.location.search : ''
-      if (search) {
-        const params = new URLSearchParams(search)
-        const tab = (params.get('tab') || '').toLowerCase()
-        if (tab === 'templates' || tab === 'best-practices' || tab === 'schulungen') {
-          setActiveTab(tab)
-        }
-      }
-    } catch (e) {
-      // noop
+    // Keep activeTab in sync with URL (works on first load and client-side nav)
+    const tab = (searchParams?.get('tab') || '').toLowerCase()
+    if (tab === 'templates' || tab === 'best-practices' || tab === 'schulungen') {
+      setActiveTab(tab)
+    } else {
+      // If no or invalid tab param, ensure state stays at default
+      // do not push URL change here to avoid unexpected history entries
     }
 
     const loadKnowledgeHubContent = async () => {
@@ -271,7 +274,7 @@ export default function KnowledgeHubGallery() {
     };
 
     loadKnowledgeHubContent();
-  }, []);
+  }, [searchParams]);
 
   useEffect(() => {
     // Debug log for filtered trainings whenever they change
@@ -414,7 +417,23 @@ export default function KnowledgeHubGallery() {
       </div>
 
       {/* Tabs */}
-      <Tabs defaultValue="templates" value={activeTab} onValueChange={setActiveTab} className="w-full">
+      <Tabs
+        defaultValue="templates"
+        value={activeTab}
+        onValueChange={(value) => {
+          setActiveTab(value)
+          // Update the URL's tab param, keep hash to ensure section stays in view
+          try {
+            const current = new URL(window.location.href)
+            current.searchParams.set('tab', value)
+            // Preserve hash (e.g., #templates) and avoid scrolling
+            router.replace(`${current.pathname}?${current.searchParams.toString()}${current.hash}`, { scroll: false })
+          } catch (e) {
+            // noop
+          }
+        }}
+        className="w-full"
+      >
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="templates">Templates</TabsTrigger>
           <TabsTrigger value="best-practices">Best Practices</TabsTrigger>
