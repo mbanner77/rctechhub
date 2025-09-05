@@ -29,6 +29,7 @@ import { useToast } from "@/hooks/use-toast";
 import { defaultKnowledgeHubContent } from "@/data/default-data";
 import { AlertCircle, Save, Trash, Plus, Download, Upload, Loader2, BookOpen, FileText, BookMarked, X } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import SchulungenManager from "@/components/admin/schulungen-manager";
 import { db, sanitizeKnowledgeHubContent } from "@/lib/db";
 import {
   getClientKnowledgeHubContent,
@@ -775,53 +776,55 @@ export default function KnowledgeHubEditor() {
         </Alert>
       )}
 
-      <div className="flex justify-between items-center mb-4">
-        <div className="flex space-x-2">
-          <Button
-            onClick={() => {
-              if (activeTab === TabType.TRAININGS) {
-                handleAddSchulungItem();
-              } else {
-                handleAddContentItem(activeTab === TabType.TEMPLATES ? ContentType.TEMPLATE : ContentType.BEST_PRACTICE);
-              }
-            }}>
-            <Plus className="mr-2 h-4 w-4" />{" "}
-            {activeTab === TabType.TEMPLATES
-              ? "Template"
-              : activeTab === TabType.BEST_PRACTICES
-                ? "Best Practice"
-                : "Schulung"} hinzufügen
-          </Button>
-          <Button onClick={handleSave} variant="default" disabled={isSaving}>
-            {isSaving ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Speichern...
-              </>
-            ) : (
-              <>
-                <Save className="mr-2 h-4 w-4" /> Speichern
-              </>
-            )}
-          </Button>
-        </div>
-        <div className="flex space-x-2">
-          <Button onClick={handleExport} variant="outline">
-            <Download className="mr-2 h-4 w-4" /> Exportieren
-          </Button>
-          <div className="relative">
-            <input
-              type="file"
-              id="import-file"
-              className="absolute inset-0 opacity-0 w-full cursor-pointer"
-              onChange={handleImport}
-              accept=".json"
-            />
-            <Button variant="outline" className="relative">
-              <Upload className="mr-2 h-4 w-4" /> Importieren
+      {activeTab !== TabType.TRAININGS && (
+        <div className="flex justify-between items-center mb-4">
+          <div className="flex space-x-2">
+            <Button
+              onClick={() => {
+                if (activeTab === TabType.TRAININGS) {
+                  handleAddSchulungItem();
+                } else {
+                  handleAddContentItem(activeTab === TabType.TEMPLATES ? ContentType.TEMPLATE : ContentType.BEST_PRACTICE);
+                }
+              }}>
+              <Plus className="mr-2 h-4 w-4" />{" "}
+              {activeTab === TabType.TEMPLATES
+                ? "Template"
+                : activeTab === TabType.BEST_PRACTICES
+                  ? "Best Practice"
+                  : "Schulung"} hinzufügen
+            </Button>
+            <Button onClick={handleSave} variant="default" disabled={isSaving}>
+              {isSaving ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Speichern...
+                </>
+              ) : (
+                <>
+                  <Save className="mr-2 h-4 w-4" /> Speichern
+                </>
+              )}
             </Button>
           </div>
+          <div className="flex space-x-2">
+            <Button onClick={handleExport} variant="outline">
+              <Download className="mr-2 h-4 w-4" /> Exportieren
+            </Button>
+            <div className="relative">
+              <input
+                type="file"
+                id="import-file"
+                className="absolute inset-0 opacity-0 w-full cursor-pointer"
+                onChange={handleImport}
+                accept=".json"
+              />
+              <Button variant="outline" className="relative">
+                <Upload className="mr-2 h-4 w-4" /> Importieren
+              </Button>
+            </div>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Load all content (for Dev purposes only) */}
       {/* <div className="grid gap-6">
@@ -844,7 +847,7 @@ export default function KnowledgeHubEditor() {
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value={TabType.TEMPLATES}>Templates</TabsTrigger>
           <TabsTrigger value={TabType.BEST_PRACTICES}>Best Practices</TabsTrigger>
-          <TabsTrigger value={TabType.TRAININGS}>Schulungen</TabsTrigger>
+          <TabsTrigger value={TabType.TRAININGS}>Schulungsmanager</TabsTrigger>
         </TabsList>
 
         <TabsContent value={TabType.TEMPLATES} className="mt-6">
@@ -877,29 +880,7 @@ export default function KnowledgeHubEditor() {
         </TabsContent>
 
         <TabsContent value={TabType.TRAININGS} className="mt-6">
-          <div>
-            {schulungen.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                <p>No training courses available. Click "Add Training" to get started.</p>
-              </div>
-            ) : (
-              <Accordion
-                type="multiple"
-                value={openSchulungen}
-                onValueChange={setOpenSchulungen}
-              >
-                {schulungen.map((schulungItem) => (
-                  <SchulungItemEditor
-                    key={schulungItem.id}
-                    schulung={schulungItem}
-                    onSchulungChange={handleSchulungItemChange}
-                    onSchulungDelete={handleSchulungItemDelete}
-                    toast={toast}
-                  />
-                ))}
-              </Accordion>
-            )}
-          </div>
+          <SchulungenManager />
         </TabsContent>
       </Tabs>
     </div>
