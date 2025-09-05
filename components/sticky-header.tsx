@@ -51,6 +51,14 @@ export function StickyHeader() {
               <Button
                 variant="ghost"
                 className={`${isScrolled ? "text-gray-700 hover:text-gray-900" : isLandingPage || isHomePage ? "text-white" : "text-black"}`}
+                onClick={(e) => {
+                  if (typeof window !== 'undefined' && pathname === '/home') {
+                    e.preventDefault()
+                    // Scroll to top when already on /home
+                    window.history.replaceState(null, '', '/home')
+                    window.scrollTo({ top: 0, behavior: 'smooth' })
+                  }
+                }}
               >
                 Lösungsbaukasten
               </Button>
@@ -83,6 +91,20 @@ export function StickyHeader() {
               <Button
                 variant="ghost"
                 className={`${isScrolled ? "text-gray-700 hover:text-gray-900" : isLandingPage || isHomePage ? "text-white" : "text-black"}`}
+                onClick={(e) => {
+                  if (typeof window !== 'undefined' && pathname === '/home') {
+                    e.preventDefault()
+                    const url = new URL(window.location.href)
+                    url.searchParams.set('packageType', 'starter-package')
+                    url.hash = 'services'
+                    window.history.replaceState(null, '', url.toString())
+                    const el = document.getElementById('services')
+                    if (el) {
+                      el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                      setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'start' }), 300)
+                    }
+                  }
+                }}
               >
                 Starter Packages
               </Button>
@@ -99,6 +121,21 @@ export function StickyHeader() {
               <Button
                 variant="ghost"
                 className={`${isScrolled ? "text-gray-700 hover:text-gray-900" : isLandingPage || isHomePage ? "text-white" : "text-black"}`}
+                onClick={(e) => {
+                  if (typeof window !== 'undefined' && pathname === '/home') {
+                    e.preventDefault()
+                    // Ensure URL reflects desired state and force scroll
+                    const url = new URL(window.location.href)
+                    url.searchParams.set('tab', 'schulungen')
+                    url.hash = 'templates'
+                    window.history.replaceState(null, '', url.toString())
+                    const el = document.getElementById('templates')
+                    if (el) {
+                      el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                      setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'start' }), 300)
+                    }
+                  }
+                }}
               >
                 Trainingskatalog
               </Button>
