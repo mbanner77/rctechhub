@@ -177,14 +177,14 @@ export async function generateServiceOnePagerPDF(service: OnePagerService) {
         </div>
       </div>
 
-      <div style="display:flex; gap:16px;">
-        <div style="flex:1; background:#f9fafb; border:1px solid #e5e7eb; border-radius:8px; padding:16px;">
+      <div data-op-block style="display:flex; gap:14px;">
+        <div data-op-block style="flex:1; background:#f9fafb; border:1px solid #e5e7eb; border-radius:8px; padding:16px;">
           <div style="font-size:12px; color:#6b7280; text-transform:uppercase; font-weight:700; letter-spacing:.04em;">Leistungen & Technologien</div>
-          ${(service.technologies && service.technologies.length) ? `<div style='margin-top:8px; display:flex; gap:8px; flex-wrap:wrap;'>${(service.technologies || []).map(t => tag(t)).join('')}</div>` : ''}
-          ${(service.included && service.included.length) ? `<ul style='margin-top:10px; padding-left:16px; color:#374151; font-size:13px; line-height:1.5;'>${service.included.slice(0,8).map(i => `<li style='margin-bottom:6px;'>${escapeHtml(i)}</li>`).join('')}${service.included.length>8?`<li style='color:#6b7280;'>… weitere Punkte</li>`:''}</ul>` : ''}
-          ${(service.notIncluded && service.notIncluded.length) ? `<div style='margin-top:8px; font-size:12px; color:#6b7280;'>Nicht enthalten:</div><ul style='margin-top:6px; padding-left:16px; font-size:12px; color:#6b7280;'>${service.notIncluded.slice(0,5).map(i => `<li style='margin-bottom:4px;'>${escapeHtml(i)}</li>`).join('')}</ul>` : ''}
+          ${(service.technologies && service.technologies.length) ? `<div data-op-block style='margin-top:8px; display:flex; gap:8px; flex-wrap:wrap;'>${(service.technologies || []).map(t => tag(t)).join('')}</div>` : ''}
+          ${(service.included && service.included.length) ? `<ul data-op-block style='margin-top:10px; padding-left:16px; color:#374151; font-size:13px; line-height:1.5;'>${service.included.slice(0,8).map(i => `<li data-op-item style='margin-bottom:6px;'>${escapeHtml(i)}</li>`).join('')}${service.included.length>8?`<li data-op-item style='color:#6b7280;'>… weitere Punkte</li>`:''}</ul>` : ''}
+          ${(service.notIncluded && service.notIncluded.length) ? `<div data-op-block style='margin-top:8px; font-size:12px; color:#6b7280;'>Nicht enthalten:</div><ul data-op-block style='margin-top:6px; padding-left:16px; font-size:12px; color:#6b7280;'>${service.notIncluded.slice(0,5).map(i => `<li data-op-item style='margin-bottom:4px;'>${escapeHtml(i)}</li>`).join('')}</ul>` : ''}
         </div>
-        <div style="width:260px; background:#ecfdf5; border:1px solid #d1fae5; border-radius:8px; padding:16px;">
+        <div data-op-block style="width:260px; background:#ecfdf5; border:1px solid #d1fae5; border-radius:8px; padding:16px;">
           <div style="font-size:12px; color:#065f46; text-transform:uppercase; font-weight:700; letter-spacing:.04em;">Festpreis</div>
           <div style="margin-top:8px; font-size:28px; font-weight:800; color:#065f46;">${formatEUR(service.price)}</div>
           <div style="font-size:12px; color:#047857;">zzgl. MwSt.</div>
@@ -194,11 +194,11 @@ export async function generateServiceOnePagerPDF(service: OnePagerService) {
       </div>
 
       ${(service.process && service.process.length) ? `
-      <div style='background:#ffffff; border:1px solid #e5e7eb; border-radius:8px; padding:14px;'>
+      <div data-op-block data-op-section="process" style='background:#ffffff; border:1px solid #e5e7eb; border-radius:8px; padding:14px;'>
         <div style="font-size:12px; color:#6b7280; text-transform:uppercase; font-weight:700; letter-spacing:.04em; margin-bottom:8px;">Ablauf</div>
         <ol style='margin:0; padding-left:0; list-style:none; display:flex; flex-direction:column; gap:10px;'>
           ${service.process.slice(0,6).map((step, idx) => `
-            <li style='display:flex; gap:10px; align-items:flex-start;'>
+            <li data-op-item style='display:flex; gap:10px; align-items:flex-start;'>
               <div style="background:#dcfce7; color:#065f46; font-weight:700; font-size:11px; width:22px; height:22px; display:flex; align-items:center; justify-content:center; border-radius:9999px;">${idx+1}</div>
               <div style='flex:1;'>
                 <div style='font-weight:600; color:#111827;'>${escapeHtml(step.title || `Schritt ${idx+1}`)}</div>
@@ -219,6 +219,23 @@ export async function generateServiceOnePagerPDF(service: OnePagerService) {
 
   document.body.appendChild(container)
 
+  // Collect smart breakpoints from DOM before rendering
+  const rootEl = container.querySelector('#onepager-root') as HTMLElement
+  const pageHeightCss = 1123
+  const safeOffsetsCss: number[] = [0]
+  try {
+    const blocks = Array.from(rootEl.querySelectorAll('[data-op-block], [data-op-item]')) as HTMLElement[]
+    for (const el of blocks) {
+      const y = el.offsetTop - rootEl.offsetTop
+      if (y > 0) safeOffsetsCss.push(y)
+      const yBottom = y + el.offsetHeight
+      safeOffsetsCss.push(yBottom)
+    }
+    safeOffsetsCss.push(rootEl.scrollHeight)
+    // Deduplicate and sort
+    safeOffsetsCss.sort((a,b)=>a-b)
+  } catch {}
+
   // Render to canvas at high scale for sharpness (full natural height)
   const canvas = await html2canvas(container as HTMLElement, {
     scale: 2,
@@ -233,44 +250,80 @@ export async function generateServiceOnePagerPDF(service: OnePagerService) {
   const pageWidth = pdf.internal.pageSize.getWidth() // 595pt
   const pageHeight = pdf.internal.pageSize.getHeight() // 842pt
 
-  // Calculate slice height in canvas pixels per PDF page
-  // canvas.width corresponds to 794px (CSS) * scale (2) = 1588px
-  const canvasPageHeight = Math.floor((canvas.height * (pageWidth / (canvas.width))))
+  // Compute page break positions using safe breakpoints
+  const cssToCanvas = (v: number) => Math.round(v * (canvas.width / 794))
+  const targetCss = pageHeightCss
+  const pageEndsCss: number[] = []
+  let startCss = 0
+  const margin = 24
 
-  // For slicing, we work in canvas pixel space
-  const sliceHeightPx = Math.floor(1123 * (canvas.width / 794)) // px per A4 page at current scale
-  let rendered = 0
+  // If a process section exists, force page 1 to end right before it
+  const processEl = rootEl.querySelector('[data-op-section="process"]') as HTMLElement | null
+  if (processEl) {
+    const processTop = processEl.offsetTop - rootEl.offsetTop
+    const firstEnd = Math.max(0, processTop - margin)
+    // End page 1 before the process block (but at a safe offset if possible)
+    let firstPageEnd = 0
+    for (const off of safeOffsetsCss) {
+      if (off <= firstEnd) firstPageEnd = off
+      else break
+    }
+    if (firstPageEnd === 0) firstPageEnd = firstEnd
+    pageEndsCss.push(firstPageEnd)
+    startCss = Math.max(firstPageEnd, processTop)
+  }
 
-  while (rendered < canvas.height) {
+  while (startCss < (rootEl.scrollHeight - 1)) {
+    const target = startCss + targetCss
+    // find last safe <= target - margin
+    let candidate = startCss
+    for (const off of safeOffsetsCss) {
+      if (off <= target - margin) candidate = off
+      else break
+    }
+    if (candidate <= startCss) {
+      candidate = Math.min(startCss + targetCss, rootEl.scrollHeight)
+    }
+    pageEndsCss.push(candidate)
+    startCss = candidate
+  }
+
+  // Slice canvas at computed CSS offsets
+  let renderedPx = 0
+  let prevCss = 0
+  for (let i = 0; i < pageEndsCss.length; i++) {
+    const endCss = pageEndsCss[i]
+    const sliceCss = endCss - prevCss
+    const slicePx = cssToCanvas(sliceCss)
+    const startPx = cssToCanvas(prevCss)
+
     const pageCanvas = document.createElement('canvas')
     const pageContext = pageCanvas.getContext('2d')!
-    const slice = Math.min(sliceHeightPx, canvas.height - rendered)
     pageCanvas.width = canvas.width
-    pageCanvas.height = slice
+    pageCanvas.height = slicePx
     pageContext.drawImage(
       canvas,
       0,
-      rendered,
+      startPx,
       canvas.width,
-      slice,
+      slicePx,
       0,
       0,
       canvas.width,
-      slice
+      slicePx
     )
     const imgData = pageCanvas.toDataURL('image/png')
 
     const imgWidthPt = pageWidth
-    const imgHeightPt = (slice / canvas.width) * pageWidth
+    const imgHeightPt = (slicePx / canvas.width) * pageWidth
 
-    if (rendered === 0) {
+    if (i === 0) {
       pdf.addImage(imgData, 'PNG', 0, 0, imgWidthPt, imgHeightPt, undefined, 'FAST')
     } else {
       pdf.addPage('a4', 'portrait')
       pdf.addImage(imgData, 'PNG', 0, 0, imgWidthPt, imgHeightPt, undefined, 'FAST')
     }
-
-    rendered += slice
+    prevCss = endCss
   }
 
   // Clean up

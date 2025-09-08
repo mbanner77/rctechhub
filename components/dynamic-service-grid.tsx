@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useLayoutEffect } from "react"
 import Image from "next/image"
-import { Check, ShoppingCart, Share2, Star, Clock, Calendar, FileDown } from "lucide-react"
+import { Check, ShoppingCart, Share2, Star, Clock, Calendar } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardDescription, CardFooter, CardTitle } from "@/components/ui/card"
@@ -1073,29 +1073,6 @@ export default function DynamicServiceGrid({
                         }}
                       >
                         OnePager herunterladen
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        onClick={async () => {
-                          toast({ title: "OnePager wird erstellt…", description: "Bitte einen Moment, der Download startet gleich." })
-                          await generateServiceOnePagerPDF({
-                            id: service.id,
-                            title: service.title,
-                            description: typeof service.description === 'string' ? service.description : String(service.description ?? ''),
-                            price: Number(service.price || 0),
-                            category: service.category,
-                            technologyCategory: service.technologyCategory,
-                            processCategory: service.processCategory,
-                            technologies: Array.isArray(service.technologies) ? service.technologies : [],
-                            image: service.image,
-                            rating: typeof service.rating === 'number' ? service.rating : undefined,
-                          })
-                        }}
-                        aria-label="OnePager herunterladen"
-                        title="OnePager herunterladen"
-                      >
-                        <FileDown className="h-4 w-4" />
                       </Button>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
