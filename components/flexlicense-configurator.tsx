@@ -151,7 +151,7 @@ export default function FlexLicenseConfigurator() {
         <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight">Digitalisierung ohne CapEx – mit dem RealCore FlexLicense Konfigurator</h1>
         <p className="mt-3 text-gray-600">
           Budgethürden bremsen Ihre Projekte? Mit dem RealCore FlexLicense brauchen Sie keine großen Investitionen mehr: Sie konfigurieren Ihr
-          Wunschprojekt online – Laufzeit, Service-Level und Projektvolumen – und erhalten sofort eine transparente Kostenübersicht.
+          Wunschprojekt online – Laufzeit, Service-Level und Projektvolumen – und erhalten eine monatliche Lizenzberechnung über Ihre gewünschte Laufzeit.
         </p>
         <ul className="mt-4 grid gap-2 text-gray-800">
           <li>• Planbare Raten statt hoher Einmalinvestition</li>
