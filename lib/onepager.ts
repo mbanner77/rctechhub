@@ -104,6 +104,27 @@ export async function generateCustomPackageOnePagerPDF(pkg: CustomPackageOnePage
   `
 
   document.body.appendChild(container)
+
+  // Distribute first page: insert a spacer before the process block so that
+  // page 1 content uses the available height and "Ablauf" starts on page 2.
+  try {
+    const rootElTmp = container.querySelector('#onepager-root') as HTMLElement
+    const processElTmp = rootElTmp?.querySelector('[data-op-section="process"]') as HTMLElement | null
+    if (rootElTmp && processElTmp) {
+      const pageHeightCssTmp = 1123
+      const desiredFirstPageEnd = pageHeightCssTmp - 80 // keep some breathing room
+      const currentTop = processElTmp.offsetTop - rootElTmp.offsetTop
+      const gap = Math.max(0, desiredFirstPageEnd - currentTop)
+      if (gap > 40) {
+        const spacer = document.createElement('div')
+        spacer.setAttribute('data-op-block', '')
+        spacer.setAttribute('data-op-spacer', '')
+        spacer.style.height = `${gap}px`
+        spacer.style.background = 'transparent'
+        processElTmp.parentElement?.insertBefore(spacer, processElTmp)
+      }
+    }
+  } catch {}
   console.log('[OnePager] container appended')
 
   const canvas = await html2canvas(container as HTMLElement, {
@@ -150,53 +171,74 @@ export async function generateServiceOnePagerPDF(service: OnePagerService) {
     container.style.fontFamily = "Inter, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif"
 
     // Precompute safe image HTML to avoid exceptions during template evaluation
-    // Branded inline SVG placeholder (no external requests, fills the box nicely)
+    // Dynamic, branded inline SVG placeholder (no external requests, fills the box nicely)
+    const catName = service.category || 'Beratungspaket'
+    const cat = (service.category || '').toLowerCase()
+    const theme = (() => {
+      if (/(ai|assistant|ml|llm)/.test(cat)) return { start: '#6d28d9', end: '#4f46e5', accent1: '#c4b5fd', accent2: '#a78bfa', ink: '#1e1b4b', badgeA: '#ede9fe', badgeB: '#ddd6fe', text: '#312e81', kind: 'ai' as const }
+      if (/(analytics|data|report)/.test(cat)) return { start: '#0284c7', end: '#0ea5e9', accent1: '#bae6fd', accent2: '#7dd3fc', ink: '#0c4a6e', badgeA: '#e0f2fe', badgeB: '#bae6fd', text: '#075985', kind: 'analytics' as const }
+      if (/(integration|prozess|process|connect)/.test(cat)) return { start: '#0d9488', end: '#14b8a6', accent1: '#99f6e4', accent2: '#5eead4', ink: '#134e4a', badgeA: '#ccfbf1', badgeB: '#99f6e4', text: '#115e59', kind: 'integration' as const }
+      if (/(sap|btp)/.test(cat)) return { start: '#16a34a', end: '#10b981', accent1: '#bbf7d0', accent2: '#86efac', ink: '#065f46', badgeA: '#ecfdf5', badgeB: '#d1fae5', text: '#065f46', kind: 'sap' as const }
+      return { start: '#16a34a', end: '#10b981', accent1: '#bbf7d0', accent2: '#86efac', ink: '#065f46', badgeA: '#ecfdf5', badgeB: '#d1fae5', text: '#065f46', kind: 'default' as const }
+    })()
+    const icon = (() => {
+      switch (theme.kind) {
+        case 'ai':
+          return `<g>
+            <circle cx="28" cy="28" r="7" fill="${theme.accent1}"/>
+            <circle cx="40" cy="36" r="5" fill="${theme.accent2}"/>
+            <circle cx="36" cy="22" r="4" fill="${theme.accent2}"/>
+            <path d="M24 44 C24 34, 40 36, 40 26" stroke="${theme.ink}" stroke-width="2" fill="none"/>
+          </g>`
+        case 'analytics':
+          return `<g>
+            <rect x="20" y="28" width="6" height="16" rx="2" fill="${theme.accent1}"/>
+            <rect x="30" y="22" width="6" height="22" rx="2" fill="${theme.accent2}"/>
+            <rect x="40" y="32" width="6" height="12" rx="2" fill="${theme.accent1}"/>
+          </g>`
+        case 'integration':
+          return `<g>
+            <path d="M24 30 a6 6 0 1 1 0 12 h-2" stroke="${theme.accent2}" stroke-width="3" fill="none"/>
+            <path d="M40 30 a6 6 0 1 0 0 12 h2" stroke="${theme.accent1}" stroke-width="3" fill="none"/>
+          </g>`
+        default:
+          return `<g>
+            <path d="M32 20 L46 44 L18 44 Z" fill="${theme.ink}"/>
+            <circle cx="32" cy="32" r="5" fill="${theme.accent2}"/>
+          </g>`
+      }
+    })()
+
     let safeImageHtml = `
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 260 180" width="260" height="180" role="img" aria-label="Placeholder">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 260 180" width="260" height="180" role="img" aria-label="${escapeHtml(catName)}">
         <defs>
           <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0%" stop-color="#16a34a"/>
-            <stop offset="100%" stop-color="#10b981"/>
+            <stop offset="0%" stop-color="${theme.start}"/>
+            <stop offset="100%" stop-color="${theme.end}"/>
           </linearGradient>
           <pattern id="grid" width="14" height="14" patternUnits="userSpaceOnUse">
             <path d="M14 0 L0 0 0 14" fill="none" stroke="#ffffff" stroke-opacity="0.08" stroke-width="1"/>
           </pattern>
           <linearGradient id="badge" x1="0" y1="0" x2="1" y2="0">
-            <stop offset="0%" stop-color="#ecfdf5"/>
-            <stop offset="100%" stop-color="#d1fae5"/>
+            <stop offset="0%" stop-color="${theme.badgeA}"/>
+            <stop offset="100%" stop-color="${theme.badgeB}"/>
           </linearGradient>
         </defs>
-        <!-- Background -->
         <rect x="0" y="0" width="260" height="180" fill="url(#bg)"/>
         <rect x="0" y="0" width="260" height="180" fill="url(#grid)"/>
-
-        <!-- Abstract shapes -->
-        <g opacity="0.3">
-          <circle cx="220" cy="-10" r="60" fill="#34d399"/>
-          <circle cx="-10" cy="160" r="70" fill="#bbf7d0"/>
+        <g opacity="0.22">
+          <circle cx="218" cy="-8" r="60" fill="${theme.accent2}"/>
+          <circle cx="-8" cy="158" r="70" fill="${theme.accent1}"/>
         </g>
-        <g opacity="0.16">
-          <path d="M0 130 C 60 110, 120 150, 260 120 L 260 180 L 0 180 Z" fill="#064e3b"/>
-        </g>
-
-        <!-- Icon cluster -->
         <g transform="translate(24,24)">
-          <circle cx="32" cy="32" r="28" fill="#ecfdf5" opacity="0.95"/>
-          <path d="M32 20 L46 44 L18 44 Z" fill="#065f46"/>
-          <circle cx="32" cy="32" r="6" fill="#10b981"/>
+          <circle cx="32" cy="32" r="28" fill="#ffffff" opacity="0.92"/>
+          ${icon}
         </g>
-
-        <!-- Badge -->
         <g transform="translate(74,24)">
-          <rect x="0" y="0" rx="6" ry="6" width="136" height="22" fill="url(#badge)" opacity="0.95"/>
-          <text x="8" y="15" font-family="Inter, Arial, sans-serif" font-size="11" fill="#065f46">Beratungspaket • realcore</text>
+          <rect x="0" y="0" rx="6" ry="6" width="150" height="22" fill="url(#badge)" opacity="0.96"/>
+          <text x="8" y="15" font-family="Inter, Arial, sans-serif" font-size="11" fill="${theme.text}">${escapeHtml(catName)} • realcore</text>
         </g>
-
-        <!-- Subtitle line -->
-        <rect x="74" y="54" rx="3" ry="3" width="116" height="10" fill="#ecfdf5" opacity="0.85"/>
-
-        <!-- Footer note -->
-        <text x="16" y="166" font-family="Inter, Arial, sans-serif" font-size="11" fill="#ecfdf5" opacity="0.88">Visual Placeholder</text>
+        <rect x="74" y="54" rx="3" ry="3" width="116" height="10" fill="#ffffff" opacity="0.85"/>
       </svg>
     `
     try {
@@ -303,6 +345,7 @@ export async function generateServiceOnePagerPDF(service: OnePagerService) {
 
   let canvas: HTMLCanvasElement | null = null
   try {
+    const fullHeight = rootEl.scrollHeight
     const renderPromise = html2canvas(container as HTMLElement, {
       scale: 2,
       backgroundColor: '#ffffff',
@@ -311,7 +354,9 @@ export async function generateServiceOnePagerPDF(service: OnePagerService) {
       imageTimeout: 4000,
       logging: false,
       width: 794,
+      height: fullHeight,
       windowWidth: 794,
+      windowHeight: fullHeight,
     })
     const timeoutPromise = new Promise<never>((_, reject) => setTimeout(() => reject(new Error('OnePager: render timeout')), 9000))
     canvas = (await Promise.race([renderPromise as unknown as Promise<HTMLCanvasElement>, timeoutPromise])) as HTMLCanvasElement
@@ -358,12 +403,18 @@ export async function generateServiceOnePagerPDF(service: OnePagerService) {
   }
 
   // Slice canvas at computed CSS offsets (ensure advancing positions)
-  // Filter out tiny slices to avoid ugly breaks
+  // Always keep the first end (processTop) so page 2 is created, then filter tiny slices.
   const filteredEnds: number[] = []
   {
     let last = 0
     const minSlice = 520 // px in CSS units
-    for (const end of pageEndsCss) {
+    for (let idx = 0; idx < pageEndsCss.length; idx++) {
+      const end = pageEndsCss[idx]
+      if (idx === 0) {
+        filteredEnds.push(end)
+        last = end
+        continue
+      }
       const slice = end - last
       if (slice >= minSlice) {
         filteredEnds.push(end)
@@ -381,7 +432,8 @@ export async function generateServiceOnePagerPDF(service: OnePagerService) {
         }
       }
     }
-    if (filteredEnds.length === 0) filteredEnds.push(rootEl.scrollHeight)
+    // Ensure the last page reaches the full height
+    if (last < rootEl.scrollHeight) filteredEnds.push(rootEl.scrollHeight)
   }
 
   let prevCss = 0
