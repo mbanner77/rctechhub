@@ -25,6 +25,7 @@ import ProcessView from "@/components/process-view"
 import { useToast } from "@/hooks/use-toast"
 import { parseQuillHTML } from "@/lib/html-parser"
 import MinimalContactDialog from "@/components/minimal-contact-dialog"
+import { generateServiceOnePagerPDF } from "@/lib/onepager"
 
 export default function StarterPackages() {
   const [services, setServices] = useState<any[]>([])
@@ -566,16 +567,6 @@ export default function StarterPackages() {
               Gesamtpreis: {(selectedPackage && services.find(s => s.id === selectedPackage)?.price || 0).toLocaleString("de-DE")} €
             </div>
             <div className="flex flex-col sm:flex-row w-full sm:w-auto gap-2">
-              <Button
-                className="w-full sm:w-auto"
-                variant="outline"
-                onClick={() => {
-                  // PDF saving functionality would go here
-                  console.log("Saving as PDF");
-                }}
-              >
-                Als PDF speichern
-              </Button>
               <Button 
                 className="w-full sm:w-auto bg-green-600 hover:bg-green-700"
                 onClick={() => {
@@ -814,19 +805,40 @@ export default function StarterPackages() {
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <Button 
-                        className="bg-green-600 hover:bg-green-700"
-                        onClick={() => {
-                          // Set the selected package and open the process view dialog
-                          setSelectedPackage(service.id);
-                          setShowProcessView(true);
-                          // Close the details dialog
-                          analytics.dialogOpen('process-view', service.id);
-                        }}
-                      >
-                        StarterPackage anfragen
-                        <ArrowRight className="ml-2 h-4 w-4" />
-                      </Button>
+                      <div className="flex gap-2">
+                        <Button 
+                          variant="outline"
+                          onClick={() => {
+                            generateServiceOnePagerPDF({
+                              id: service.id,
+                              title: service.title,
+                              description: typeof service.description === 'string' ? service.description : String(service.description ?? ''),
+                              price: Number(service.price || 0),
+                              category: service.category,
+                              technologyCategory: service.technologyCategory,
+                              processCategory: service.processCategory,
+                              technologies: Array.isArray(service.technologies) ? service.technologies : [],
+                              image: service.image,
+                              rating: typeof service.rating === 'number' ? service.rating : undefined,
+                            })
+                          }}
+                        >
+                          OnePager herunterladen
+                        </Button>
+                        <Button 
+                          className="bg-green-600 hover:bg-green-700"
+                          onClick={() => {
+                            // Set the selected package and open the process view dialog
+                            setSelectedPackage(service.id);
+                            setShowProcessView(true);
+                            // Close the details dialog
+                            analytics.dialogOpen('process-view', service.id);
+                          }}
+                        >
+                          StarterPackage anfragen
+                          <ArrowRight className="ml-2 h-4 w-4" />
+                        </Button>
+                      </div>
                     </TooltipTrigger>
                     <TooltipContent>
                       <p>Anfrage für dieses StarterPackage senden</p>

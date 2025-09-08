@@ -36,6 +36,10 @@ export default function PostgresAdminPage() {
   const [queryResult, setQueryResult] = useState<{ columns: string[]; rows: any[] } | null>(null)
   const [queryError, setQueryError] = useState<string | null>(null)
   const [queryLoading, setQueryLoading] = useState(false)
+  const [prettyPrint, setPrettyPrint] = useState<boolean>(true)
+  type SavedQuery = { id: string; name: string; sql: string }
+  const [savedQueries, setSavedQueries] = useState<SavedQuery[]>([])
+  const savedQueriesKey = 'admin-postgres-saved-queries'
 
   // Tables browser state
   const [tables, setTables] = useState<TableInfo[]>([])
@@ -52,6 +56,7 @@ export default function PostgresAdminPage() {
     total: number | null
   } | null>(null)
   const [pageLimit, setPageLimit] = useState(50)
+  const [offsetInput, setOffsetInput] = useState<string>("0")
 
   // Schema, sorting, filters
   const [columnsMeta, setColumnsMeta] = useState<ColumnMeta[] | null>(null)
@@ -65,6 +70,11 @@ export default function PostgresAdminPage() {
   const [filters, setFilters] = useState<Filter[]>([])
 
   useEffect(() => {
+    // Load saved queries from localStorage
+    try {
+      const raw = localStorage.getItem(savedQueriesKey)
+      if (raw) setSavedQueries(JSON.parse(raw))
+    } catch {}
     const run = async () => {
       try {
         setLoading(true)
@@ -77,6 +87,52 @@ export default function PostgresAdminPage() {
       } finally {
         setLoading(false)
       }
+
+  // Client-side export helpers
+  const exportRowsAsCSV = (columns: string[], rows: any[], filename: string) => {
+    const esc = (v: any) => {
+      if (v == null) return ''
+      const s = typeof v === 'string' ? v : JSON.stringify(v)
+      const needsQuotes = /[",\n]/.test(s)
+      const inner = s.replace(/"/g, '""')
+      return needsQuotes ? `"${inner}"` : inner
+    }
+    const header = columns.join(',')
+    const lines = rows.map(r => columns.map(c => esc(r[c])).join(','))
+    const csv = [header, ...lines].join('\n')
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = filename
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
+  const exportRowsAsJSON = (rows: any[], filename: string) => {
+    const blob = new Blob([JSON.stringify(rows, null, 2)], { type: 'application/json;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = filename
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
+  // Saved queries helpers
+  const saveCurrentQuery = () => {
+    const name = prompt('Name für diese Abfrage eingeben:')
+    if (!name) return
+    const next: SavedQuery[] = [{ id: String(Date.now()), name, sql }, ...savedQueries].slice(0, 50)
+    setSavedQueries(next)
+    try { localStorage.setItem(savedQueriesKey, JSON.stringify(next)) } catch {}
+  }
+
+  const deleteSavedQuery = (id: string) => {
+    const next = savedQueries.filter(q => q.id !== id)
+    setSavedQueries(next)
+    try { localStorage.setItem(savedQueriesKey, JSON.stringify(next)) } catch {}
+  }
     }
     run()
   }, [])
@@ -268,6 +324,18 @@ export default function PostgresAdminPage() {
                       value={pageLimit}
                       onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPageLimit(Math.max(1, Math.min(200, Number(e.target.value) || 50)))}
                     />
+                    <Input
+                      className="w-28 h-8"
+                      type="number"
+                      min={0}
+                      value={offsetInput}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => setOffsetInput(e.target.value)}
+                    />
+                    <Button
+                      variant="outline"
+                      onClick={() => selected && loadRows(selected.schema, selected.name, Math.max(0, parseInt(offsetInput || '0', 10)))}
+                      disabled={rowsLoading}
+                    >Gehe zu Offset</Button>
                   </div>
                 </div>
               ) : (
@@ -354,6 +422,22 @@ export default function PostgresAdminPage() {
                           window.location.href = `/api/admin/db/export-csv?${params.toString()}`
                         }}
                       >CSV Export</Button>
+                      {rowsResult && (
+                        <>
+                          <Button
+                            variant="outline"
+                            onClick={() => exportRowsAsCSV(rowsResult.columns, rowsResult.rows, `${selected?.schema}.${selected?.name}.csv`)}
+                          >CSV (Client)</Button>
+                          <Button
+                            variant="outline"
+                            onClick={() => exportRowsAsJSON(rowsResult.rows, `${selected?.schema}.${selected?.name}.json`)}
+                          >JSON Export</Button>
+                        </>
+                      )}
+                      <label className="ml-3 text-xs flex items-center gap-1">
+                        <input type="checkbox" checked={prettyPrint} onChange={(e) => setPrettyPrint(e.target.checked)} />
+                        <span>Pretty JSON</span>
+                      </label>
                     </div>
                   </div>
 
@@ -512,7 +596,7 @@ export default function PostgresAdminPage() {
                           <tr key={idx} className="odd:bg-muted/30">
                             {rowsResult.columns.map((c: string) => (
                               <td key={c} className="px-2 py-1 align-top border-b">
-                                <pre className="whitespace-pre-wrap break-words">{JSON.stringify(row[c])}</pre>
+                                <pre className="whitespace-pre-wrap break-words">{prettyPrint ? JSON.stringify(row[c], null, 2) : JSON.stringify(row[c])}</pre>
                               </td>
                             ))}
                           </tr>
@@ -565,8 +649,43 @@ export default function PostgresAdminPage() {
             Nur SELECT-Statements sind erlaubt. Ergebnis auf 200 Zeilen begrenzt.
           </div>
           <Textarea value={sql} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setSql(e.target.value)} rows={6} />
-          <div className="flex gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <Button onClick={runQuery} disabled={queryLoading}>Ausführen</Button>
+            <label className="ml-2 text-xs flex items-center gap-1">
+              <input type="checkbox" checked={prettyPrint} onChange={(e) => setPrettyPrint(e.target.checked)} />
+              <span>Pretty JSON</span>
+            </label>
+            {queryResult && (
+              <>
+                <Button variant="outline" onClick={() => exportRowsAsCSV(queryResult.columns, queryResult.rows, 'query-result.csv')}>CSV (Client)</Button>
+                <Button variant="outline" onClick={() => exportRowsAsJSON(queryResult.rows, 'query-result.json')}>JSON Export</Button>
+              </>
+            )}
+            <Button variant="outline" onClick={saveCurrentQuery}>Abfrage speichern</Button>
+            {savedQueries.length > 0 && (
+              <div className="flex items-center gap-1 text-xs">
+                <span className="text-muted-foreground">Gespeichert:</span>
+                <select
+                  className="border rounded px-2 py-1 text-sm"
+                  onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
+                    const q = savedQueries.find(sq => sq.id === e.target.value)
+                    if (q) setSql(q.sql)
+                  }}
+                >
+                  <option value="">(wählen)</option>
+                  {savedQueries.map((q) => (
+                    <option key={q.id} value={q.id}>{q.name}</option>
+                  ))}
+                </select>
+                <Button
+                  variant="ghost"
+                  onClick={() => {
+                    const id = prompt('ID der gespeicherten Abfrage zum Löschen eingeben:')
+                    if (id) deleteSavedQuery(id)
+                  }}
+                >Löschen…</Button>
+              </div>
+            )}
           </div>
           {queryError && <div className="text-red-600">{queryError}</div>}
           {queryResult && (
@@ -584,7 +703,7 @@ export default function PostgresAdminPage() {
                     <tr key={idx} className="odd:bg-muted/30">
                       {queryResult.columns.map((c) => (
                         <td key={c} className="px-2 py-1 align-top border-b">
-                          <pre className="whitespace-pre-wrap break-words">{JSON.stringify(row[c])}</pre>
+                          <pre className="whitespace-pre-wrap break-words">{prettyPrint ? JSON.stringify(row[c], null, 2) : JSON.stringify(row[c])}</pre>
                         </td>
                       ))}
                     </tr>

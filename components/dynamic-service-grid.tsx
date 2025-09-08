@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useLayoutEffect } from "react"
 import Image from "next/image"
-import { Check, ShoppingCart, Share2, Star, Clock, Calendar } from "lucide-react"
+import { Check, ShoppingCart, Share2, Star, Clock, Calendar, FileDown } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardDescription, CardFooter, CardTitle } from "@/components/ui/card"
@@ -24,6 +24,7 @@ import SelectedServicesDialog from "./selected-services-dialog"
 import { useRouter, useSearchParams } from "next/navigation"
 import { parseQuillHTML } from "@/lib/html-parser"
 import MinimalContactDialog from "@/components/minimal-contact-dialog"
+import { generateServiceOnePagerPDF } from "@/lib/onepager"
 
 export default function DynamicServiceGrid({
   searchQuery,
@@ -1048,6 +1049,51 @@ export default function DynamicServiceGrid({
                       <Button variant="outline" onClick={() => toggleServiceSelection(service.id)}>
                         {selectedServices.includes(service.id) ? "Abwählen" : "Auswählen"}
                       </Button>
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          generateServiceOnePagerPDF({
+                            id: service.id,
+                            title: service.title,
+                            description: typeof service.description === 'string' ? service.description : String(service.description ?? ''),
+                            price: Number(service.price || 0),
+                            category: service.category,
+                            technologyCategory: service.technologyCategory,
+                            processCategory: service.processCategory,
+                            technologies: Array.isArray(service.technologies) ? service.technologies : [],
+                            image: service.image,
+                            rating: typeof service.rating === 'number' ? service.rating : undefined,
+                            duration: service.duration,
+                            included: Array.isArray(service.included) ? service.included : [],
+                            notIncluded: Array.isArray(service.notIncluded) ? service.notIncluded : [],
+                            process: Array.isArray(service.process) ? service.process : [],
+                          })
+                        }}
+                      >
+                        OnePager herunterladen
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => {
+                          generateServiceOnePagerPDF({
+                            id: service.id,
+                            title: service.title,
+                            description: typeof service.description === 'string' ? service.description : String(service.description ?? ''),
+                            price: Number(service.price || 0),
+                            category: service.category,
+                            technologyCategory: service.technologyCategory,
+                            processCategory: service.processCategory,
+                            technologies: Array.isArray(service.technologies) ? service.technologies : [],
+                            image: service.image,
+                            rating: typeof service.rating === 'number' ? service.rating : undefined,
+                          })
+                        }}
+                        aria-label="OnePager herunterladen"
+                        title="OnePager herunterladen"
+                      >
+                        <FileDown className="h-4 w-4" />
+                      </Button>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button variant="outline" size="icon">
@@ -1057,18 +1103,33 @@ export default function DynamicServiceGrid({
                         <DropdownMenuContent>
                           <DropdownMenuItem onClick={() => shareService(service)}>Link kopieren</DropdownMenuItem>
                           <DropdownMenuItem onClick={() => shareServiceViaEmail(service)}>Per E-Mail teilen</DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => {
+                            generateServiceOnePagerPDF({
+                              id: service.id,
+                              title: service.title,
+                              description: typeof service.description === 'string' ? service.description : String(service.description ?? ''),
+                              price: Number(service.price || 0),
+                              category: service.category,
+                              technologyCategory: service.technologyCategory,
+                              processCategory: service.processCategory,
+                              technologies: Array.isArray(service.technologies) ? service.technologies : [],
+                              image: service.image,
+                              rating: typeof service.rating === 'number' ? service.rating : undefined,
+                              duration: service.duration,
+                              included: Array.isArray(service.included) ? service.included : [],
+                              notIncluded: Array.isArray(service.notIncluded) ? service.notIncluded : [],
+                              process: Array.isArray(service.process) ? service.process : [],
+                            })
+                          }}>OnePager herunterladen</DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </div>
-                    <Button 
-                      className="bg-green-600 hover:bg-green-700"
-                      onClick={() => {
-                        setContactDialogTitle("Anfrage zu Angebot")
-                        setContactEmailType("Service")
-                        setContactContext(`Service: ${service.title}`)
-                        setIsContactDialogOpen(true)
-                      }}
-                    >
+                    <Button className="bg-green-600 hover:bg-green-700" onClick={() => {
+                      setContactDialogTitle("Anfrage zu Angebot")
+                      setContactEmailType("Service")
+                      setContactContext(`Service: ${service.title}`)
+                      setIsContactDialogOpen(true)
+                    }}>
                       <ShoppingCart className="mr-2 h-4 w-4" />
                       Anfragen
                     </Button>

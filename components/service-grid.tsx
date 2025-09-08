@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import Image from "next/image"
-import { Check, ShoppingCart, Share2, Star, CalendarIcon, Users, Phone, Mail } from "lucide-react"
+import { Check, ShoppingCart, Share2, Star, CalendarIcon, Users, Phone, Mail, FileDown } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -28,6 +28,7 @@ import { de } from "date-fns/locale"
 import { analytics } from "@/lib/analytics"
 import MinimalContactDialog from "@/components/minimal-contact-dialog"
 import { parseQuillHTML } from "@/lib/html-parser"
+import { generateServiceOnePagerPDF } from "@/lib/onepager"
 
 export default function ServiceGrid() {
   const [selectedServices, setSelectedServices] = useState<string[]>([])
@@ -466,6 +467,31 @@ export default function ServiceGrid() {
                       <Button variant="outline" onClick={() => toggleServiceSelection(service.id)}>
                         {selectedServices.includes(service.id) ? "Abwählen" : "Auswählen"}
                       </Button>
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          generateServiceOnePagerPDF({
+                            id: service.id,
+                            title: service.title,
+                            description: typeof service.description === 'string' ? service.description : String(service.description ?? ''),
+                            price: Number(service.price || 0),
+                            category: service.category,
+                            technologyCategory: service.technologyCategory,
+                            processCategory: service.processCategory,
+                            technologies: Array.isArray(service.technologies) ? service.technologies : [],
+                            image: service.image,
+                            rating: typeof service.rating === 'number' ? service.rating : undefined,
+                            duration: service.duration,
+                            included: Array.isArray(service.included) ? service.included : [],
+                            notIncluded: Array.isArray(service.notIncluded) ? service.notIncluded : [],
+                            process: Array.isArray(service.process) ? service.process : [],
+                          })
+                        }}
+                        aria-label="OnePager herunterladen"
+                        title="OnePager herunterladen"
+                      >
+                        <FileDown className="h-4 w-4" />
+                      </Button>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button variant="outline" size="icon">
@@ -475,6 +501,24 @@ export default function ServiceGrid() {
                         <DropdownMenuContent>
                           <DropdownMenuItem onClick={() => shareService(service)}>Link kopieren</DropdownMenuItem>
                           <DropdownMenuItem onClick={() => shareService(service)}>Per E-Mail teilen</DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => {
+                            generateServiceOnePagerPDF({
+                              id: service.id,
+                              title: service.title,
+                              description: typeof service.description === 'string' ? service.description : String(service.description ?? ''),
+                              price: Number(service.price || 0),
+                              category: service.category,
+                              technologyCategory: service.technologyCategory,
+                              processCategory: service.processCategory,
+                              technologies: Array.isArray(service.technologies) ? service.technologies : [],
+                              image: service.image,
+                              rating: typeof service.rating === 'number' ? service.rating : undefined,
+                              duration: service.duration,
+                              included: Array.isArray(service.included) ? service.included : [],
+                              notIncluded: Array.isArray(service.notIncluded) ? service.notIncluded : [],
+                              process: Array.isArray(service.process) ? service.process : [],
+                            })
+                          }}>OnePager herunterladen</DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </div>
@@ -501,49 +545,38 @@ export default function ServiceGrid() {
         ))}
       </div>
 
-      {showProcessView && (
-        <Dialog open={showProcessView} onOpenChange={setShowProcessView}>
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Prozessansicht</DialogTitle>
-              <DialogDescription>Optimale Reihenfolge Ihrer ausgewählten Beratungsangebote</DialogDescription>
-            </DialogHeader>
+  {showProcessView && (
+    <Dialog open={showProcessView} onOpenChange={setShowProcessView}>
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Prozessansicht</DialogTitle>
+          <DialogDescription>Optimale Reihenfolge Ihrer ausgewählten Beratungsangebote</DialogDescription>
+        </DialogHeader>
 
-            <ProcessView selectedServiceIds={selectedServices} services={services} />
+        <ProcessView selectedServiceIds={selectedServices} services={services} />
 
-            <div className="mt-6 flex flex-col sm:flex-row justify-between items-center gap-4">
-              <div className="font-bold text-lg">Gesamtpreis: {totalPrice.toLocaleString("de-DE")} €</div>
-              <div className="flex flex-col sm:flex-row w-full sm:w-auto gap-2">
-                <Button
-                  className="w-full sm:w-auto"
-                  variant="outline"
-                  onClick={() => {
-                    toast({
-                      title: "PDF generiert",
-                      description: "Das Angebot wurde als PDF heruntergeladen.",
-                    })
-                  }}
-                >
-                  Als PDF speichern
-                </Button>
-                <Button className="w-full sm:w-auto bg-green-600 hover:bg-green-700" onClick={() => {
-                  const titles = selectedServices
-                    .map(id => services.find(s => s.id === id)?.title)
-                    .filter(Boolean)
-                    .join(", ")
-                  setContactDialogTitle("Anfrage zu ausgewählten Angeboten")
-                  setContactEmailType("Service-Auswahl")
-                  setContactContext(titles ? `Auswahl: ${titles}` : `Auswahl: ${selectedServices.join(', ')}`)
-                  setIsContactDialogOpen(true)
-                }}>
-                  <ShoppingCart className="mr-2 h-4 w-4" />
-                  Anfrage senden
-                </Button>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
-      )}
-    </div>
-  )
+        <div className="mt-6 flex flex-col sm:flex-row justify-between items-center gap-4">
+          <div className="font-bold text-lg">Gesamtpreis: {totalPrice.toLocaleString("de-DE")} €</div>
+          <div className="flex flex-col sm:flex-row w-full sm:w-auto gap-2">
+            <Button className="w-full sm:w-auto bg-green-600 hover:bg-green-700" onClick={() => {
+              const titles = selectedServices
+                .map(id => services.find(s => s.id === id)?.title)
+                .filter(Boolean)
+                .join(", ")
+              setContactDialogTitle("Anfrage zu ausgewählten Angeboten")
+              setContactEmailType("Service-Auswahl")
+              setContactContext(titles ? `Auswahl: ${titles}` : `Auswahl: ${selectedServices.join(', ')}`)
+              setIsContactDialogOpen(true)
+            }}>
+              <ShoppingCart className="mr-2 h-4 w-4" />
+              Anfrage senden
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  )}
+</div>
+
+  );
 }
