@@ -125,6 +125,15 @@ export async function generateCustomPackageOnePagerPDF(pkg: CustomPackageOnePage
 
   const fileName = toFileName(`OnePager_${pkg.title}.pdf`)
   pdf.save(fileName)
+} catch (e) {
+  console.error('[OnePager] Unhandled generation error', e)
+  throw e
+}
+    pdf.save(fileName)
+  } catch (e) {
+    console.error('[OnePager] Unhandled generation error', e)
+    throw e
+  }
 }
 
 // Helper to ensure code only runs in the browser
@@ -132,22 +141,32 @@ const isBrowser = () => typeof window !== 'undefined' && typeof document !== 'un
 
 export async function generateServiceOnePagerPDF(service: OnePagerService) {
   if (!isBrowser()) return
+  try {
+    const [{ default: html2canvas }, { jsPDF }] = await Promise.all([
+      import('html2canvas'),
+      import('jspdf') as unknown as Promise<{ jsPDF: any }>,
+    ])
 
-  const [{ default: html2canvas }, { jsPDF }] = await Promise.all([
-    import('html2canvas'),
-    import('jspdf') as unknown as Promise<{ jsPDF: any }>,
-  ])
+    // Create offscreen container with styled A4 layout
+    const container = document.createElement('div')
+    container.style.position = 'fixed'
+    container.style.left = '-99999px'
+    container.style.top = '0'
+    container.style.width = '794px' // A4 width at 96 DPI approx
+    container.style.background = 'white'
+    container.style.fontFamily = "Inter, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif"
 
-  // Create offscreen container with styled A4 layout
-  const container = document.createElement('div')
-  container.style.position = 'fixed'
-  container.style.left = '-99999px'
-  container.style.top = '0'
-  container.style.width = '794px' // A4 width at 96 DPI approx
-  container.style.background = 'white'
-  container.style.fontFamily = "Inter, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif"
+    // Precompute safe image HTML to avoid exceptions during template evaluation
+    let safeImageHtml = `<div style='color:#9ca3af;font-size:12px;'>Kein Bild</div>`
+    try {
+      const url = service.image || ''
+      const isSameOrigin = url && (url.startsWith('/') || new URL(url, window.location.origin).origin === window.location.origin)
+      if (isSameOrigin && url) {
+        safeImageHtml = `<img src="${url}" alt="Cover" style="width:100%; height:100%; object-fit:cover;" onerror="this.src='/placeholder.svg'"/>`
+      }
+    } catch {}
 
-  container.innerHTML = `
+    container.innerHTML = `
     <div style="box-sizing:border-box; width:794px; min-height:1123px; padding:32px; display:flex; flex-direction:column; gap:16px;">
       <header style="display:flex; align-items:center; justify-content:space-between; border-bottom:2px solid #e5e7eb; padding-bottom:12px;">
         <div style="display:flex; align-items:center; gap:12px;">
@@ -172,15 +191,7 @@ export async function generateServiceOnePagerPDF(service: OnePagerService) {
             ${escapeHtml(collapseWhitespace(stripHtml(service.description || '')))}
           </div>
         </div>
-        <div style="width:260px; height:180px; border-radius:8px; overflow:hidden; background:#f3f4f6; display:flex; align-items:center; justify-content:center;">
-          ${(() => {
-            try {
-              const url = service.image || ''
-              const isSameOrigin = url && (url.startsWith('/') || new URL(url, window.location.origin).origin === window.location.origin)
-              return isSameOrigin && url ? `<img src="${url}" alt="Cover" style="width:100%; height:100%; object-fit:cover;" onerror="this.src='/placeholder.svg'"/>` : `<div style='color:#9ca3af;font-size:12px;'>Kein Bild</div>`
-            } catch { return `<div style='color:#9ca3af;font-size:12px;'>Kein Bild</div>` }
-          })()}
-        </div>
+        <div style="width:260px; height:180px; border-radius:8px; overflow:hidden; background:#f3f4f6; display:flex; align-items:center; justify-content:center;">${safeImageHtml}</div>
       </div>
 
       <div data-op-block style="display:flex; gap:14px;">
@@ -441,6 +452,25 @@ export async function generateServiceOnePagerPDF(service: OnePagerService) {
 
   const fileName = toFileName(`OnePager_${service.title}.pdf`)
   pdf.save(fileName)
+  return
+} catch (e) {
+  console.error('[OnePager] Unhandled generation error – using emergency fallback', e)
+  const { jsPDF } = await (import('jspdf') as unknown as Promise<{ jsPDF: any }>)
+  const pdf = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' })
+  const pageWidth = pdf.internal.pageSize.getWidth()
+  pdf.setFillColor(22, 163, 74)
+  pdf.rect(0, 0, pageWidth, 60, 'F')
+  pdf.setTextColor(255,255,255)
+  pdf.setFontSize(14)
+  pdf.text('realcore', 40, 38)
+  pdf.setTextColor(0,0,0)
+  pdf.setFontSize(18)
+  pdf.text(service.title || 'Angebot', 40, 90)
+  pdf.setFontSize(11)
+  pdf.text(`Festpreis: ${formatEUR(service.price)}`, 40, 110)
+  const fileName = toFileName(`OnePager_${service.title}.pdf`)
+  pdf.save(fileName)
+  return
 }
 
 // Utilities
