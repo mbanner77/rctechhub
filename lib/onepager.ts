@@ -202,8 +202,10 @@ export async function generateServiceOnePagerPDF(service: OnePagerService) {
     try {
       const url = service.image || ''
       const isSameOrigin = url && (url.startsWith('/') || new URL(url, window.location.origin).origin === window.location.origin)
-      if (isSameOrigin && url) {
-        safeImageHtml = `<img src="${url}" alt="Cover" style="width:100%; height:100%; object-fit:cover;" onerror="this.style.display='none'"/>`
+      if (url) {
+        const src = isSameOrigin ? url : `/api/image-proxy?url=${encodeURIComponent(url)}`
+        const cross = isSameOrigin ? '' : 'crossorigin="anonymous"'
+        safeImageHtml = `<img src="${src}" ${cross} alt="Cover" style="width:100%; height:100%; object-fit:cover;" onerror="this.style.display='none'"/>`
       }
     } catch {}
 
@@ -330,20 +332,14 @@ export async function generateServiceOnePagerPDF(service: OnePagerService) {
   let startCss = 0
   const margin = 80
 
-  // If a process section exists, force page 1 to end right before it
+  // If a process section exists, force page 1 to end exactly at its top,
+  // so that the "Ablauf" block begins at the top of page 2 with no gap.
   const processEl = rootEl.querySelector('[data-op-section="process"]') as HTMLElement | null
   if (processEl) {
     const processTop = processEl.offsetTop - rootEl.offsetTop
-    const firstEnd = Math.max(0, processTop - margin)
-    // End page 1 before the process block (but at a safe offset if possible)
-    let firstPageEnd = 0
-    for (const off of safeOffsetsCss) {
-      if (off <= firstEnd) firstPageEnd = off
-      else break
-    }
-    if (firstPageEnd === 0) firstPageEnd = firstEnd
+    const firstPageEnd = Math.max(0, processTop)
     pageEndsCss.push(firstPageEnd)
-    startCss = Math.max(firstPageEnd, processTop)
+    startCss = firstPageEnd
   }
 
   while (startCss < (rootEl.scrollHeight - 1)) {
