@@ -160,7 +160,7 @@ export async function generateServiceOnePagerPDF(service: OnePagerService) {
     } catch {}
 
     container.innerHTML = `
-    <div style="box-sizing:border-box; width:794px; min-height:1123px; padding:32px; display:flex; flex-direction:column; gap:16px;">
+    <div id="onepager-root" style="box-sizing:border-box; width:794px; min-height:1123px; padding:32px; display:flex; flex-direction:column; gap:16px;">
       <header style="display:flex; align-items:center; justify-content:space-between; border-bottom:2px solid #e5e7eb; padding-bottom:12px;">
         <div style="display:flex; align-items:center; gap:12px;">
           <img src="/images/rc-logo.png" onerror="this.style.display='none'" alt="Logo" style="height:28px; width:auto;" />
@@ -267,103 +267,8 @@ export async function generateServiceOnePagerPDF(service: OnePagerService) {
 
   // Compute page break positions using safe breakpoints
   if (!canvas) {
-    // Fallback: branded, text-based PDF so the user still gets a file
-    // Header band
-    pdf.setFillColor(22, 163, 74) // green-600
-    pdf.rect(0, 0, pageWidth, 60, 'F')
-    pdf.setTextColor(255,255,255)
-    pdf.setFontSize(14)
-    pdf.text('realcore', 40, 38)
-    pdf.setFontSize(10)
-    pdf.text('Beratungspaket OnePager', pageWidth - 200, 38)
-
-    // Content
-    pdf.setTextColor(0,0,0)
-    pdf.setFontSize(18)
-    pdf.text(service.title || 'Angebot', 40, 90)
-    pdf.setFontSize(11)
-    pdf.text(`Festpreis: ${formatEUR(service.price)}`, 40, 110)
-
-    const badgeLine: string[] = []
-    if (service.category) badgeLine.push(service.category)
-    if (service.technologyCategory) badgeLine.push(service.technologyCategory)
-    if (service.processCategory) badgeLine.push(service.processCategory)
-    if (badgeLine.length) {
-      pdf.text(badgeLine.join(' | '), 40, 126)
-    }
-
-    // Price panel on the right
-    const panelX = pageWidth - 210
-    const panelY = 90
-    const panelW = 170
-    const panelH = 100
-    pdf.setDrawColor(209, 250, 229) // border green-100
-    pdf.setFillColor(236, 253, 245) // bg green-50
-    pdf.roundedRect(panelX, panelY, panelW, panelH, 6, 6, 'FD')
-    pdf.setTextColor(6, 95, 70) // green-800
-    pdf.setFontSize(10)
-    pdf.text('Festpreis', panelX + 12, panelY + 18)
-    pdf.setFontSize(20)
-    pdf.text(`${formatEUR(service.price)}`, panelX + 12, panelY + 42)
-    pdf.setFontSize(10)
-    pdf.text('zzgl. MwSt.', panelX + 12, panelY + 58)
-    if (typeof service.rating === 'number') {
-      pdf.text(`⭐ ${service.rating.toFixed(1)} / 5`, panelX + 12, panelY + 74)
-    }
-
-    // Description on left
-    const desc = collapseWhitespace(stripHtml(service.description || ''))
-    const leftWidth = pageWidth - 80 - panelW - 20
-    const descLines = pdf.splitTextToSize(desc || 'Keine Beschreibung vorhanden.', leftWidth)
-    pdf.setTextColor(0,0,0)
-    pdf.text(descLines, 40, 150)
-
-    const startY = 150 + descLines.length * 12 + 16
-    pdf.setFontSize(12)
-    pdf.text('Leistungen & Technologien', 40, startY)
-    pdf.setFontSize(10)
-    const techs = (service.technologies || []).join(', ')
-    const techLines = pdf.splitTextToSize(techs || 'Keine Angaben', pageWidth - 80)
-    pdf.text(techLines, 40, startY + 16)
-
-    // Ablauf section (page-aware)
-    let flowY = startY + 16 + techLines.length * 12 + 20
-    pdf.setFontSize(12)
-    pdf.text('Ablauf', 40, flowY)
-    flowY += 14
-    pdf.setFontSize(10)
-    const steps = Array.isArray(service.process) ? service.process : []
-    const lineHeight = 12
-    for (let i = 0; i < Math.min(steps.length, 12); i++) {
-      const step = steps[i] || {}
-      const title = step.title ? String(step.title) : `Schritt ${i+1}`
-      const descS = collapseWhitespace(stripHtml(step.description || ''))
-      const lines = pdf.splitTextToSize(`${i+1}. ${title} – ${descS}`, pageWidth - 80)
-      // Page break if needed
-      for (let li = 0; li < lines.length; li++) {
-        if (flowY > pageHeight - 60) {
-          pdf.addPage('a4', 'portrait')
-          // header band on new page
-          pdf.setFillColor(22, 163, 74)
-          pdf.rect(0, 0, pageWidth, 60, 'F')
-          pdf.setTextColor(255,255,255)
-          pdf.setFontSize(10)
-          pdf.text('Beratungspaket OnePager (Fortsetzung)', 40, 38)
-          pdf.setTextColor(0,0,0)
-          pdf.setFontSize(10)
-          flowY = 90
-        }
-        pdf.text(lines[li], 40, flowY)
-        flowY += lineHeight
-      }
-      flowY += 6
-    }
-
-    const fileName = toFileName(`OnePager_${service.title}.pdf`)
-    console.log('[OnePager] fallback pdf.save', fileName)
-    pdf.save(fileName)
     document.body.removeChild(container)
-    return
+    throw new Error('OnePager: html2canvas failed')
   }
 
   const cssToCanvas = (v: number) => Math.round(v * (canvas!.width / 794))
@@ -449,23 +354,8 @@ export async function generateServiceOnePagerPDF(service: OnePagerService) {
   pdf.save(fileName)
   return
 } catch (e) {
-  console.error('[OnePager] Unhandled generation error – using emergency fallback', e)
-  const { jsPDF } = await (import('jspdf') as unknown as Promise<{ jsPDF: any }>)
-  const pdf = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' })
-  const pageWidth = pdf.internal.pageSize.getWidth()
-  pdf.setFillColor(22, 163, 74)
-  pdf.rect(0, 0, pageWidth, 60, 'F')
-  pdf.setTextColor(255,255,255)
-  pdf.setFontSize(14)
-  pdf.text('realcore', 40, 38)
-  pdf.setTextColor(0,0,0)
-  pdf.setFontSize(18)
-  pdf.text(service.title || 'Angebot', 40, 90)
-  pdf.setFontSize(11)
-  pdf.text(`Festpreis: ${formatEUR(service.price)}`, 40, 110)
-  const fileName = toFileName(`OnePager_${service.title}.pdf`)
-  pdf.save(fileName)
-  return
+  console.error('[OnePager] generation error', e)
+  throw e
 }
 
 }
