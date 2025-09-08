@@ -34,6 +34,7 @@ import ConsultingPhasesDisplay from "@/components/consulting-phases-display"
 import { StickyHeader } from "@/components/sticky-header"
 import { EnhancedFooter } from "@/components/enhanced-footer"
 import { analytics } from "@/lib/analytics"
+import FlexLicenseDialog from "@/components/flexlicense-dialog"
 
 export default function Home() {
   // search query "Beratungsangebote"
@@ -48,6 +49,7 @@ export default function Home() {
   const [isDownloadDialogOpen, setIsDownloadDialogOpen] = useState(false)
   const [isLearnMoreDialogOpen, setIsLearnMoreDialogOpen] = useState(false)
   const [isTrainingCatalogDialogOpen, setIsTrainingCatalogDialogOpen] = useState(false)
+  const [isFlexDialogOpen, setIsFlexDialogOpen] = useState(false)
   const { toast } = useToast()
   
   // Kontaktformular-States
@@ -453,6 +455,13 @@ export default function Home() {
                   >
                     Standortbestimmung
                   </Button>
+                  <Button
+                    size="lg"
+                    className="bg-green-600 text-white hover:bg-green-700 shadow-lg hover:shadow-xl transition-all"
+                    onClick={() => setIsFlexDialogOpen(true)}
+                  >
+                    FlexLicense konfigurieren
+                  </Button>
                 </div>
                 <div className="mt-5 flex items-center">
                   <div className="flex items-center space-x-2 text-xl font-semibold">
@@ -763,6 +772,7 @@ export default function Home() {
         <EnhancedFooter />
 
         {/* Dialoge */}
+        <FlexLicenseDialog open={isFlexDialogOpen} onOpenChange={setIsFlexDialogOpen} />
         <AssessmentDialog isOpen={isAssessmentDialogOpen} onClose={() => setIsAssessmentDialogOpen(false)} />
 
         <WorkshopBookingDialog

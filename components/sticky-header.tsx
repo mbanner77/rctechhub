@@ -8,12 +8,14 @@ import { Button } from "@/components/ui/button"
 import { Menu, X, Sun, Moon } from "lucide-react"
 import { useTheme } from "next-themes"
 import RealCoreLogo from "@/components/realcore-logo"
+import FlexLicenseDialog from "@/components/flexlicense-dialog"
 
 export function StickyHeader() {
   const [isScrolled, setIsScrolled] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const { theme, setTheme } = useTheme()
   const pathname = usePathname()
+  const [isFlexOpen, setIsFlexOpen] = useState(false)
 
   const isLandingPage = pathname === "/landing" || pathname === "/" || pathname.startsWith("/pathfinder/")
   const isHomePage = pathname === "/home"
@@ -117,6 +119,13 @@ export function StickyHeader() {
                 Pathfinder
               </Button>
             </Link>
+            <Button
+              variant="ghost"
+              className={`${isScrolled ? "text-gray-700 hover:text-gray-900" : isLandingPage || isHomePage ? "text-white" : "text-black"}`}
+              onClick={() => setIsFlexOpen(true)}
+            >
+              FlexLicense
+            </Button>
             <Link href="/home?tab=schulungen#templates">
               <Button
                 variant="ghost"
@@ -215,10 +224,18 @@ export function StickyHeader() {
                   Trainingskatalog
                 </Button>
               </Link>
+              <Button
+                variant="ghost"
+                className="w-full justify-start text-black"
+                onClick={() => { setMobileMenuOpen(false); setIsFlexOpen(true) }}
+              >
+                FlexLicense
+              </Button>
             </nav>
           </div>
         )}
       </div>
+      <FlexLicenseDialog open={isFlexOpen} onOpenChange={setIsFlexOpen} />
     </header>
   )
 }

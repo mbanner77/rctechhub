@@ -288,41 +288,41 @@ export async function generateServiceOnePagerPDF(service: OnePagerService) {
     startCss = candidate
   }
 
-  // Slice canvas at computed CSS offsets
-  let renderedPx = 0
+  // Slice canvas at computed CSS offsets (ensure advancing positions)
+  const filteredEnds: number[] = []
+  {
+    let last = 0
+    for (const end of pageEndsCss) {
+      if (end > last + 4) { // require minimal progress
+        filteredEnds.push(end)
+        last = end
+      }
+    }
+    if (filteredEnds.length === 0) {
+      filteredEnds.push(rootEl.scrollHeight)
+    }
+  }
+
   let prevCss = 0
-  for (let i = 0; i < pageEndsCss.length; i++) {
-    const endCss = pageEndsCss[i]
-    const sliceCss = endCss - prevCss
-    const slicePx = cssToCanvas(sliceCss)
+  for (let i = 0; i < filteredEnds.length; i++) {
+    const endCss = filteredEnds[i]
+    const sliceCss = Math.max(0, endCss - prevCss)
+    const slicePx = Math.max(1, cssToCanvas(sliceCss))
     const startPx = cssToCanvas(prevCss)
 
     const pageCanvas = document.createElement('canvas')
     const pageContext = pageCanvas.getContext('2d')!
     pageCanvas.width = canvas.width
     pageCanvas.height = slicePx
-    pageContext.drawImage(
-      canvas,
-      0,
-      startPx,
-      canvas.width,
-      slicePx,
-      0,
-      0,
-      canvas.width,
-      slicePx
-    )
+    pageContext.drawImage(canvas, 0, startPx, canvas.width, slicePx, 0, 0, canvas.width, slicePx)
     const imgData = pageCanvas.toDataURL('image/png')
 
     const imgWidthPt = pageWidth
     const imgHeightPt = (slicePx / canvas.width) * pageWidth
 
-    if (i === 0) {
-      pdf.addImage(imgData, 'PNG', 0, 0, imgWidthPt, imgHeightPt, undefined, 'FAST')
-    } else {
-      pdf.addPage('a4', 'portrait')
-      pdf.addImage(imgData, 'PNG', 0, 0, imgWidthPt, imgHeightPt, undefined, 'FAST')
-    }
+    if (i === 0) pdf.addImage(imgData, 'PNG', 0, 0, imgWidthPt, imgHeightPt, undefined, 'FAST')
+    else { pdf.addPage('a4', 'portrait'); pdf.addImage(imgData, 'PNG', 0, 0, imgWidthPt, imgHeightPt, undefined, 'FAST') }
+
     prevCss = endCss
   }
 
