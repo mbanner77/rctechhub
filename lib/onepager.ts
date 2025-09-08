@@ -112,14 +112,15 @@ export async function generateCustomPackageOnePagerPDF(pkg: CustomPackageOnePage
     const processElTmp = rootElTmp?.querySelector('[data-op-section="process"]') as HTMLElement | null
     if (rootElTmp && processElTmp) {
       const pageHeightCssTmp = 1123
-      const desiredFirstPageEnd = pageHeightCssTmp - 80 // keep some breathing room
+      const desiredFirstPageEnd = pageHeightCssTmp - 24 // fill page almost entirely
       const currentTop = processElTmp.offsetTop - rootElTmp.offsetTop
       const gap = Math.max(0, desiredFirstPageEnd - currentTop)
-      if (gap > 40) {
+      if (gap > 10) {
         const spacer = document.createElement('div')
         spacer.setAttribute('data-op-block', '')
         spacer.setAttribute('data-op-spacer', '')
         spacer.style.height = `${gap}px`
+        spacer.style.display = 'block'
         spacer.style.background = 'transparent'
         processElTmp.parentElement?.insertBefore(spacer, processElTmp)
       }
@@ -453,8 +454,14 @@ export async function generateServiceOnePagerPDF(service: OnePagerService) {
     const imgWidthPt = pageWidth
     const imgHeightPt = (slicePx / canvas.width) * pageWidth
 
-    if (i === 0) pdf.addImage(imgData, 'PNG', 0, 0, imgWidthPt, imgHeightPt, undefined, 'FAST')
-    else { pdf.addPage('a4', 'portrait'); pdf.addImage(imgData, 'PNG', 0, 0, imgWidthPt, imgHeightPt, undefined, 'FAST') }
+    if (i === 0) {
+      pdf.addImage(imgData, 'PNG', 0, 0, imgWidthPt, imgHeightPt, undefined, 'FAST')
+    } else {
+      // Add two blank lines at top of subsequent pages (approx 48pt)
+      const topPadding = 48
+      pdf.addPage('a4', 'portrait')
+      pdf.addImage(imgData, 'PNG', 0, topPadding, imgWidthPt, imgHeightPt, undefined, 'FAST')
+    }
 
     prevCss = endCss
   }

@@ -1044,13 +1044,14 @@ export default function DynamicServiceGrid({
                     </TabsContent> */}
                   </Tabs>
 
-                  <div className="flex justify-between mt-6">
-                    <div className="flex gap-2">
-                      <Button variant="outline" onClick={() => toggleServiceSelection(service.id)}>
+                  <div className="mt-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                    <div className="flex flex-wrap gap-2 w-full sm:w-auto">
+                      <Button variant="outline" className="w-full sm:w-auto" onClick={() => toggleServiceSelection(service.id)}>
                         {selectedServices.includes(service.id) ? "Abwählen" : "Auswählen"}
                       </Button>
                       <Button 
                         variant="outline"
+                        className="w-full sm:w-auto"
                         onClick={async () => {
                           try {
                             toast({ title: "OnePager wird erstellt…", description: "Bitte einen Moment, der Download startet gleich." })
@@ -1081,7 +1082,7 @@ export default function DynamicServiceGrid({
                       </Button>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="outline" size="icon">
+                          <Button variant="outline" size="icon" className="sm:ml-0">
                             <Share2 className="h-4 w-4" />
                           </Button>
                         </DropdownMenuTrigger>
@@ -1116,7 +1117,7 @@ export default function DynamicServiceGrid({
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </div>
-                    <Button className="bg-green-600 hover:bg-green-700" onClick={() => {
+                    <Button className="w-full sm:w-auto bg-green-600 hover:bg-green-700" onClick={() => {
                       setContactDialogTitle("Anfrage zu Angebot")
                       setContactEmailType("Service")
                       setContactContext(`Service: ${service.title}`)
