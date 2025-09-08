@@ -67,7 +67,7 @@ export async function generateCustomPackageOnePagerPDF(pkg: CustomPackageOnePage
   const badgesHtml = (pkg.badges || []).map(b => pill(b)).join('')
 
   container.innerHTML = `
-    <div style="box-sizing:border-box; width:794px; min-height:1123px; padding:32px; display:flex; flex-direction:column; gap:16px;">
+    <div id="onepager-root" style="box-sizing:border-box; width:794px; min-height:1123px; padding:28px; display:flex; flex-direction:column; gap:14px;">
       <header style="display:flex; align-items:center; justify-content:space-between; border-bottom:2px solid #e5e7eb; padding-bottom:12px;">
         <div style="display:flex; align-items:center; gap:12px;">
           <img src="/images/rc-logo.png" onerror="this.style.display='none'" alt="Logo" style="height:28px; width:auto;" />
@@ -83,7 +83,7 @@ export async function generateCustomPackageOnePagerPDF(pkg: CustomPackageOnePage
       <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:8px;">${badgesHtml}</div>
       ${pkg.description ? `<div style='font-size:14px; color:#374151;'>${escapeHtml(pkg.description)}</div>` : ''}
 
-      <div style="display:flex; gap:16px;">
+      <div style="display:flex; gap:14px;">
         <div style="flex:1; background:#ffffff; border:1px solid #e5e7eb; border-radius:8px; padding:16px;">
           <div style="font-size:12px; color:#6b7280; text-transform:uppercase; font-weight:700; letter-spacing:.04em; margin-bottom:8px;">Enthaltene Leistungen</div>
           ${itemsHtml}
@@ -194,7 +194,7 @@ export async function generateServiceOnePagerPDF(service: OnePagerService) {
       </div>
 
       ${(service.process && service.process.length) ? `
-      <div style='background:#ffffff; border:1px solid #e5e7eb; border-radius:8px; padding:16px;'>
+      <div style='background:#ffffff; border:1px solid #e5e7eb; border-radius:8px; padding:14px;'>
         <div style="font-size:12px; color:#6b7280; text-transform:uppercase; font-weight:700; letter-spacing:.04em; margin-bottom:8px;">Ablauf</div>
         <ol style='margin:0; padding-left:0; list-style:none; display:flex; flex-direction:column; gap:10px;'>
           ${service.process.slice(0,6).map((step, idx) => `
@@ -218,6 +218,22 @@ export async function generateServiceOnePagerPDF(service: OnePagerService) {
   `
 
   document.body.appendChild(container)
+
+  // If content height exceeds a single A4 page, scale the whole layout down to fit
+  try {
+    const root = container.querySelector('#onepager-root') as HTMLElement | null
+    if (root) {
+      // Measure natural height
+      const naturalHeight = root.scrollHeight || root.getBoundingClientRect().height
+      const pageHeightPx = 1123
+      if (naturalHeight > pageHeightPx) {
+        const scale = Math.min(1, pageHeightPx / naturalHeight)
+        root.style.transformOrigin = 'top left'
+        root.style.transform = `scale(${scale})`
+        // When scaling down, increase canvas scale a bit to keep sharpness
+      }
+    }
+  } catch {}
 
   // Render to canvas at high scale for sharpness
   const canvas = await html2canvas(container as HTMLElement, {
