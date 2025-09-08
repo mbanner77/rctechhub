@@ -173,7 +173,13 @@ export async function generateServiceOnePagerPDF(service: OnePagerService) {
           </div>
         </div>
         <div style="width:260px; height:180px; border-radius:8px; overflow:hidden; background:#f3f4f6; display:flex; align-items:center; justify-content:center;">
-          ${service.image ? `<img src="${service.image}" alt="Cover" style="width:100%; height:100%; object-fit:cover;" onerror="this.src='/placeholder.svg'"/>` : `<div style='color:#9ca3af;font-size:12px;'>Kein Bild</div>`}
+          ${(() => {
+            try {
+              const url = service.image || ''
+              const isSameOrigin = url && (url.startsWith('/') || new URL(url, window.location.origin).origin === window.location.origin)
+              return isSameOrigin && url ? `<img src="${url}" alt="Cover" style="width:100%; height:100%; object-fit:cover;" onerror="this.src='/placeholder.svg'"/>` : `<div style='color:#9ca3af;font-size:12px;'>Kein Bild</div>`
+            } catch { return `<div style='color:#9ca3af;font-size:12px;'>Kein Bild</div>` }
+          })()}
         </div>
       </div>
 
@@ -237,21 +243,125 @@ export async function generateServiceOnePagerPDF(service: OnePagerService) {
   } catch {}
 
   // Render to canvas at high scale for sharpness (full natural height)
-  const canvas = await html2canvas(container as HTMLElement, {
-    scale: 2,
-    backgroundColor: '#ffffff',
-    useCORS: true,
-    logging: false,
-    width: 794,
-    windowWidth: 794,
-  })
-
   const pdf = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' })
   const pageWidth = pdf.internal.pageSize.getWidth() // 595pt
   const pageHeight = pdf.internal.pageSize.getHeight() // 842pt
 
+  let canvas: HTMLCanvasElement | null = null
+  try {
+    canvas = await html2canvas(container as HTMLElement, {
+      scale: 2,
+      backgroundColor: '#ffffff',
+      useCORS: true,
+      logging: false,
+      width: 794,
+      windowWidth: 794,
+    })
+  } catch (e) {
+    console.error('[OnePager] html2canvas failed', e)
+  }
+
   // Compute page break positions using safe breakpoints
-  const cssToCanvas = (v: number) => Math.round(v * (canvas.width / 794))
+  if (!canvas) {
+    // Fallback: branded, text-based PDF so the user still gets a file
+    // Header band
+    pdf.setFillColor(22, 163, 74) // green-600
+    pdf.rect(0, 0, pageWidth, 60, 'F')
+    pdf.setTextColor(255,255,255)
+    pdf.setFontSize(14)
+    pdf.text('realcore', 40, 38)
+    pdf.setFontSize(10)
+    pdf.text('Beratungspaket OnePager', pageWidth - 200, 38)
+
+    // Content
+    pdf.setTextColor(0,0,0)
+    pdf.setFontSize(18)
+    pdf.text(service.title || 'Angebot', 40, 90)
+    pdf.setFontSize(11)
+    pdf.text(`Festpreis: ${formatEUR(service.price)}`, 40, 110)
+
+    const badgeLine: string[] = []
+    if (service.category) badgeLine.push(service.category)
+    if (service.technologyCategory) badgeLine.push(service.technologyCategory)
+    if (service.processCategory) badgeLine.push(service.processCategory)
+    if (badgeLine.length) {
+      pdf.text(badgeLine.join(' | '), 40, 126)
+    }
+
+    // Price panel on the right
+    const panelX = pageWidth - 210
+    const panelY = 90
+    const panelW = 170
+    const panelH = 100
+    pdf.setDrawColor(209, 250, 229) // border green-100
+    pdf.setFillColor(236, 253, 245) // bg green-50
+    pdf.roundedRect(panelX, panelY, panelW, panelH, 6, 6, 'FD')
+    pdf.setTextColor(6, 95, 70) // green-800
+    pdf.setFontSize(10)
+    pdf.text('Festpreis', panelX + 12, panelY + 18)
+    pdf.setFontSize(20)
+    pdf.text(`${formatEUR(service.price)}`, panelX + 12, panelY + 42)
+    pdf.setFontSize(10)
+    pdf.text('zzgl. MwSt.', panelX + 12, panelY + 58)
+    if (typeof service.rating === 'number') {
+      pdf.text(`⭐ ${service.rating.toFixed(1)} / 5`, panelX + 12, panelY + 74)
+    }
+
+    // Description on left
+    const desc = collapseWhitespace(stripHtml(service.description || ''))
+    const leftWidth = pageWidth - 80 - panelW - 20
+    const descLines = pdf.splitTextToSize(desc || 'Keine Beschreibung vorhanden.', leftWidth)
+    pdf.setTextColor(0,0,0)
+    pdf.text(descLines, 40, 150)
+
+    const startY = 150 + descLines.length * 12 + 16
+    pdf.setFontSize(12)
+    pdf.text('Leistungen & Technologien', 40, startY)
+    pdf.setFontSize(10)
+    const techs = (service.technologies || []).join(', ')
+    const techLines = pdf.splitTextToSize(techs || 'Keine Angaben', pageWidth - 80)
+    pdf.text(techLines, 40, startY + 16)
+
+    // Ablauf section (page-aware)
+    let flowY = startY + 16 + techLines.length * 12 + 20
+    pdf.setFontSize(12)
+    pdf.text('Ablauf', 40, flowY)
+    flowY += 14
+    pdf.setFontSize(10)
+    const steps = Array.isArray(service.process) ? service.process : []
+    const lineHeight = 12
+    for (let i = 0; i < Math.min(steps.length, 12); i++) {
+      const step = steps[i] || {}
+      const title = step.title ? String(step.title) : `Schritt ${i+1}`
+      const descS = collapseWhitespace(stripHtml(step.description || ''))
+      const lines = pdf.splitTextToSize(`${i+1}. ${title} – ${descS}`, pageWidth - 80)
+      // Page break if needed
+      for (let li = 0; li < lines.length; li++) {
+        if (flowY > pageHeight - 60) {
+          pdf.addPage('a4', 'portrait')
+          // header band on new page
+          pdf.setFillColor(22, 163, 74)
+          pdf.rect(0, 0, pageWidth, 60, 'F')
+          pdf.setTextColor(255,255,255)
+          pdf.setFontSize(10)
+          pdf.text('Beratungspaket OnePager (Fortsetzung)', 40, 38)
+          pdf.setTextColor(0,0,0)
+          pdf.setFontSize(10)
+          flowY = 90
+        }
+        pdf.text(lines[li], 40, flowY)
+        flowY += lineHeight
+      }
+      flowY += 6
+    }
+
+    const fileName = toFileName(`OnePager_${service.title}.pdf`)
+    pdf.save(fileName)
+    document.body.removeChild(container)
+    return
+  }
+
+  const cssToCanvas = (v: number) => Math.round(v * (canvas!.width / 794))
   const targetCss = pageHeightCss
   const pageEndsCss: number[] = []
   let startCss = 0
@@ -312,9 +422,9 @@ export async function generateServiceOnePagerPDF(service: OnePagerService) {
 
     const pageCanvas = document.createElement('canvas')
     const pageContext = pageCanvas.getContext('2d')!
-    pageCanvas.width = canvas.width
+    pageCanvas.width = canvas!.width
     pageCanvas.height = slicePx
-    pageContext.drawImage(canvas, 0, startPx, canvas.width, slicePx, 0, 0, canvas.width, slicePx)
+    pageContext.drawImage(canvas!, 0, startPx, canvas!.width, slicePx, 0, 0, canvas!.width, slicePx)
     const imgData = pageCanvas.toDataURL('image/png')
 
     const imgWidthPt = pageWidth
