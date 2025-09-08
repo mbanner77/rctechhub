@@ -150,12 +150,60 @@ export async function generateServiceOnePagerPDF(service: OnePagerService) {
     container.style.fontFamily = "Inter, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif"
 
     // Precompute safe image HTML to avoid exceptions during template evaluation
-    let safeImageHtml = `<div style='color:#9ca3af;font-size:12px;'>Kein Bild</div>`
+    // Branded inline SVG placeholder (no external requests, fills the box nicely)
+    let safeImageHtml = `
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 260 180" width="260" height="180" role="img" aria-label="Placeholder">
+        <defs>
+          <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="#16a34a"/>
+            <stop offset="100%" stop-color="#10b981"/>
+          </linearGradient>
+          <pattern id="grid" width="14" height="14" patternUnits="userSpaceOnUse">
+            <path d="M14 0 L0 0 0 14" fill="none" stroke="#ffffff" stroke-opacity="0.08" stroke-width="1"/>
+          </pattern>
+          <linearGradient id="badge" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stop-color="#ecfdf5"/>
+            <stop offset="100%" stop-color="#d1fae5"/>
+          </linearGradient>
+        </defs>
+        <!-- Background -->
+        <rect x="0" y="0" width="260" height="180" fill="url(#bg)"/>
+        <rect x="0" y="0" width="260" height="180" fill="url(#grid)"/>
+
+        <!-- Abstract shapes -->
+        <g opacity="0.3">
+          <circle cx="220" cy="-10" r="60" fill="#34d399"/>
+          <circle cx="-10" cy="160" r="70" fill="#bbf7d0"/>
+        </g>
+        <g opacity="0.16">
+          <path d="M0 130 C 60 110, 120 150, 260 120 L 260 180 L 0 180 Z" fill="#064e3b"/>
+        </g>
+
+        <!-- Icon cluster -->
+        <g transform="translate(24,24)">
+          <circle cx="32" cy="32" r="28" fill="#ecfdf5" opacity="0.95"/>
+          <path d="M32 20 L46 44 L18 44 Z" fill="#065f46"/>
+          <circle cx="32" cy="32" r="6" fill="#10b981"/>
+        </g>
+
+        <!-- Badge -->
+        <g transform="translate(74,24)">
+          <rect x="0" y="0" rx="6" ry="6" width="136" height="22" fill="url(#badge)" opacity="0.95"/>
+          <text x="8" y="15" font-family="Inter, Arial, sans-serif" font-size="11" fill="#065f46">Beratungspaket • realcore</text>
+        </g>
+
+        <!-- Subtitle line -->
+        <rect x="74" y="54" rx="3" ry="3" width="116" height="10" fill="#ecfdf5" opacity="0.85"/>
+
+        <!-- Footer note -->
+        <text x="16" y="166" font-family="Inter, Arial, sans-serif" font-size="11" fill="#ecfdf5" opacity="0.88">Visual Placeholder</text>
+      </svg>
+    `
     try {
       const url = service.image || ''
       const isSameOrigin = url && (url.startsWith('/') || new URL(url, window.location.origin).origin === window.location.origin)
       if (isSameOrigin && url) {
-        safeImageHtml = `<img src="${url}" alt="Cover" style="width:100%; height:100%; object-fit:cover;" onerror="this.src='/placeholder.svg'"/>`
+        safeImageHtml = `<img src="${url}" alt="Cover" style="width:100%; height:100%; object-fit:cover;" onerror="this.style.display='none'"/>`
       }
     } catch {}
 
@@ -253,14 +301,18 @@ export async function generateServiceOnePagerPDF(service: OnePagerService) {
 
   let canvas: HTMLCanvasElement | null = null
   try {
-    canvas = await html2canvas(container as HTMLElement, {
+    const renderPromise = html2canvas(container as HTMLElement, {
       scale: 2,
       backgroundColor: '#ffffff',
       useCORS: true,
+      allowTaint: false,
+      imageTimeout: 4000,
       logging: false,
       width: 794,
       windowWidth: 794,
     })
+    const timeoutPromise = new Promise<never>((_, reject) => setTimeout(() => reject(new Error('OnePager: render timeout')), 9000))
+    canvas = (await Promise.race([renderPromise as unknown as Promise<HTMLCanvasElement>, timeoutPromise])) as HTMLCanvasElement
   } catch (e) {
     console.error('[OnePager] html2canvas failed', e)
   }
@@ -272,10 +324,11 @@ export async function generateServiceOnePagerPDF(service: OnePagerService) {
   }
 
   const cssToCanvas = (v: number) => Math.round(v * (canvas!.width / 794))
-  const targetCss = pageHeightCss
+  // Leave some breathing room to avoid cutting close to footer
+  const targetCss = pageHeightCss - 120
   const pageEndsCss: number[] = []
   let startCss = 0
-  const margin = 24
+  const margin = 80
 
   // If a process section exists, force page 1 to end right before it
   const processEl = rootEl.querySelector('[data-op-section="process"]') as HTMLElement | null
@@ -309,18 +362,30 @@ export async function generateServiceOnePagerPDF(service: OnePagerService) {
   }
 
   // Slice canvas at computed CSS offsets (ensure advancing positions)
+  // Filter out tiny slices to avoid ugly breaks
   const filteredEnds: number[] = []
   {
     let last = 0
+    const minSlice = 520 // px in CSS units
     for (const end of pageEndsCss) {
-      if (end > last + 4) { // require minimal progress
+      const slice = end - last
+      if (slice >= minSlice) {
         filteredEnds.push(end)
         last = end
+      } else {
+        // try to find an earlier safe offset that makes the previous slice big enough
+        let adjusted = last
+        for (let i = safeOffsetsCss.length - 1; i >= 0; i--) {
+          const off = safeOffsetsCss[i]
+          if (off > last + minSlice && off <= end - 20) { adjusted = off; break }
+        }
+        if (adjusted !== last) {
+          filteredEnds.push(adjusted)
+          last = adjusted
+        }
       }
     }
-    if (filteredEnds.length === 0) {
-      filteredEnds.push(rootEl.scrollHeight)
-    }
+    if (filteredEnds.length === 0) filteredEnds.push(rootEl.scrollHeight)
   }
 
   let prevCss = 0
