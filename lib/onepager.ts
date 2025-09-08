@@ -468,6 +468,8 @@ export async function generateServiceOnePagerPDF(service: OnePagerService) {
   return
 }
 
+}
+
 // Utilities
 function pill(text: string) {
   return `<span style="font-size:11px; padding:6px 10px; border:1px solid #e5e7eb; border-radius:9999px; background:#f9fafb; color:#374151;">${escapeHtml(text)}</span>`
