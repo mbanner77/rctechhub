@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useLayoutEffect } from "react"
 import Image from "next/image"
-import { Check, ShoppingCart, Share2, Star, Clock, Calendar } from "lucide-react"
+import { Check, ShoppingCart, Share2, Star, Clock, Calendar, Download } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardDescription, CardFooter, CardTitle } from "@/components/ui/card"
@@ -1049,9 +1049,43 @@ export default function DynamicServiceGrid({
                       <Button variant="outline" className="w-full sm:w-auto" onClick={() => toggleServiceSelection(service.id)}>
                         {selectedServices.includes(service.id) ? "Abwählen" : "Auswählen"}
                       </Button>
+                      {/* Mobile: icon-only button */}
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="sm:hidden"
+                        onClick={async () => {
+                          try {
+                            toast({ title: "OnePager wird erstellt…", description: "Bitte einen Moment, der Download startet gleich." })
+                            await generateServiceOnePagerPDF({
+                              id: service.id,
+                              title: service.title,
+                              description: typeof service.description === 'string' ? service.description : String(service.description ?? ''),
+                              price: Number(service.price || 0),
+                              category: service.category,
+                              technologyCategory: service.technologyCategory,
+                              processCategory: service.processCategory,
+                              technologies: Array.isArray(service.technologies) ? service.technologies : [],
+                              image: service.image,
+                              rating: typeof service.rating === 'number' ? service.rating : undefined,
+                              duration: service.duration,
+                              included: Array.isArray(service.included) ? service.included : [],
+                              notIncluded: Array.isArray(service.notIncluded) ? service.notIncluded : [],
+                              process: Array.isArray(service.process) ? service.process : [],
+                            })
+                            toast({ title: "Download gestartet", description: "Ihr OnePager wird heruntergeladen." })
+                          } catch (e:any) {
+                            console.error('[OnePager] Fehler bei der Generierung', e)
+                            toast({ title: "Fehler bei der PDF-Erstellung", description: "Bitte versuchen Sie es erneut.", variant: "destructive" })
+                          }
+                        }}
+                      >
+                        <Download className="h-4 w-4" />
+                      </Button>
+                      {/* Desktop/tablet: text button */}
                       <Button 
                         variant="outline"
-                        className="w-full sm:w-auto"
+                        className="hidden sm:inline-flex w-full sm:w-auto"
                         onClick={async () => {
                           try {
                             toast({ title: "OnePager wird erstellt…", description: "Bitte einen Moment, der Download startet gleich." })
