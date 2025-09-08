@@ -1049,10 +1049,11 @@ export default function DynamicServiceGrid({
                       <Button variant="outline" onClick={() => toggleServiceSelection(service.id)}>
                         {selectedServices.includes(service.id) ? "Abwählen" : "Auswählen"}
                       </Button>
-                      <Button
+                      <Button 
                         variant="outline"
-                        onClick={() => {
-                          generateServiceOnePagerPDF({
+                        onClick={async () => {
+                          toast({ title: "OnePager wird erstellt…", description: "Bitte einen Moment, der Download startet gleich." })
+                          await generateServiceOnePagerPDF({
                             id: service.id,
                             title: service.title,
                             description: typeof service.description === 'string' ? service.description : String(service.description ?? ''),
@@ -1068,6 +1069,7 @@ export default function DynamicServiceGrid({
                             notIncluded: Array.isArray(service.notIncluded) ? service.notIncluded : [],
                             process: Array.isArray(service.process) ? service.process : [],
                           })
+                          toast({ title: "Download gestartet", description: "Ihr OnePager wird heruntergeladen." })
                         }}
                       >
                         OnePager herunterladen
@@ -1075,8 +1077,9 @@ export default function DynamicServiceGrid({
                       <Button
                         variant="outline"
                         size="icon"
-                        onClick={() => {
-                          generateServiceOnePagerPDF({
+                        onClick={async () => {
+                          toast({ title: "OnePager wird erstellt…", description: "Bitte einen Moment, der Download startet gleich." })
+                          await generateServiceOnePagerPDF({
                             id: service.id,
                             title: service.title,
                             description: typeof service.description === 'string' ? service.description : String(service.description ?? ''),
@@ -1103,8 +1106,9 @@ export default function DynamicServiceGrid({
                         <DropdownMenuContent>
                           <DropdownMenuItem onClick={() => shareService(service)}>Link kopieren</DropdownMenuItem>
                           <DropdownMenuItem onClick={() => shareServiceViaEmail(service)}>Per E-Mail teilen</DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => {
-                            generateServiceOnePagerPDF({
+                          <DropdownMenuItem onClick={async () => {
+                            toast({ title: "OnePager wird erstellt…", description: "Bitte einen Moment, der Download startet gleich." })
+                            await generateServiceOnePagerPDF({
                               id: service.id,
                               title: service.title,
                               description: typeof service.description === 'string' ? service.description : String(service.description ?? ''),
@@ -1120,6 +1124,7 @@ export default function DynamicServiceGrid({
                               notIncluded: Array.isArray(service.notIncluded) ? service.notIncluded : [],
                               process: Array.isArray(service.process) ? service.process : [],
                             })
+                            toast({ title: "Download gestartet", description: "Ihr OnePager wird heruntergeladen." })
                           }}>OnePager herunterladen</DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>

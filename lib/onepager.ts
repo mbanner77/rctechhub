@@ -219,42 +219,59 @@ export async function generateServiceOnePagerPDF(service: OnePagerService) {
 
   document.body.appendChild(container)
 
-  // If content height exceeds a single A4 page, scale the whole layout down to fit
-  try {
-    const root = container.querySelector('#onepager-root') as HTMLElement | null
-    if (root) {
-      // Measure natural height
-      const naturalHeight = root.scrollHeight || root.getBoundingClientRect().height
-      const pageHeightPx = 1123
-      if (naturalHeight > pageHeightPx) {
-        const scale = Math.min(1, pageHeightPx / naturalHeight)
-        root.style.transformOrigin = 'top left'
-        root.style.transform = `scale(${scale})`
-        // When scaling down, increase canvas scale a bit to keep sharpness
-      }
-    }
-  } catch {}
-
-  // Render to canvas at high scale for sharpness
+  // Render to canvas at high scale for sharpness (full natural height)
   const canvas = await html2canvas(container as HTMLElement, {
     scale: 2,
     backgroundColor: '#ffffff',
     useCORS: true,
     logging: false,
     width: 794,
-    height: 1123,
     windowWidth: 794,
-    windowHeight: 1123,
   })
 
-  const imgData = canvas.toDataURL('image/png')
-
   const pdf = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' })
-  const pageWidth = pdf.internal.pageSize.getWidth()
-  const pageHeight = pdf.internal.pageSize.getHeight()
+  const pageWidth = pdf.internal.pageSize.getWidth() // 595pt
+  const pageHeight = pdf.internal.pageSize.getHeight() // 842pt
 
-  // Draw image to full page
-  pdf.addImage(imgData, 'PNG', 0, 0, pageWidth, pageHeight, undefined, 'FAST')
+  // Calculate slice height in canvas pixels per PDF page
+  // canvas.width corresponds to 794px (CSS) * scale (2) = 1588px
+  const canvasPageHeight = Math.floor((canvas.height * (pageWidth / (canvas.width))))
+
+  // For slicing, we work in canvas pixel space
+  const sliceHeightPx = Math.floor(1123 * (canvas.width / 794)) // px per A4 page at current scale
+  let rendered = 0
+
+  while (rendered < canvas.height) {
+    const pageCanvas = document.createElement('canvas')
+    const pageContext = pageCanvas.getContext('2d')!
+    const slice = Math.min(sliceHeightPx, canvas.height - rendered)
+    pageCanvas.width = canvas.width
+    pageCanvas.height = slice
+    pageContext.drawImage(
+      canvas,
+      0,
+      rendered,
+      canvas.width,
+      slice,
+      0,
+      0,
+      canvas.width,
+      slice
+    )
+    const imgData = pageCanvas.toDataURL('image/png')
+
+    const imgWidthPt = pageWidth
+    const imgHeightPt = (slice / canvas.width) * pageWidth
+
+    if (rendered === 0) {
+      pdf.addImage(imgData, 'PNG', 0, 0, imgWidthPt, imgHeightPt, undefined, 'FAST')
+    } else {
+      pdf.addPage('a4', 'portrait')
+      pdf.addImage(imgData, 'PNG', 0, 0, imgWidthPt, imgHeightPt, undefined, 'FAST')
+    }
+
+    rendered += slice
+  }
 
   // Clean up
   document.body.removeChild(container)
