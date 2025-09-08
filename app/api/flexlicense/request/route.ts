@@ -29,19 +29,27 @@ export async function POST(req: NextRequest) {
       ${body?.contact?.message ? `<hr/><p><b>Nachricht:</b><br/>${body.contact.message}</p>` : ""}
     `
 
-    // Use existing mail API
-    await fetch(new URL("/api/send-email", process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"), {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ subject, html, testEmail: to }),
-    })
-
-    if (body?.contact?.email) {
+    // Use existing mail API (best-effort)
+    try {
       await fetch(new URL("/api/send-email", process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ subject: "Ihre FlexLicense Anfrage", html: `<p>Vielen Dank für Ihre Anfrage. Wir melden uns zeitnah.</p>${html}` , testEmail: body.contact.email }),
+        body: JSON.stringify({ subject, html, testEmail: to }),
       })
+    } catch (e) {
+      console.warn("/api/flexlicense/request: team email failed", e)
+    }
+
+    try {
+      if (body?.contact?.email) {
+        await fetch(new URL("/api/send-email", process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"), {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ subject: "Ihre FlexLicense Anfrage", html: `<p>Vielen Dank für Ihre Anfrage. Wir melden uns zeitnah.</p>${html}` , testEmail: body.contact.email }),
+        })
+      }
+    } catch (e) {
+      console.warn("/api/flexlicense/request: confirmation email failed", e)
     }
 
     return NextResponse.json({ ok: true })
