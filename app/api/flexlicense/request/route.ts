@@ -9,6 +9,12 @@ export async function POST(req: NextRequest) {
     const subject = `FlexLicense Anfrage – ${body?.contact?.company || "Unbekannt"}`
     const to = cfg.defaultTarget || "techhub@realcore.de"
 
+    const discountHtml = Array.isArray(body?.discountTiers)
+      ? body.discountTiers
+          .map((t: any) => `ab Jahr ${t?.fromYear}: ${t?.percent}%`)
+          .join(" · ")
+      : "3% ab Jahr 3 · 5% ab Jahr 5 · 10% ab Jahr 10"
+
     const html = `
       <h2>FlexLicense Anfrage</h2>
       <p><b>Name:</b> ${body?.contact?.name || "-"}</p>
@@ -19,9 +25,9 @@ export async function POST(req: NextRequest) {
       <p><b>Projektvolumen:</b> ${body?.projectVolume?.toLocaleString("de-DE")} €</p>
       <p><b>Laufzeit:</b> ${body?.termYears} Jahre</p>
       <p><b>SLA:</b> ${body?.sla}</p>
-      <p><b>Hosting:</b> ${body?.hosting ? "Ja" : "Nein"}</p>
-      <p><b>Preisindex p.a.:</b> ${body?.priceIndexPct}%</p>
-      <p><b>Rabatt:</b> ${body?.discountPct}% ab Jahr ${body?.discountStartYear}</p>
+      <p><b>Betrieb:</b> ${body?.hosting ? "Ja" : "Nein"}</p>
+      <p><b>Preisindex p.a.:</b> ${body?.priceIndexPct ?? 2}%</p>
+      <p><b>Rabatte:</b> ${discountHtml}</p>
       <hr/>
       <p><b>Monatlich:</b> ${Number(body?.results?.monthly||0).toLocaleString("de-DE")} €</p>
       <p><b>Gesamt:</b> ${Number(body?.results?.total||0).toLocaleString("de-DE")} €</p>
@@ -29,27 +35,33 @@ export async function POST(req: NextRequest) {
       ${body?.contact?.message ? `<hr/><p><b>Nachricht:</b><br/>${body.contact.message}</p>` : ""}
     `
 
-    // Use existing mail API (best-effort)
-    try {
-      await fetch(new URL("/api/send-email", process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"), {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ subject, html, testEmail: to }),
-      })
-    } catch (e) {
-      console.warn("/api/flexlicense/request: team email failed", e)
+    // Build a base URL from request headers for internal fetches
+    const proto = req.headers.get("x-forwarded-proto") || "http"
+    const host = req.headers.get("host") || "localhost:3000"
+    const baseUrl = `${proto}://${host}`
+
+    // Send team mail
+    const teamRes = await fetch(new URL("/api/send-email", baseUrl), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ subject, html, testEmail: to }),
+    })
+    if (!teamRes.ok) {
+      const msg = await teamRes.text().catch(()=>"")
+      throw new Error(`Team-Mail fehlgeschlagen: ${teamRes.status} ${msg}`)
     }
 
-    try {
-      if (body?.contact?.email) {
-        await fetch(new URL("/api/send-email", process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"), {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ subject: "Ihre FlexLicense Anfrage", html: `<p>Vielen Dank für Ihre Anfrage. Wir melden uns zeitnah.</p>${html}` , testEmail: body.contact.email }),
-        })
+    // Send customer confirmation if available
+    if (body?.contact?.email) {
+      const custRes = await fetch(new URL("/api/send-email", baseUrl), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ subject: "Ihre FlexLicense Anfrage", html: `<p>Vielen Dank für Ihre Anfrage. Wir melden uns zeitnah.</p>${html}`, testEmail: body.contact.email }),
+      })
+      if (!custRes.ok) {
+        const msg = await custRes.text().catch(()=>"")
+        throw new Error(`Bestätigungs-Mail fehlgeschlagen: ${custRes.status} ${msg}`)
       }
-    } catch (e) {
-      console.warn("/api/flexlicense/request: confirmation email failed", e)
     }
 
     return NextResponse.json({ ok: true })
