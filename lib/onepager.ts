@@ -104,6 +104,7 @@ export async function generateCustomPackageOnePagerPDF(pkg: CustomPackageOnePage
   `
 
   document.body.appendChild(container)
+  console.log('[OnePager] container appended')
 
   const canvas = await html2canvas(container as HTMLElement, {
     scale: 2,
@@ -125,15 +126,6 @@ export async function generateCustomPackageOnePagerPDF(pkg: CustomPackageOnePage
 
   const fileName = toFileName(`OnePager_${pkg.title}.pdf`)
   pdf.save(fileName)
-} catch (e) {
-  console.error('[OnePager] Unhandled generation error', e)
-  throw e
-}
-    pdf.save(fileName)
-  } catch (e) {
-    console.error('[OnePager] Unhandled generation error', e)
-    throw e
-  }
 }
 
 // Helper to ensure code only runs in the browser
@@ -142,6 +134,7 @@ const isBrowser = () => typeof window !== 'undefined' && typeof document !== 'un
 export async function generateServiceOnePagerPDF(service: OnePagerService) {
   if (!isBrowser()) return
   try {
+    console.log('[OnePager] start generateServiceOnePagerPDF', service?.id || service?.title)
     const [{ default: html2canvas }, { jsPDF }] = await Promise.all([
       import('html2canvas'),
       import('jspdf') as unknown as Promise<{ jsPDF: any }>,
@@ -367,6 +360,7 @@ export async function generateServiceOnePagerPDF(service: OnePagerService) {
     }
 
     const fileName = toFileName(`OnePager_${service.title}.pdf`)
+    console.log('[OnePager] fallback pdf.save', fileName)
     pdf.save(fileName)
     document.body.removeChild(container)
     return
@@ -451,6 +445,7 @@ export async function generateServiceOnePagerPDF(service: OnePagerService) {
   document.body.removeChild(container)
 
   const fileName = toFileName(`OnePager_${service.title}.pdf`)
+  console.log('[OnePager] success pdf.save', fileName)
   pdf.save(fileName)
   return
 } catch (e) {
