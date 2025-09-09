@@ -24,7 +24,7 @@ export async function GET(req: NextRequest) {
     if (name) { where.push(`e.name = $${idx++}`); values.push(name); }
     if (q) { where.push(`(e.path ILIKE $${idx} OR e.referrer ILIKE $${idx} OR e.user_agent ILIKE $${idx} OR CAST(e.props AS TEXT) ILIKE $${idx})`); values.push(`%${q}%`); idx++; }
     if (from) { where.push(`e.created_at >= $${idx++}`); values.push(new Date(from)); }
-    if (to) { where.push(`e.created_at <= $${idx++}`); values.push(new Date(to)); }
+    if (to) { const d = new Date(to); d.setDate(d.getDate() + 1); where.push(`e.created_at < $${idx++}`); values.push(d); }
 
     const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : '';
 

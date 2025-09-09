@@ -13,8 +13,8 @@ export async function GET(req: NextRequest) {
     const offset = (page - 1) * limit;
     const name = searchParams.get("name") || undefined;
     const q = searchParams.get("q") || undefined;
-    const from = searchParams.get("from") || undefined; // ISO date
-    const to = searchParams.get("to") || undefined;     // ISO date
+    const from = searchParams.get("from") || undefined; // ISO date (YYYY-MM-DD)
+    const to = searchParams.get("to") || undefined;     // ISO date (YYYY-MM-DD)
 
     const where: string[] = [];
     const values: any[] = [];
@@ -30,12 +30,17 @@ export async function GET(req: NextRequest) {
       idx++;
     }
     if (from) {
+      // Start of the given day (inclusive)
+      const d = new Date(from)
       where.push(`e.created_at >= $${idx++}`);
-      values.push(new Date(from));
+      values.push(d);
     }
     if (to) {
-      where.push(`e.created_at <= $${idx++}`);
-      values.push(new Date(to));
+      // Exclusive upper bound: next day 00:00
+      const d = new Date(to)
+      d.setDate(d.getDate() + 1)
+      where.push(`e.created_at < $${idx++}`);
+      values.push(d);
     }
 
     const whereSql = where.length ? `WHERE ${where.join(" AND ")}` : "";
