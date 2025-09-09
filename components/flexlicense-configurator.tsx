@@ -314,9 +314,9 @@ export default function FlexLicenseConfigurator() {
               <div className="p-3 rounded-md border bg-gray-50">
                 <div className="font-semibold mb-1">Feste Rabattstaffel</div>
                 <ul className="list-disc ml-5 space-y-1">
-                  <li>ab Jahr 3: 3%</li>
-                  <li>ab Jahr 5: 5%</li>
-                  <li>ab Jahr 10: 10%</li>
+                  {([...cfg.discountTiers].sort((a,b)=>a.fromYear-b.fromYear)).map((t, idx) => (
+                    <li key={`${t.fromYear}-${t.percent}-${idx}`}>ab Jahr {t.fromYear}: {t.percent}%</li>
+                  ))}
                 </ul>
               </div>
               <div className="p-3 rounded-md border bg-gray-50">
