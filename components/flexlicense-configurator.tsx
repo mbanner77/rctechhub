@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useMemo, useState } from "react"
+import React, { useEffect, useMemo, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -14,12 +14,45 @@ import { Bar } from "react-chartjs-2"
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, CTitle, CTooltip, CLegend)
 
-// SLA presets
-const SLA_PRESETS: Record<string, { label: string; multiplier: number; response: string; availability: string }> = {
-  Bronze: { label: "Bronze", multiplier: 1.0, response: "48h", availability: "97.0%" },
-  Silver: { label: "Silver", multiplier: 1.08, response: "24h", availability: "98.5%" },
-  Gold: { label: "Gold", multiplier: 1.16, response: "8h", availability: "99.5%" },
-  Platinum: { label: "Platinum", multiplier: 1.25, response: "4h", availability: "99.9%" },
+// Types and defaults for dynamic config
+type SlaPreset = { label: string; multiplier: number; response: string; availability: string }
+type FlexConfig = {
+  priceIndexPct: number
+  discountTiers: { fromYear: number; percent: number }[]
+  slaPresets: Record<string, SlaPreset>
+  ui: {
+    hostingLabel: string
+    minProjectVolume: number
+    maxProjectVolume: number
+    defaultProjectVolume: number
+    minYears: number
+    maxYears: number
+    defaultYears: number
+  }
+}
+
+const DEFAULT_CFG: FlexConfig = {
+  priceIndexPct: 2,
+  discountTiers: [
+    { fromYear: 3, percent: 3 },
+    { fromYear: 5, percent: 5 },
+    { fromYear: 10, percent: 10 },
+  ],
+  slaPresets: {
+    Bronze: { label: "Bronze", multiplier: 1.0, response: "48h", availability: "97.0%" },
+    Silver: { label: "Silver", multiplier: 1.08, response: "24h", availability: "98.5%" },
+    Gold: { label: "Gold", multiplier: 1.16, response: "8h", availability: "99.5%" },
+    Platinum: { label: "Platinum", multiplier: 1.25, response: "4h", availability: "99.9%" },
+  },
+  ui: {
+    hostingLabel: "Betrieb inkludiert",
+    minProjectVolume: 100000,
+    maxProjectVolume: 2000000,
+    defaultProjectVolume: 500000,
+    minYears: 3,
+    maxYears: 10,
+    defaultYears: 5,
+  }
 }
 
 function formatEUR(n: number) {
@@ -42,14 +75,55 @@ export default function FlexLicenseConfigurator() {
   // Step state
   const [step, setStep] = useState<number>(1)
 
+  // Config state (loaded from API)
+  const [cfg, setCfg] = useState<FlexConfig>(DEFAULT_CFG)
+  const [cfgLoaded, setCfgLoaded] = useState<boolean>(false)
+
   // Inputs
-  const [projectVolume, setProjectVolume] = useState<number>(500_000)
-  const [termYears, setTermYears] = useState<number>(5)
+  const [projectVolume, setProjectVolume] = useState<number>(DEFAULT_CFG.ui.defaultProjectVolume)
+  const [termYears, setTermYears] = useState<number>(DEFAULT_CFG.ui.defaultYears)
   const [hosting, setHosting] = useState<boolean>(true)
-  const [sla, setSla] = useState<keyof typeof SLA_PRESETS>("Gold")
-  // Geschäftsregeln: feste Preisindexierung 2% p.a., feste Rabattstaffel
-  const PRICE_INDEX_PCT = 2
+  const [sla, setSla] = useState<string>("Gold")
+
+  // Load config from API on mount
+  useEffect(() => {
+    let cancelled = false
+    const run = async () => {
+      try {
+        const res = await fetch('/api/flexlicense/config', { cache: 'no-store' })
+        const body = await res.json()
+        const next = (body?.config || DEFAULT_CFG) as FlexConfig
+        if (!cancelled) {
+          setCfg(next)
+          setCfgLoaded(true)
+          // Apply defaults from config
+          setProjectVolume(next.ui.defaultProjectVolume)
+          setTermYears(next.ui.defaultYears)
+          // Prefer "Gold" if present, otherwise first key
+          const keys = Object.keys(next.slaPresets || {})
+          setSla(keys.includes('Gold') ? 'Gold' : (keys[0] || 'Gold'))
+        }
+      } catch {
+        if (!cancelled) setCfgLoaded(true)
+      }
+    }
+    run()
+    return () => { cancelled = true }
+  }, [])
+
+  // Dynamic SLA presets alias
+  const SLA = cfg.slaPresets || DEFAULT_CFG.slaPresets
+  // Dynamic price index
+  const PRICE_INDEX_PCT = cfg.priceIndexPct
   const discountByYear = (year: number): number => {
+    // Use configured tiers (pick the highest applicable)
+    const tiers = (cfg.discountTiers || []).slice().sort((a,b)=>a.fromYear - b.fromYear)
+    let pct = 0
+    for (const t of tiers) {
+      if (year >= t.fromYear) pct = t.percent
+    }
+    if (pct) return pct
+    // fallback legacy
     if (year >= 10) return 10
     if (year >= 5) return 5
     if (year >= 3) return 3
@@ -74,7 +148,7 @@ export default function FlexLicenseConfigurator() {
     const hostingMonthly = hosting ? baseMonthly * 0.08 : 0
 
     // SLA multiplier on service portion (hosting+service) – apply on (base + hosting)
-    const slaMult = SLA_PRESETS[sla].multiplier
+    const slaMult = (SLA[sla]?.multiplier) ?? 1
 
     // apply indexation p.a. and discounts after discountStartYear
     const monthlyIndex = Math.pow(1 + PRICE_INDEX_PCT / 100, 1 / 12) - 1
@@ -173,11 +247,22 @@ export default function FlexLicenseConfigurator() {
               <div>
                 <Label>Projektvolumen (EUR)</Label>
                 <div className="flex items-center gap-3">
-                  <Slider value={[projectVolume]} min={100000} max={2000000} step={10000} onValueChange={(v)=>setProjectVolume(Math.min(2_000_000, Math.max(100_000, v[0])))} className="flex-1" />
-                  <Input value={projectVolume} onChange={(e)=>{
-                    const n = Number(e.target.value) || 0
-                    setProjectVolume(Math.min(2_000_000, Math.max(100_000, n)))
-                  }} className="w-40"/>
+                  <Slider
+                    value={[projectVolume]}
+                    min={cfg.ui.minProjectVolume}
+                    max={cfg.ui.maxProjectVolume}
+                    step={10000}
+                    onValueChange={(v)=>setProjectVolume(Math.min(cfg.ui.maxProjectVolume, Math.max(cfg.ui.minProjectVolume, v[0])))}
+                    className="flex-1"
+                  />
+                  <Input
+                    value={projectVolume}
+                    onChange={(e)=>{
+                      const n = Number(e.target.value) || 0
+                      setProjectVolume(Math.min(cfg.ui.maxProjectVolume, Math.max(cfg.ui.minProjectVolume, n)))
+                    }}
+                    className="w-40"
+                  />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
@@ -186,7 +271,7 @@ export default function FlexLicenseConfigurator() {
                   <Select value={String(termYears)} onValueChange={(v)=>setTermYears(Number(v))}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      {Array.from({length:8},(_,i)=>3+i).map(y=> (
+                      {Array.from({length: Math.max(0, (cfg.ui.maxYears - cfg.ui.minYears + 1))},(_,i)=> cfg.ui.minYears + i).map(y=> (
                         <SelectItem key={y} value={String(y)}>{y}</SelectItem>
                       ))}
                     </SelectContent>
@@ -195,7 +280,7 @@ export default function FlexLicenseConfigurator() {
                 <div className="flex items-start gap-2 pt-6">
                   <Checkbox id="hosting" checked={hosting} onCheckedChange={(v)=>setHosting(Boolean(v))} />
                   <div>
-                    <Label htmlFor="hosting">Betrieb inkludiert</Label>
+                    <Label htmlFor="hosting">{cfg.ui.hostingLabel}</Label>
                     <div className="text-xs text-gray-500">Optionaler Betrieb/Hosting wird in die Monatsrate eingerechnet.</div>
                   </div>
                 </div>
@@ -209,11 +294,11 @@ export default function FlexLicenseConfigurator() {
               <CardTitle>2 · SLA-Variante</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <Select value={sla} onValueChange={(v)=>setSla(v as keyof typeof SLA_PRESETS)}>
+              <Select value={sla} onValueChange={(v)=>setSla(v)}>
                 <SelectTrigger><SelectValue placeholder="SLA wählen"/></SelectTrigger>
                 <SelectContent>
-                  {Object.keys(SLA_PRESETS).map(k => (
-                    <SelectItem key={k} value={k}>{SLA_PRESETS[k].label} — Reaktion {SLA_PRESETS[k].response}, Verfügbarkeit {SLA_PRESETS[k].availability}</SelectItem>
+                  {Object.keys(SLA).map(k => (
+                    <SelectItem key={k} value={k}>{SLA[k].label} — Reaktion {SLA[k].response}, Verfügbarkeit {SLA[k].availability}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -334,10 +419,10 @@ export default function FlexLicenseConfigurator() {
             <CardContent className="space-y-2 text-sm">
               <div><span className="text-gray-500">Projektvolumen:</span> {formatEUR(projectVolume)}</div>
               <div><span className="text-gray-500">Laufzeit:</span> {termYears} Jahre</div>
-              <div><span className="text-gray-500">SLA:</span> {SLA_PRESETS[sla].label}</div>
+              <div><span className="text-gray-500">SLA:</span> {SLA[sla]?.label || sla}</div>
               <div><span className="text-gray-500">Betrieb:</span> {hosting ? "Ja" : "Nein"}</div>
               <div><span className="text-gray-500">Preisindex:</span> {PRICE_INDEX_PCT}% p.a.</div>
-              <div><span className="text-gray-500">Rabatte:</span> 3% ab Jahr 3 · 5% ab Jahr 5 · 10% ab Jahr 10</div>
+              <div><span className="text-gray-500">Rabatte:</span> {cfg.discountTiers.map((t,i)=> `${t.percent}% ab Jahr ${t.fromYear}`).join(' · ')}</div>
               <hr className="my-2" />
               <div className="font-semibold">Monatlich: {formatEUR(calc.monthly)}</div>
               <div>Gesamt: {formatEUR(calc.total)}</div>
