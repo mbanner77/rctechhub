@@ -46,9 +46,9 @@ export const ServiceItemList: FC<ServiceItemListProps> = ({
   // Sync changes with parent component without auto-saving
   useEffect(() => {
     if (dirty) {
-      // Get valid items and send to parent component
-      const validItems = localItems.map(item => item.trim()).filter(item => item.length > 0);
-      onSave(validItems);
+      // Pass through items as-is so that newly added empty rows remain visible for editing.
+      // Filtering/trimming at this stage caused the UI to reset and the new row to disappear.
+      onSave(localItems);
       setDirty(false);
     }
   }, [dirty, onSave, localItems]);
