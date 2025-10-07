@@ -33,6 +33,8 @@ import {
 } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { RichTextEditor } from "@/components/ui/rich-text-editor"
+import { useSiteConfig } from "@/hooks/use-site-config"
+import { formatCurrency } from "@/lib/currency"
 
 // Pathfinder unit options (from the existing code)
 const pathfinderUnitOptions = [
@@ -52,6 +54,7 @@ export default function SchulungenManager() {
   const [error, setError] = useState<string | null>(null)
   const { toast } = useToast()
   const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({})
+  const { config } = useSiteConfig()
 
   // Load training courses on initial render
   useEffect(() => {
@@ -376,7 +379,7 @@ export default function SchulungenManager() {
                     <div className="text-sm text-gray-500 flex space-x-4">
                       <span>{schulung.category}</span>
                       <span>{schulung.duration}</span>
-                      <span>{schulung.price} €</span>
+                      <span>{typeof schulung.price === 'number' && schulung.price > 0 ? formatCurrency(Number(schulung.price || 0), config.currency) : 'Kostenlos'}</span>
                     </div>
                   </div>
                 </AccordionTrigger>
@@ -457,7 +460,7 @@ export default function SchulungenManager() {
                             </div>
                           </div>
                           <div className="space-y-2">
-                            <Label htmlFor={`price-${index}`}>Price (EUR)</Label>
+                            <Label htmlFor={`price-${index}`}>Preis</Label>
                             <Input
                               id={`price-${index}`}
                               type="number"
@@ -467,7 +470,7 @@ export default function SchulungenManager() {
                                 const v = e.target.value.trim()
                                 handleSchulungChange(index, "price", v === "" ? 0 : parseFloat(v))
                               }}
-                              placeholder="Price in Euro"
+                              placeholder="Preis"
                             />
                           </div>
                           <div className="space-y-2">

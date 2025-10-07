@@ -12,6 +12,8 @@ import ActionDialog from "./action-dialog"
 import { Card, CardContent } from "@/components/ui/card"
 import { ArrowRight, Check, Mail, Phone } from "lucide-react"
 import { analytics } from "@/lib/analytics"
+import { useSiteConfig } from "@/hooks/use-site-config"
+import { formatCurrency } from "@/lib/currency"
 import { sendFormConfirmationEmail, sendTeamNotificationEmail } from "@/lib/send-confirmation-email"
 import type { IService } from "@/types/service"
  
@@ -44,6 +46,7 @@ export default function PackageBuilderDialog({ isOpen, onClose }: PackageBuilder
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [serviceOptions, setServiceOptions] = useState<ServiceOption[]>([])
   const [isLoadingServices, setIsLoadingServices] = useState<boolean>(false)
+  const { config } = useSiteConfig()
 
   const toggleService = (serviceId: string) => {
     const service = serviceOptions.find(s => s.id === serviceId)
@@ -159,10 +162,10 @@ export default function PackageBuilderDialog({ isOpen, onClose }: PackageBuilder
         // Add selected services to form details
         selectedServiceDetails.forEach((service, index) => {
           if (service.name && service.price) {
-            formDetails[`Service ${index + 1}`] = `${service.name} - ${service.price.toLocaleString('de-DE')} €`;
+            formDetails[`Service ${index + 1}`] = `${service.name} - ${formatCurrency(Number(service.price || 0), config.currency)}`;
           }
         });
-        formDetails['Gesamtpreis'] = `${calculateTotalPrice().toLocaleString('de-DE')} €`;
+        formDetails['Gesamtpreis'] = `${formatCurrency(calculateTotalPrice(), config.currency)}`;
         
         // Send notification email to the team
         const teamEmailSent = await sendTeamNotificationEmail(
@@ -179,7 +182,7 @@ export default function PackageBuilderDialog({ isOpen, onClose }: PackageBuilder
         // Create content for user confirmation email
         const servicesList = selectedServiceDetails
           .map(service => service.name && service.price ? 
-            `<li>${service.name} - ${service.price.toLocaleString('de-DE')} €</li>` : '')
+            `<li>${service.name} - ${formatCurrency(Number(service.price || 0), config.currency)}</li>` : '')
           .join('');
           
         const confirmationContent = `
@@ -187,7 +190,7 @@ export default function PackageBuilderDialog({ isOpen, onClose }: PackageBuilder
           <ul>
             ${servicesList}
           </ul>
-          <p><strong>Gesamtpreis:</strong> ${calculateTotalPrice().toLocaleString('de-DE')} €</p>
+          <p><strong>Gesamtpreis:</strong> ${formatCurrency(calculateTotalPrice(), config.currency)}</p>
         `;
         
         // Send confirmation email to the user
@@ -303,7 +306,7 @@ export default function PackageBuilderDialog({ isOpen, onClose }: PackageBuilder
                         <p className="text-xs sm:text-sm text-gray-600 break-words w-full overflow-hidden">{service.description}</p>
                         <div className="flex flex-wrap gap-2 justify-between items-center mt-3 w-full">
                           <span className="text-xs bg-gray-100 px-2 py-1 rounded truncate">{service.category}</span>
-                          <span className="font-medium text-sm sm:text-base whitespace-nowrap font-bold">{service.price.toLocaleString("de-DE")} €</span>
+                          <span className="font-medium text-sm sm:text-base whitespace-nowrap font-bold">{formatCurrency(Number(service.price || 0), config.currency)}</span>
                         </div>
                       </div>
                     </div>
@@ -321,7 +324,7 @@ export default function PackageBuilderDialog({ isOpen, onClose }: PackageBuilder
           </div>
           <div className="flex justify-between items-center mt-2">
             <span className="font-medium">Gesamtpreis:</span>
-            <span className="text-lg font-bold text-green-700">{calculateTotalPrice().toLocaleString("de-DE")} €</span>
+            <span className="text-lg font-bold text-green-700">{formatCurrency(calculateTotalPrice(), config.currency)}</span>
           </div>
         </div>
       </div>
@@ -348,7 +351,7 @@ export default function PackageBuilderDialog({ isOpen, onClose }: PackageBuilder
           </div>
           <div className="flex justify-between items-center mt-4 font-medium sticky bottom-0 bg-gray-50 py-2 z-10 border-t">
             <span>Gesamtpreis:</span>
-            <span className="font-bold">{calculateTotalPrice().toLocaleString("de-DE")} €</span>
+            <span className="font-bold">{formatCurrency(calculateTotalPrice(), config.currency)}</span>
           </div>
         </div>
 

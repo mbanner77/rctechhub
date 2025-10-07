@@ -10,6 +10,8 @@ import { db, type IWorkshop } from "@/lib/db"
 import { defaultWorkshops } from "@/data/default-data"
 import WorkshopBookingDialog from "@/components/workshop-booking-dialog" // Fixed import
 import { getClientWorkshops } from "@/lib/client-data-service"
+import { useSiteConfig } from "@/hooks/use-site-config"
+import { formatCurrency } from "@/lib/currency"
 
 interface DynamicWorkshopGridProps {
   workshops?: IWorkshop[] | any[];
@@ -29,6 +31,7 @@ export default function DynamicWorkshopGrid({ workshops: providedWorkshops }: Dy
   const [isLoading, setIsLoading] = useState(!providedWorkshops)
   const [selectedWorkshop, setSelectedWorkshop] = useState<IWorkshop | any | null>(null)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const { config } = useSiteConfig()
 
   useEffect(() => {
     // Wenn Workshops als Props übergeben wurden, verwende diese
@@ -86,7 +89,7 @@ export default function DynamicWorkshopGrid({ workshops: providedWorkshops }: Dy
                 <CardTitle className="ml-2">{workshop.title}</CardTitle>
               </div>
               <CardDescription>
-                {workshop.duration} {workshop.price && `| ${workshop.price} €`}
+                {workshop.duration} {typeof workshop.price === 'number' && workshop.price > 0 ? `| ${formatCurrency(Number(workshop.price || 0), config.currency)}` : ""}
               </CardDescription>
             </CardHeader>
             <CardContent className="flex-grow">

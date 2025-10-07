@@ -46,6 +46,8 @@ import { useCaseStudiesByUnitId } from "@/hooks/use-case-studies"
 import { useSchulungenByUnitId } from "@/hooks/use-schulungen"
 import { CaseStudies } from "@/components/case-studies"
 import SchulungenDisplay from "@/components/schulungen-display"
+import { useSiteConfig } from "@/hooks/use-site-config"
+import { formatCurrency } from "@/lib/currency"
 import { Approach, Step } from "@/types/unit-cards"
 import { getClientWorkshops } from "@/lib/client-data-service"
 import { fetchCurrentExperts } from "@/data/experts"
@@ -63,6 +65,7 @@ const iconMap: Record<string, React.ReactNode> = {
 
 export default function PathfinderUnitPageClient() {  
   const router = useRouter()
+  const { config } = useSiteConfig()
   const { id } = useParams() as { id: string }
   const [activeTab, setActiveTab] = useState("overview")
   const [isContactOpen, setIsContactOpen] = useState(false)
@@ -615,7 +618,7 @@ export default function PathfinderUnitPageClient() {
                               <div className="flex items-center justify-between">
                                 <span className="text-sm font-medium">Preis:</span>
                                 <span className="text-sm">
-                                  {schulung.price > 0 ? `${schulung.price} €` : "Kostenlos"}
+                                  {typeof schulung.price === 'number' && schulung.price > 0 ? formatCurrency(Number(schulung.price || 0), config.currency) : 'Kostenlos'}
                                 </span>
                               </div>
                             </div>

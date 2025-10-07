@@ -6,6 +6,8 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/componen
 import { BookOpen } from "lucide-react"
 import { Schulung } from "@/types/schulung"
 import TrainingCatalogDialog from "@/components/training-catalog-dialog"
+import { useSiteConfig } from "@/hooks/use-site-config"
+import { formatCurrency } from "@/lib/currency"
 
 interface SchulungenDisplayProps {
   maxItems?: number; // Maximal anzuzeigende Elemente, bevor "Alle anzeigen" Button erscheint
@@ -17,6 +19,7 @@ export default function SchulungenDisplay({ maxItems = 4, unitId }: SchulungenDi
   const [showAll, setShowAll] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [isCatalogOpen, setIsCatalogOpen] = useState(false)
+  const { config } = useSiteConfig()
 
   useEffect(() => {
     const fetchData = async () => {
@@ -92,7 +95,7 @@ export default function SchulungenDisplay({ maxItems = 4, unitId }: SchulungenDi
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium">Preis:</span>
                   <span className="text-sm">
-                    {schulung.price > 0 ? `${schulung.price} €` : "Kostenlos"}
+                    {typeof schulung.price === 'number' && schulung.price > 0 ? formatCurrency(Number(schulung.price || 0), config.currency) : "Kostenlos"}
                   </span>
                 </div>
               </div>

@@ -150,6 +150,14 @@ export default function AdminPage() {
               </Link>
             </div>
             <div>
+              <Link href="/admin/site-config">
+                <Button className="w-full" variant="outline">
+                  <Settings className="mr-2 h-4 w-4" />
+                  Seiteneinstellungen (Währung)
+                </Button>
+              </Link>
+            </div>
+            <div>
               <Link href="/admin/analytics">
                 <Button className="w-full" variant="outline">
                   <Settings className="mr-2 h-4 w-4" />

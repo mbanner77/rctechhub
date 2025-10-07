@@ -622,7 +622,7 @@ export default function UnitCardTabs({ formData, onFormChange }: UnitCardTabsPro
                     </div>
                     <div className="grid gap-2">
                       <Label htmlFor="res-price">Preis</Label>
-                      <Input id="res-price" name="res-price" placeholder="z.B. €500, Kostenlos" />
+                      <Input id="res-price" name="res-price" placeholder="z.B. 500, Kostenlos" />
                     </div>
                     <div className="grid gap-2">
                       <Label htmlFor="res-pdf">PDF Link</Label>

@@ -184,7 +184,7 @@ export default function ConsultingPhasesManager() {
                           />
                         </div>
                         <div className="md:col-span-2">
-                          <Label className="sr-only">Preis (€)</Label>
+                          <Label className="sr-only">Preis</Label>
                           <Input
                             type="number"
                             value={Number.isFinite(offer.price as number) ? String(offer.price) : ""}
@@ -192,7 +192,7 @@ export default function ConsultingPhasesManager() {
                               const val = e.target.value.trim()
                               updateOffer(phaseIdx, offerIdx, { price: val === "" ? 0 : parseFloat(val) })
                             }}
-                            placeholder="Preis (€)"
+                            placeholder="Preis"
                           />
                         </div>
                         <div className="md:col-span-2 flex items-center gap-2">

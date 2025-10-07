@@ -6,6 +6,8 @@ import { useState } from "react"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useToast } from "@/hooks/use-toast"
+import { useSiteConfig } from "@/hooks/use-site-config"
+import { formatCurrency } from "@/lib/currency"
 import ActionDialog from "./action-dialog"
 import { Loader2 } from "lucide-react"
 import { Textarea } from "@/components/ui/textarea"
@@ -36,6 +38,7 @@ export default function SelectedServicesDialog({
   })
   const [isSubmitting, setIsSubmitting] = useState(false)
   const { toast } = useToast()
+  const { config } = useSiteConfig()
 
   // Berechne den Gesamtpreis der ausgewählten Services
   const selectedServices = services.filter((service) => selectedServiceIds.includes(service.id))
@@ -84,9 +87,9 @@ export default function SelectedServicesDialog({
       
       // Add selected services to form details
       selectedServices.forEach((service, index) => {
-        formDetails[`Service ${index + 1}`] = `${service.title} - ${service.price?.toLocaleString("de-DE")} €`;
+        formDetails[`Service ${index + 1}`] = `${service.title} - ${formatCurrency(Number(service.price || 0), config.currency)}`;
       });
-      formDetails['Gesamtpreis'] = `${totalPrice.toLocaleString("de-DE")} €`;
+      formDetails['Gesamtpreis'] = `${formatCurrency(totalPrice, config.currency)}`;
       
       // Send notification email to the team
       const teamEmailSent = await sendTeamNotificationEmail(
@@ -102,7 +105,7 @@ export default function SelectedServicesDialog({
       
       // Create content for the user confirmation email
       const servicesList = selectedServices
-        .map(service => `<li>${service.title} - ${service.price?.toLocaleString("de-DE")} €</li>`)
+        .map(service => `<li>${service.title} - ${formatCurrency(Number(service.price || 0), config.currency)}</li>`)
         .join('');
         
       const confirmationContent = `
@@ -110,7 +113,7 @@ export default function SelectedServicesDialog({
         <ul>
           ${servicesList}
         </ul>
-        <p><strong>Gesamtpreis:</strong> ${totalPrice.toLocaleString("de-DE")} €</p>
+        <p><strong>Gesamtpreis:</strong> ${formatCurrency(totalPrice, config.currency)}</p>
       `;
       
       // Send confirmation email to the user
@@ -165,12 +168,12 @@ export default function SelectedServicesDialog({
             {selectedServices.map((service) => (
               <li key={service.id} className="flex justify-between items-start gap-2">
                 <span className="text-sm break-words flex-1">{service.title}</span>
-                <span className="font-medium whitespace-nowrap">{service.price?.toLocaleString("de-DE")} €</span>
+                <span className="font-medium whitespace-nowrap">{formatCurrency(Number(service.price || 0), config.currency)}</span>
               </li>
             ))}
             <li className="flex justify-between border-t pt-2 mt-2 font-bold sticky bottom-0 bg-blue-50 py-1 z-10">
               <span>Gesamtpreis:</span>
-              <span>{totalPrice.toLocaleString("de-DE")} €</span>
+              <span>{formatCurrency(totalPrice, config.currency)}</span>
             </li>
           </ul>
         </div>

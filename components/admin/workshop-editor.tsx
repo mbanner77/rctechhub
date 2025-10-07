@@ -20,6 +20,8 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { sanitizeWorkshop, type IWorkshop } from "@/lib/db"
+import { useSiteConfig } from "@/hooks/use-site-config"
+import { formatCurrency } from "@/lib/currency"
 import { getClientWorkshops, saveClientWorkshops } from "@/lib/client-data-service"
 
 export default function WorkshopEditor() {
@@ -32,6 +34,7 @@ export default function WorkshopEditor() {
   const { toast } = useToast()
   const fileInputRef = useRef<HTMLInputElement | null>(null)
   const workshopRefs = useRef<React.RefObject<HTMLDivElement>[]>([]);
+  const { config } = useSiteConfig()
 
   // Initialisiere den Edit-Mode für alle Workshops
   useEffect(() => {
@@ -436,7 +439,7 @@ export default function WorkshopEditor() {
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor={`price-${index}`}>Preis (€)</Label>
+                      <Label htmlFor={`price-${index}`}>Preis</Label>
                       <Input
                         id={`price-${index}`}
                         type="number"
@@ -511,7 +514,7 @@ export default function WorkshopEditor() {
                       <span className="font-medium">Icon:</span> {workshop.icon || "Users"}
                     </div>
                     <div className="space-y-2">
-                      <span className="font-medium">Preis:</span> {workshop.price || 0} €
+                      <span className="font-medium">Preis:</span> {typeof workshop.price === 'number' && workshop.price > 0 ? formatCurrency(Number(workshop.price || 0), config.currency) : 'Kostenlos'}
                     </div>
                     <div className="space-y-2">
                       <span className="font-medium">Dauer:</span> {workshop.duration || ""}

@@ -33,7 +33,9 @@ export type CustomPackageOnePager = {
   badges?: string[]
 }
 
-export async function generateCustomPackageOnePagerPDF(pkg: CustomPackageOnePager) {
+export type CurrencyCode = "EUR" | "CHF"
+
+export async function generateCustomPackageOnePagerPDF(pkg: CustomPackageOnePager, currency: CurrencyCode = "EUR") {
   if (!isBrowser()) return
 
   const [{ default: html2canvas }, { jsPDF }] = await Promise.all([
@@ -59,7 +61,7 @@ export async function generateCustomPackageOnePagerPDF(pkg: CustomPackageOnePage
             ${it.category ? `<div style='font-size:11px; color:#6b7280;'>${escapeHtml(it.category)}</div>` : ''}
           </div>
         </div>
-        <div style="font-weight:700; color:#065f46;">${formatEUR(it.price)}</div>
+        <div style="font-weight:700; color:#065f46;">${formatCurrencyForPDF(it.price, currency)}</div>
       </div>
     `)
     .join('') || `<div style='color:#9ca3af; font-size:12px;'>Keine Services ausgewählt</div>`
@@ -91,7 +93,7 @@ export async function generateCustomPackageOnePagerPDF(pkg: CustomPackageOnePage
 
         <div style="width:260px; background:#ecfdf5; border:1px solid #d1fae5; border-radius:8px; padding:16px; height:fit-content;">
           <div style="font-size:12px; color:#065f46; text-transform:uppercase; font-weight:700; letter-spacing:.04em;">Gesamtpreis</div>
-          <div style="margin-top:8px; font-size:28px; font-weight:800; color:#065f46;">${formatEUR(pkg.totalPrice)}</div>
+          <div style="margin-top:8px; font-size:28px; font-weight:800; color:#065f46;">${formatCurrencyForPDF(pkg.totalPrice, currency)}</div>
           <div style="font-size:12px; color:#047857;">zzgl. MwSt.</div>
         </div>
       </div>
@@ -153,7 +155,7 @@ export async function generateCustomPackageOnePagerPDF(pkg: CustomPackageOnePage
 // Helper to ensure code only runs in the browser
 const isBrowser = () => typeof window !== 'undefined' && typeof document !== 'undefined'
 
-export async function generateServiceOnePagerPDF(service: OnePagerService) {
+export async function generateServiceOnePagerPDF(service: OnePagerService, currency: CurrencyCode = "EUR") {
   if (!isBrowser()) return
   try {
     console.log('[OnePager] start generateServiceOnePagerPDF', service?.id || service?.title)
@@ -289,7 +291,7 @@ export async function generateServiceOnePagerPDF(service: OnePagerService) {
         </div>
         <div data-op-block style="width:260px; background:#ecfdf5; border:1px solid #d1fae5; border-radius:8px; padding:16px;">
           <div style="font-size:12px; color:#065f46; text-transform:uppercase; font-weight:700; letter-spacing:.04em;">Festpreis</div>
-          <div style="margin-top:8px; font-size:28px; font-weight:800; color:#065f46;">${formatEUR(service.price)}</div>
+          <div style="margin-top:8px; font-size:28px; font-weight:800; color:#065f46;">${formatCurrencyForPDF(service.price, currency)}</div>
           <div style="font-size:12px; color:#047857;">zzgl. MwSt.</div>
           ${service.duration ? `<div style='margin-top:8px; font-size:12px; color:#065f46;'>⏱ ${escapeHtml(service.duration)}</div>` : ''}
           ${typeof service.rating === 'number' ? `<div style="margin-top:12px; font-size:12px; color:#065f46;">⭐ ${service.rating.toFixed(1)} / 5</div>` : ''}
@@ -494,6 +496,23 @@ function formatEUR(value: number) {
     return new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(value)
   } catch {
     return `${value.toLocaleString('de-DE')} €`
+  }
+}
+
+// New: PDF currency formatting supporting EUR and CHF with locales
+function formatCurrencyForPDF(value: number, currency: CurrencyCode): string {
+  try {
+    if (currency === "CHF") {
+      // Use de-CH formatting and append CHF per UI style
+      const num = new Intl.NumberFormat('de-CH', { maximumFractionDigits: 0 }).format(value)
+      return `${num} CHF`
+    }
+    // Default EUR with de-DE and trailing Euro sign (to match UI style)
+    const num = new Intl.NumberFormat('de-DE', { maximumFractionDigits: 0 }).format(value)
+    return `${num} €`
+  } catch {
+    const num = (Number(value) || 0).toLocaleString(currency === 'CHF' ? 'de-CH' : 'de-DE')
+    return currency === 'CHF' ? `${num} CHF` : `${num} €`
   }
 }
 

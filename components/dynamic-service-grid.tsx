@@ -25,6 +25,8 @@ import { useRouter, useSearchParams } from "next/navigation"
 import { parseQuillHTML } from "@/lib/html-parser"
 import MinimalContactDialog from "@/components/minimal-contact-dialog"
 import { generateServiceOnePagerPDF } from "@/lib/onepager"
+import { useSiteConfig } from "@/hooks/use-site-config"
+import { formatCurrency } from "@/lib/currency"
 
 export default function DynamicServiceGrid({
   searchQuery,
@@ -55,6 +57,7 @@ export default function DynamicServiceGrid({
   const [contactContext, setContactContext] = useState<string | undefined>(undefined)
   const [contactDialogTitle, setContactDialogTitle] = useState<string | undefined>(undefined)
   const [contactEmailType, setContactEmailType] = useState<string | undefined>(undefined)
+  const { config } = useSiteConfig()
   
   // Pagination state
   const ITEMS_PER_PAGE = 6
@@ -592,7 +595,7 @@ export default function DynamicServiceGrid({
           <div>
             <span className="font-medium">{selectedServices.length} Angebote ausgewählt</span>
             <span className="mx-2">|</span>
-            <span className="font-bold">Gesamtpreis: {totalPrice.toLocaleString("de-DE")} €</span>
+            <span className="font-bold">Gesamtpreis: {formatCurrency(totalPrice, config.currency)}</span>
           </div>
           <div className="flex gap-2 mt-2 md:mt-0">
             <Button variant="outline" onClick={() => setSelectedServices([])}>
@@ -628,7 +631,7 @@ export default function DynamicServiceGrid({
                   className="cursor-pointer hover:bg-green-100 py-1.5 px-3"
                   onClick={() => toggleServiceSelection(id)}
                 >
-                  {service?.title} (+{service?.price.toLocaleString("de-DE")} €)
+                  {service?.title} (+{formatCurrency(Number(service?.price || 0), config.currency)})
                 </Badge>
               )
             })}
@@ -677,7 +680,7 @@ export default function DynamicServiceGrid({
               {/* Header section */}
               <div className="flex justify-between items-start mb-3">
                 <Badge variant="outline">{service.category}</Badge>
-                <span className="font-bold text-lg">{service.price.toLocaleString("de-DE")} €</span>
+                <span className="font-bold text-lg">{formatCurrency(Number(service.price || 0), config.currency)}</span>
               </div>
               
               {/* Title section - flexible height but limited to 2 lines */}
@@ -740,7 +743,7 @@ export default function DynamicServiceGrid({
                 <DialogContent className="max-w-3xl">
                   <DialogHeader>
                     <DialogTitle>{service.title}</DialogTitle>
-                    <DialogDescription>Festpreis: {service.price.toLocaleString("de-DE")} €</DialogDescription>
+                    <DialogDescription>Festpreis: {formatCurrency(Number(service.price || 0), config.currency)}</DialogDescription>
                   </DialogHeader>
 
                   <Tabs defaultValue="details">
@@ -1072,7 +1075,7 @@ export default function DynamicServiceGrid({
                               included: Array.isArray(service.included) ? service.included : [],
                               notIncluded: Array.isArray(service.notIncluded) ? service.notIncluded : [],
                               process: Array.isArray(service.process) ? service.process : [],
-                            })
+                            }, config.currency)
                             toast({ title: "Download gestartet", description: "Ihr OnePager wird heruntergeladen." })
                           } catch (e:any) {
                             console.error('[OnePager] Fehler bei der Generierung', e)
@@ -1104,7 +1107,7 @@ export default function DynamicServiceGrid({
                               included: Array.isArray(service.included) ? service.included : [],
                               notIncluded: Array.isArray(service.notIncluded) ? service.notIncluded : [],
                               process: Array.isArray(service.process) ? service.process : [],
-                            })
+                            }, config.currency)
                             toast({ title: "Download gestartet", description: "Ihr OnePager wird heruntergeladen." })
                           } catch (e:any) {
                             console.error('[OnePager] Fehler bei der Generierung', e)
@@ -1141,7 +1144,7 @@ export default function DynamicServiceGrid({
                                 included: Array.isArray(service.included) ? service.included : [],
                                 notIncluded: Array.isArray(service.notIncluded) ? service.notIncluded : [],
                                 process: Array.isArray(service.process) ? service.process : [],
-                              })
+                              }, config.currency)
                               toast({ title: "Download gestartet", description: "Ihr OnePager wird heruntergeladen." })
                             } catch (e:any) {
                               console.error('[OnePager] Fehler bei der Generierung (Dropdown)', e)
@@ -1203,7 +1206,7 @@ export default function DynamicServiceGrid({
           <ProcessView selectedServiceIds={selectedServices} services={displayServices} />
 
           <div className="mt-6 flex flex-col sm:flex-row justify-between items-center gap-4">
-            <div className="font-bold text-lg">Gesamtpreis: {totalPrice.toLocaleString("de-DE")} €</div>
+            <div className="font-bold text-lg">Gesamtpreis: {formatCurrency(totalPrice, config.currency)}</div>
             <div className="flex flex-col sm:flex-row w-full sm:w-auto gap-2">
               <Button
                 className="w-full sm:w-auto"
@@ -1236,14 +1239,14 @@ export default function DynamicServiceGrid({
               return service ? (
                 <li key={id} className="flex justify-between items-center py-2 border-b border-green-100 last:border-0">
                   <span>{service.title}</span>
-                  <span className="font-semibold">{service.price.toLocaleString("de-DE")} €</span>
+                  <span className="font-semibold">{formatCurrency(Number(service.price || 0), config.currency)}</span>
                 </li>
               ) : null
             })}
           </ul>
           <div className="flex justify-between items-center font-semibold">
             <span>Gesamtpreis:</span>
-            <span>{totalPrice.toLocaleString("de-DE")} €</span>
+            <span>{formatCurrency(totalPrice, config.currency)}</span>
           </div>
           <div className="mt-4 flex justify-end">
             <Button className="bg-green-600 hover:bg-green-700" onClick={handleSendRequest}>

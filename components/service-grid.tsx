@@ -16,6 +16,8 @@ import {
 } from "@/components/ui/dialog"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { services } from "@/data/services"
+import { useSiteConfig } from "@/hooks/use-site-config"
+import { formatCurrency } from "@/lib/currency"
 import ProcessView from "@/components/process-view"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { toast } from "@/hooks/use-toast"
@@ -39,6 +41,7 @@ export default function ServiceGrid() {
   const [contactContext, setContactContext] = useState<string | undefined>(undefined)
   const [contactDialogTitle, setContactDialogTitle] = useState<string | undefined>(undefined)
   const [contactEmailType, setContactEmailType] = useState<string | undefined>(undefined)
+  const { config } = useSiteConfig()
 
   useEffect(() => {
     const loadMailConfig = async () => {
@@ -130,7 +133,7 @@ export default function ServiceGrid() {
           <div>
             <span className="font-medium">{selectedServices.length} Angebote ausgewählt</span>
             <span className="mx-2">|</span>
-            <span className="font-bold">Gesamtpreis: {totalPrice.toLocaleString("de-DE")} €</span>
+            <span className="font-bold">Gesamtpreis: {formatCurrency(totalPrice, config.currency)}</span>
           </div>
           <div className="flex gap-2 mt-2 md:mt-0">
             <Button variant="outline" onClick={() => setSelectedServices([])}>
@@ -159,7 +162,7 @@ export default function ServiceGrid() {
                   className="cursor-pointer hover:bg-green-100 py-1.5 px-3"
                   onClick={() => toggleServiceSelection(id)}
                 >
-                  {service?.title} (+{service?.price.toLocaleString("de-DE")} €)
+                  {service?.title} (+{formatCurrency(Number(service?.price || 0), config.currency)})
                 </Badge>
               )
             })}
@@ -195,7 +198,7 @@ export default function ServiceGrid() {
             <CardContent className="p-6">
               <div className="flex justify-between items-start mb-2">
                 <Badge variant="outline">{service.category}</Badge>
-                <span className="font-bold text-lg">{service.price.toLocaleString("de-DE")} €</span>
+                <span className="font-bold text-lg">{formatCurrency(Number(service.price || 0), config.currency)}</span>
               </div>
               <CardTitle className="text-xl mb-2">{service.title}</CardTitle>
               <CardDescription className="line-clamp-3">{parseQuillHTML(service.description)}</CardDescription>
@@ -208,7 +211,7 @@ export default function ServiceGrid() {
                 <DialogContent className="max-w-3xl">
                   <DialogHeader>
                     <DialogTitle>{service.title}</DialogTitle>
-                    <DialogDescription>Festpreis: {service.price.toLocaleString("de-DE")} €</DialogDescription>
+                    <DialogDescription>Festpreis: {formatCurrency(Number(service.price || 0), config.currency)}</DialogDescription>
                   </DialogHeader>
 
                   <Tabs defaultValue="details">
@@ -556,7 +559,7 @@ export default function ServiceGrid() {
         <ProcessView selectedServiceIds={selectedServices} services={services} />
 
         <div className="mt-6 flex flex-col sm:flex-row justify-between items-center gap-4">
-          <div className="font-bold text-lg">Gesamtpreis: {totalPrice.toLocaleString("de-DE")} €</div>
+          <div className="font-bold text-lg">Gesamtpreis: {formatCurrency(totalPrice, config.currency)}</div>
           <div className="flex flex-col sm:flex-row w-full sm:w-auto gap-2">
             <Button className="w-full sm:w-auto bg-green-600 hover:bg-green-700" onClick={() => {
               const titles = selectedServices

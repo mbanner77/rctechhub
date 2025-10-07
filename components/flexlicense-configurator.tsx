@@ -11,6 +11,8 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { useToast } from "@/hooks/use-toast"
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title as CTitle, Tooltip as CTooltip, Legend as CLegend } from "chart.js"
 import { Bar } from "react-chartjs-2"
+import { useSiteConfig } from "@/hooks/use-site-config"
+import { formatCurrency } from "@/lib/currency"
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, CTitle, CTooltip, CLegend)
 
@@ -55,13 +57,7 @@ const DEFAULT_CFG: FlexConfig = {
   }
 }
 
-function formatEUR(n: number) {
-  try {
-    return new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(n)
-  } catch {
-    return `${n.toLocaleString("de-DE")} €`
-  }
-}
+// Note: all currency output uses site-config via formatCurrency
 
 function npv(cashflows: number[], rate: number) {
   // cashflows are monthly, rate is yearly; convert to monthly discount factor
@@ -71,6 +67,7 @@ function npv(cashflows: number[], rate: number) {
 
 export default function FlexLicenseConfigurator() {
   const { toast } = useToast()
+  const { config } = useSiteConfig()
 
   // Step state
   const [step, setStep] = useState<number>(1)
@@ -245,7 +242,7 @@ export default function FlexLicenseConfigurator() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <Label>Projektvolumen (EUR)</Label>
+                <Label>Projektvolumen</Label>
                 <div className="flex items-center gap-3">
                   <Slider
                     value={[projectVolume]}
@@ -336,15 +333,15 @@ export default function FlexLicenseConfigurator() {
               <div className="grid md:grid-cols-3 gap-4">
                 <div className="p-3 rounded-md border">
                   <div className="text-xs text-gray-500">Monatliche Rate</div>
-                  <div className="text-xl font-bold">{formatEUR(calc.monthly)}</div>
+                  <div className="text-xl font-bold">{formatCurrency(Number(calc.monthly || 0), config.currency)}</div>
                 </div>
                 <div className="p-3 rounded-md border">
                   <div className="text-xs text-gray-500">Gesamtkosten (Laufzeit)</div>
-                  <div className="text-xl font-bold">{formatEUR(calc.total)}</div>
+                  <div className="text-xl font-bold">{formatCurrency(Number(calc.total || 0), config.currency)}</div>
                 </div>
                 <div className="p-3 rounded-md border">
                   <div className="text-xs text-gray-500">NPV @ 10% WACC</div>
-                  <div className="text-xl font-bold">{formatEUR(calc.npv)}</div>
+                  <div className="text-xl font-bold">{formatCurrency(Number(calc.npv || 0), config.currency)}</div>
                 </div>
               </div>
               <div className="mt-4">
@@ -417,16 +414,16 @@ export default function FlexLicenseConfigurator() {
               <CardTitle>Ihre Auswahl</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2 text-sm">
-              <div><span className="text-gray-500">Projektvolumen:</span> {formatEUR(projectVolume)}</div>
+              <div><span className="text-gray-500">Projektvolumen:</span> {formatCurrency(Number(projectVolume || 0), config.currency)}</div>
               <div><span className="text-gray-500">Laufzeit:</span> {termYears} Jahre</div>
               <div><span className="text-gray-500">SLA:</span> {SLA[sla]?.label || sla}</div>
               <div><span className="text-gray-500">Betrieb:</span> {hosting ? "Ja" : "Nein"}</div>
               <div><span className="text-gray-500">Preisindex:</span> {PRICE_INDEX_PCT}% p.a.</div>
               <div><span className="text-gray-500">Rabatte:</span> {cfg.discountTiers.map((t,i)=> `${t.percent}% ab Jahr ${t.fromYear}`).join(' · ')}</div>
               <hr className="my-2" />
-              <div className="font-semibold">Monatlich: {formatEUR(calc.monthly)}</div>
-              <div>Gesamt: {formatEUR(calc.total)}</div>
-              <div>NPV @10%: {formatEUR(calc.npv)}</div>
+              <div className="font-semibold">Monatlich: {formatCurrency(Number(calc.monthly || 0), config.currency)}</div>
+              <div>Gesamt: {formatCurrency(Number(calc.total || 0), config.currency)}</div>
+              <div>NPV @10%: {formatCurrency(Number(calc.npv || 0), config.currency)}</div>
             </CardContent>
           </Card>
           <Card>

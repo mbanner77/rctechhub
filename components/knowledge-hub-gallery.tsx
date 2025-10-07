@@ -16,6 +16,8 @@ import { db, sanitizeKnowledgeHubContent } from "@/lib/db";
 import { getClientKnowledgeHubContent } from "@/lib/client-data-service";
 import { mockSchulungen } from "@/app/api/shared/mock-data/schulungen";
 import { analytics } from "@/lib/analytics"
+import { useSiteConfig } from "@/hooks/use-site-config"
+import { formatCurrency } from "@/lib/currency"
 import { useDownloadCounter } from "@/hooks/useDownloadCounter"
 import { fetchDownloadCounts, updateContentWithDownloadCounts } from "@/lib/download-helpers"
 import { MinimalContactDialog } from "./minimal-contact-dialog"
@@ -129,6 +131,7 @@ export default function KnowledgeHubGallery() {
   const [allSchulungen, setAllSchulungen] = useState<any[]>([])  // Store all trainings
   const [filteredSchulungen, setFilteredSchulungen] = useState<any[]>([])  // Store filtered trainings for display
   const { incrementDownloadCount } = useDownloadCounter()
+  const { config } = useSiteConfig()
 
   const populateInitialContent = async (content: any[]) => {
     // Get the latest download counts from the API
@@ -539,7 +542,7 @@ export default function KnowledgeHubGallery() {
                       </div>
                       <div className="flex justify-between">
                         <span className="text-sm font-medium text-gray-500">Preis:</span>
-                        <span className="font-bold inline-flex items-center rounded-full bg-[#E9F8E4] px-2 py-0.5 text-xs text-[#2B6B16] ring-1 ring-[#BEE9B4]">{schulung.price > 0 ? `${schulung.price} €` : "Kostenlos"}</span>
+                        <span className="font-bold inline-flex items-center rounded-full bg-[#E9F8E4] px-2 py-0.5 text-xs text-[#2B6B16] ring-1 ring-[#BEE9B4]">{schulung.price > 0 ? formatCurrency(Number(schulung.price || 0), config.currency) : "Kostenlos"}</span>
                       </div>
                     </div>
                   </CardContent>
@@ -629,7 +632,7 @@ export default function KnowledgeHubGallery() {
                   <div className="inline-flex items-center rounded-full bg-[#66C63A] px-3 py-1 text-sm font-medium text-white shadow">
                     <Euro className="h-4 w-4 mr-1" />
                     {typeof selectedItem.price === 'number' && selectedItem.price > 0
-                      ? new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(selectedItem.price)
+                      ? formatCurrency(Number(selectedItem.price || 0), config.currency)
                       : 'Kostenlos'}
                   </div>
                 </div>
@@ -687,7 +690,7 @@ export default function KnowledgeHubGallery() {
                         <span className="text-gray-600">Preis</span>
                         <span className="font-semibold">
                           {typeof selectedItem.price === 'number' && selectedItem.price > 0
-                            ? new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(selectedItem.price)
+                            ? formatCurrency(Number(selectedItem.price || 0), config.currency)
                             : 'Kostenlos'}
                         </span>
                       </div>

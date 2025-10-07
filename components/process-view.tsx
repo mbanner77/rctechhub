@@ -5,6 +5,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { parseQuillHTML } from "@/lib/html-parser"
 import type { IService } from "@/types/service"
+import { useSiteConfig } from "@/hooks/use-site-config"
+import { formatCurrency } from "@/lib/currency"
 
 interface ProcessViewProps {
   selectedServiceIds: string[]
@@ -12,6 +14,7 @@ interface ProcessViewProps {
 }
 
 export default function ProcessView({ selectedServiceIds, services }: ProcessViewProps) {
+  const { config } = useSiteConfig()
   // Filter selected services
   const selectedServices = services.filter((service) => selectedServiceIds.includes(service.id))
 
@@ -161,7 +164,7 @@ export default function ProcessView({ selectedServiceIds, services }: ProcessVie
                     <CardHeader className="p-4 pb-2">
                       <div className="flex justify-between items-start">
                         <CardTitle className="text-lg">{service.title}</CardTitle>
-                        <Badge variant="outline">{service.price.toLocaleString("de-DE")} €</Badge>
+                        <Badge variant="outline">{formatCurrency(Number(service.price || 0), config.currency)}</Badge>
                       </div>
                       <CardDescription className="line-clamp-2">
                         {parseQuillHTML(service.description)}
@@ -251,7 +254,7 @@ export default function ProcessView({ selectedServiceIds, services }: ProcessVie
                   <CardHeader className="p-4 pb-2">
                     <div className="flex justify-between items-start">
                       <CardTitle className="text-lg">{service.title}</CardTitle>
-                      <Badge variant="outline">{service.price.toLocaleString("de-DE")} €</Badge>
+                      <Badge variant="outline">{formatCurrency(Number(service.price || 0), config.currency)}</Badge>
                     </div>
                     <CardDescription className="line-clamp-2">
                       {parseQuillHTML(service.description)}

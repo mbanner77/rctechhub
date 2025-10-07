@@ -462,7 +462,7 @@ export default function ServiceEditor() {
                           />
                         </div>
                         <div className="grid gap-2">
-                          <Label htmlFor={`price-${service.id}`}>Preis (€)</Label>
+                          <Label htmlFor={`price-${service.id}`}>Preis</Label>
                           <Input
                             id={`price-${service.id}`}
                             type="number"

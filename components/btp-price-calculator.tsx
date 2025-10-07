@@ -1,6 +1,8 @@
 "use client"
 
 import { useState } from "react"
+import { useSiteConfig } from "@/hooks/use-site-config"
+import { formatCurrency } from "@/lib/currency"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -16,6 +18,7 @@ export default function BTPPriceCalculator() {
   const [storage, setStorage] = useState(100)
   const [includeFree, setIncludeFree] = useState(true)
   const [includeDiscount, setIncludeDiscount] = useState(false)
+  const { config } = useSiteConfig()
 
   return (
     <div className="space-y-6">
@@ -171,36 +174,36 @@ export default function BTPPriceCalculator() {
               <div className="space-y-3">
                 <div className="flex justify-between">
                   <span className="text-gray-600">SAP HANA Cloud</span>
-                  <span className="font-medium">€ 950,00 / Monat</span>
+                  <span className="font-medium">{formatCurrency(950, config.currency)} / Monat</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">SAP Integration Suite</span>
-                  <span className="font-medium">€ 750,00 / Monat</span>
+                  <span className="font-medium">{formatCurrency(750, config.currency)} / Monat</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">SAP Business Application Studio</span>
-                  <span className="font-medium">€ 250,00 / Monat</span>
+                  <span className="font-medium">{formatCurrency(250, config.currency)} / Monat</span>
                 </div>
                 <div className="border-t pt-3 flex justify-between">
                   <span className="text-gray-600">Zwischensumme</span>
-                  <span className="font-medium">€ 1.950,00 / Monat</span>
+                  <span className="font-medium">{formatCurrency(1950, config.currency)} / Monat</span>
                 </div>
                 {includeFree && (
                   <div className="flex justify-between text-green-600">
                     <span>Free Tier Rabatt</span>
-                    <span>- € 150,00 / Monat</span>
+                    <span>- {formatCurrency(150, config.currency)} / Monat</span>
                   </div>
                 )}
                 {includeDiscount && (
                   <div className="flex justify-between text-green-600">
                     <span>Volumenrabatt (10%)</span>
-                    <span>- € 180,00 / Monat</span>
+                    <span>- {formatCurrency(180, config.currency)} / Monat</span>
                   </div>
                 )}
                 <div className="border-t pt-3 flex justify-between font-bold">
                   <span>Gesamtkosten</span>
                   <span>
-                    € {(1950 - (includeFree ? 150 : 0) - (includeDiscount ? 180 : 0)).toLocaleString("de-DE")},00 /
+                    {formatCurrency(1950 - (includeFree ? 150 : 0) - (includeDiscount ? 180 : 0), config.currency)} /
                     Monat
                   </span>
                 </div>

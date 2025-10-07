@@ -26,6 +26,8 @@ import { useToast } from "@/hooks/use-toast"
 import { parseQuillHTML } from "@/lib/html-parser"
 import MinimalContactDialog from "@/components/minimal-contact-dialog"
 import { generateServiceOnePagerPDF } from "@/lib/onepager"
+import { useSiteConfig } from "@/hooks/use-site-config"
+import { formatCurrency } from "@/lib/currency"
 
 export default function StarterPackages() {
   const [services, setServices] = useState<any[]>([])
@@ -39,6 +41,7 @@ export default function StarterPackages() {
   const [contactContext, setContactContext] = useState<string | undefined>(undefined)
   const [contactDialogTitle, setContactDialogTitle] = useState<string | undefined>(undefined)
   const [contactEmailType, setContactEmailType] = useState<string | undefined>(undefined)
+  const { config } = useSiteConfig()
 
   // Pagination state for each category
   const ITEMS_PER_PAGE = 6
@@ -479,7 +482,7 @@ export default function StarterPackages() {
                     <div className="flex items-center justify-between">
                       <span className="text-sm font-medium">Preis:</span>
                       <span className="text-sm font-bold">
-                        {schulung.price > 0 ? `${schulung.price} €` : "Kostenlos"}
+                        {typeof schulung.price === 'number' && schulung.price > 0 ? formatCurrency(Number(schulung.price || 0), config.currency) : "Kostenlos"}
                       </span>
                     </div>
                   </div>
@@ -564,7 +567,7 @@ export default function StarterPackages() {
 
           <div className="mt-6 flex flex-col sm:flex-row justify-between items-center gap-4">
             <div className="font-bold text-lg">
-              Gesamtpreis: {(selectedPackage && services.find(s => s.id === selectedPackage)?.price || 0).toLocaleString("de-DE")} €
+              Gesamtpreis: {formatCurrency(Number((selectedPackage && services.find(s => s.id === selectedPackage)?.price) || 0), config.currency)}
             </div>
             <div className="flex flex-col sm:flex-row w-full sm:w-auto gap-2">
               <Button 
@@ -629,7 +632,7 @@ export default function StarterPackages() {
         <CardContent className="p-4 sm:p-6">
           <div className="flex flex-wrap justify-between items-start mb-2 gap-2">
             <Badge variant="outline" className="text-xs whitespace-normal break-words">{service.category}</Badge>
-            <span className="font-bold text-lg whitespace-nowrap">{service.price.toLocaleString("de-DE")} €</span>
+            <span className="font-bold text-lg whitespace-nowrap">{formatCurrency(Number(service.price || 0), config.currency)}</span>
           </div>
           <CardTitle className="text-lg sm:text-xl mb-2 break-words">{service.title}</CardTitle>
           <CardDescription className="line-clamp-3 text-sm">{parseQuillHTML(service.description)}</CardDescription>
@@ -683,7 +686,7 @@ export default function StarterPackages() {
             <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto w-[95vw]">
               <DialogHeader>
                 <DialogTitle className="break-words text-xl sm:text-2xl">{service.title}</DialogTitle>
-                <DialogDescription>Festpreis: {service.price.toLocaleString("de-DE")} €</DialogDescription>
+                <DialogDescription>Festpreis: {formatCurrency(Number(service.price || 0), config.currency)}</DialogDescription>
               </DialogHeader>
 
               <div className="space-y-4 overflow-y-auto">

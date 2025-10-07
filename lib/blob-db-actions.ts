@@ -11,6 +11,76 @@ function debug(message: string, ...args: any[]) {
   console.log(`[BLOB-DB-ACTIONS] ${message}`, ...args);
 }
 
+// Site Config
+export async function getSiteConfigFromBlob() {
+  debug("getSiteConfigFromBlob aufgerufen");
+  try {
+    const blobPath = `realcore-data/site-config/data.json`;
+    const blob = await blobExists(blobPath);
+
+    if (blob) {
+      debug(`Blob gefunden: ${blob.url}`);
+      const data = await getBlobContent(blob.url);
+      debug("Site Config aus Blob geladen");
+      return data;
+    }
+
+    // Wenn keine Daten gefunden wurden, verwende EUR als Standard
+    debug("Keine Site Config im Blob gefunden, verwende Standard (EUR)");
+    await saveSiteConfigToBlob({ currency: "EUR" });
+    return { currency: "EUR" } as { currency: "EUR" | "CHF" };
+  } catch (error) {
+    console.error("Fehler beim Laden der Site Config aus Blob Storage:", error);
+    debug("Fehler beim Laden der Site Config, verwende Standard (EUR)");
+    return { currency: "EUR" } as { currency: "EUR" | "CHF" };
+  }
+}
+
+export async function saveSiteConfigToBlob(siteConfig: { currency: "EUR" | "CHF" }) {
+  debug("saveSiteConfigToBlob aufgerufen");
+  try {
+    await ensureAuth();
+    // Erstelle zuerst ein Backup der aktuellen Daten
+    const blobPath = `realcore-data/site-config/data.json`;
+    const blob = await blobExists(blobPath);
+
+    if (blob) {
+      debug("Erstelle Backup der aktuellen Site Config");
+      const data = await getBlobContent(blob.url);
+      const timestamp = Date.now();
+      const backupPath = `realcore-data/site-config/backup-${timestamp}.json`;
+
+      await put(backupPath, JSON.stringify(data), {
+        contentType: "application/json",
+        access: "public",
+        allowOverwrite: true,
+      });
+      debug(`Backup erstellt: ${backupPath}`);
+    }
+
+    // Speichere die neuen Daten
+    debug("Speichere neue Site Config-Daten");
+    await put(blobPath, JSON.stringify(siteConfig), {
+      contentType: "application/json",
+      access: "public",
+      allowOverwrite: true,
+    });
+    debug("Site Config in Blob gespeichert");
+
+    // Revalidiere die entsprechenden Pfade
+    revalidatePath("/", "page");
+    revalidatePath("/", "layout");
+    revalidatePath("/admin", "page");
+    revalidatePath("/admin", "layout");
+
+    return true;
+  } catch (error) {
+    console.error("Fehler beim Speichern der Site Config in Blob Storage:", error);
+    debug("Fehler beim Speichern der Site Config");
+    return false;
+  }
+}
+
 // Hilfsfunktion zum Überprüfen der Authentifizierung
 async function ensureAuth() {
   const isProduction = process.env.NODE_ENV === "production";
@@ -515,6 +585,7 @@ export async function resetBlobDB(): Promise<boolean> {
     const knowledgeHubContentBlob = await blobExists(`realcore-data/best-practices/data.json`);
     const resourcesBlob = await blobExists(`realcore-data/resources/data.json`);
     const mailConfigBlob = await blobExists(`realcore-data/mail-config/data.json`);
+    const siteConfigBlob = await blobExists(`realcore-data/site-config/data.json`);
     const landingPageBlob = await blobExists(`realcore-data/landing-page/data.json`);
 
     const timestamp = Date.now();
@@ -569,6 +640,16 @@ export async function resetBlobDB(): Promise<boolean> {
       });
     }
 
+    if (siteConfigBlob) {
+      debug("Erstelle Backup der Site Config");
+      const data = await getBlobContent(siteConfigBlob.url);
+      await put(`realcore-data/site-config/backup-${timestamp}.json`, JSON.stringify(data), {
+        contentType: "application/json",
+        access: "public",
+        allowOverwrite: true,
+      });
+    }
+
     if (landingPageBlob) {
       debug("Erstelle Backup der Landing Page");
       const data = await getBlobContent(landingPageBlob.url);
@@ -614,6 +695,16 @@ export async function resetBlobDB(): Promise<boolean> {
       access: "public",
       allowOverwrite: true,
     });
+
+    await put(
+      `realcore-data/site-config/data.json`,
+      JSON.stringify({ currency: "EUR" }),
+      {
+        contentType: "application/json",
+        access: "public",
+        allowOverwrite: true,
+      }
+    );
 
     await put(`realcore-data/landing-page/data.json`, JSON.stringify(defaultData.landingPage), {
       contentType: "application/json",

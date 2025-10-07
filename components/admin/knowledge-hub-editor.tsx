@@ -280,7 +280,7 @@ const SchulungItemEditor = ({ schulung, onSchulungChange, onSchulungDelete, toas
           </div>
 
           <div className="grid gap-2">
-            <Label htmlFor={`price-${schulung.id}`}>Preis (€)</Label>
+            <Label htmlFor={`price-${schulung.id}`}>Preis</Label>
             <Input
               id={`price-${schulung.id}`}
               type="number"

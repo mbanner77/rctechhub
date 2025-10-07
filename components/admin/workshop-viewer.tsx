@@ -9,6 +9,8 @@ import {
   BookOpen, Calendar, Code, Lightbulb, Search, Settings, Users
 } from "lucide-react";
 import { Workshop } from "@/types/workshop";
+import { useSiteConfig } from "@/hooks/use-site-config";
+import { formatCurrency } from "@/lib/currency";
 import { defaultWorkshops } from "@/data/default-workshops";
 
 // Icon Map für die Anzeige
@@ -26,6 +28,8 @@ export default function WorkshopViewer() {
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState<string | null>(null);
+
+  const { config } = useSiteConfig()
 
   useEffect(() => {
     const fetchWorkshops = async () => {
@@ -153,6 +157,7 @@ const unitNames: Record<string, string> = {
 };
 
 function WorkshopCard({ workshop }: { workshop: Workshop }) {
+  const { config } = useSiteConfig()
   return (
     <Card className="h-full flex flex-col">
       <CardHeader>
@@ -166,10 +171,10 @@ function WorkshopCard({ workshop }: { workshop: Workshop }) {
         </div>
         <div className="text-sm text-gray-500 flex flex-wrap gap-2 mt-2">
           <span>{workshop.duration}</span>
-          {workshop.price && (
+          {typeof workshop.price === 'number' && workshop.price > 0 && (
             <>
               <span>•</span>
-              <span>{workshop.price} €</span>
+              <span>{formatCurrency(Number(workshop.price || 0), config.currency)}</span>
             </>
           )}
           {workshop.audience && (

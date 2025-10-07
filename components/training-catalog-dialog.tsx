@@ -4,6 +4,8 @@ import type React from "react"
 
 import { useState } from "react"
 import { useAllSchulungen } from "@/hooks/use-schulungen"
+import { useSiteConfig } from "@/hooks/use-site-config"
+import { formatCurrency } from "@/lib/currency"
 import type { Schulung } from "@/types/schulung"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
@@ -46,6 +48,7 @@ export default function TrainingCatalogDialog({ isOpen, onClose }: TrainingCatal
 
   const { schulungen, loading, error } = useAllSchulungen()
   const courses: Schulung[] = schulungen || []
+  const { config } = useSiteConfig()
 
   // Filter courses based on search term
   const filteredCourses = courses.filter(
@@ -165,7 +168,7 @@ export default function TrainingCatalogDialog({ isOpen, onClose }: TrainingCatal
                             <h3 className="text-lg font-semibold tracking-tight leading-snug">{course.title}</h3>
                             <div className="inline-flex items-center rounded-full bg-[#E9F8E4] px-2.5 py-0.5 text-xs font-medium text-[#2B6B16] ring-1 ring-[#BEE9B4]">
                               <Euro className="h-3.5 w-3.5 mr-1" />
-                              {course.price === 0 ? "Kostenlos" : `${course.price} €`}
+                              {course.price === 0 ? "Kostenlos" : formatCurrency(Number(course.price || 0), config.currency)}
                             </div>
                           </div>
 
@@ -328,7 +331,7 @@ export default function TrainingCatalogDialog({ isOpen, onClose }: TrainingCatal
                           <div>
                             <span className="text-gray-500">Preis:</span>
                             <span className="font-medium ml-2">
-                              {selectedCourse.price === 0 ? "Kostenlos" : `${selectedCourse.price} €`}
+                              {selectedCourse.price === 0 ? "Kostenlos" : formatCurrency(Number(selectedCourse.price || 0), config.currency)}
                             </span>
                           </div>
                         </div>
@@ -384,7 +387,7 @@ export default function TrainingCatalogDialog({ isOpen, onClose }: TrainingCatal
                       <h2 className="text-3xl font-semibold tracking-tight drop-shadow-sm">{selectedCourse.title}</h2>
                       <div className="inline-flex items-center rounded-full bg-[#66C63A] text-white px-3 py-1 text-sm font-medium shadow">
                         <Euro className="h-4 w-4 mr-1" />
-                        {selectedCourse.price === 0 ? "Kostenlos" : `${selectedCourse.price} €`}
+                        {selectedCourse.price === 0 ? "Kostenlos" : formatCurrency(Number(selectedCourse.price || 0), config.currency)}
                       </div>
                     </div>
                   </div>
@@ -413,7 +416,7 @@ export default function TrainingCatalogDialog({ isOpen, onClose }: TrainingCatal
                           <div className="flex items-center justify-between">
                             <span className="text-gray-500">Preis:</span>
                             <span className="font-medium">
-                              {selectedCourse.price === 0 ? "Kostenlos" : `${selectedCourse.price} €`}
+                              {selectedCourse.price === 0 ? "Kostenlos" : formatCurrency(Number(selectedCourse.price || 0), config.currency)}
                             </span>
                           </div>
                           {/* Datum-Angaben entfernt */}
@@ -428,7 +431,7 @@ export default function TrainingCatalogDialog({ isOpen, onClose }: TrainingCatal
                       <CardContent className="p-6 space-y-4">
                         <div className="flex items-center justify-between">
                           <span className="text-gray-600">Preis</span>
-                          <span className="text-xl font-semibold">{selectedCourse.price === 0 ? "Kostenlos" : `${selectedCourse.price} €`}</span>
+                          <span className="text-xl font-semibold">{selectedCourse.price === 0 ? "Kostenlos" : formatCurrency(Number(selectedCourse.price || 0), config.currency)}</span>
                         </div>
                         <div className="flex items-center justify-between text-sm">
                           <span className="text-gray-600">Dauer</span>

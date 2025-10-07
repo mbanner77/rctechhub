@@ -22,6 +22,8 @@ import { de } from "date-fns/locale"
 import { cn } from "@/lib/utils"
 import { useToast } from "@/hooks/use-toast"
 import { sendFormConfirmationEmail, sendTeamNotificationEmail } from "@/lib/send-confirmation-email"
+import { useSiteConfig } from "@/hooks/use-site-config"
+import { formatCurrency } from "@/lib/currency"
 
 // Hilfsfunktion zum Rendern des Icons basierend auf dem Icon-Namen
 const renderIcon = (iconName: string) => {
@@ -52,6 +54,7 @@ export function WorkshopBookingDialog({ isOpen, onClose, workshop }) {
   const [message, setMessage] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
   const { toast } = useToast()
+  const { config } = useSiteConfig()
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -66,7 +69,7 @@ export function WorkshopBookingDialog({ isOpen, onClose, workshop }) {
         'Workshop': workshop?.title || 'Unbekannt',
         'Datum': date ? format(date, 'PPP', { locale: de }) : 'Nicht angegeben',
         'Nachricht': message || 'Keine Nachricht',
-        'Preis': workshop?.price ? `${workshop.price.toLocaleString('de-DE')} €` : 'Nicht angegeben'
+        'Preis': workshop?.price ? `${formatCurrency(Number(workshop.price || 0), config.currency)}` : 'Nicht angegeben'
       };
       
       // Send notification email to the team
@@ -88,7 +91,7 @@ export function WorkshopBookingDialog({ isOpen, onClose, workshop }) {
         <strong>${workshop?.title}</strong><br/>
         ${workshop?.description || ''}<br/><br/>
         <strong>Gewünschtes Datum:</strong> ${date ? format(date, 'PPP', { locale: de }) : 'Nicht angegeben'}<br/>
-        <strong>Preis:</strong> ${workshop?.price ? `${workshop.price.toLocaleString('de-DE')} €` : 'Nicht angegeben'}
+        <strong>Preis:</strong> ${workshop?.price ? `${formatCurrency(Number(workshop.price || 0), config.currency)}` : 'Nicht angegeben'}
       `;
       
       // Send confirmation email to the user
@@ -149,7 +152,7 @@ export function WorkshopBookingDialog({ isOpen, onClose, workshop }) {
             <span className="font-medium mr-2">Dauer:</span> {workshop.duration}
           </div>
           <div className="flex items-center">
-            <span className="font-medium mr-2">Preis:</span> {workshop.price} €
+            <span className="font-medium mr-2">Preis:</span> {typeof workshop.price === 'number' && workshop.price > 0 ? formatCurrency(Number(workshop.price || 0), config.currency) : 'Kostenlos'}
           </div>
         </div>
 
