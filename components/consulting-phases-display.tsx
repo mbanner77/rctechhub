@@ -14,6 +14,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import { useSiteConfig } from "@/hooks/use-site-config"
+import { formatCurrency } from "@/lib/currency"
 
 export default function ConsultingPhasesDisplay() {
   const [data, setData] = useState<ConsultingPhasesData | null>(null)
@@ -24,6 +26,7 @@ export default function ConsultingPhasesDisplay() {
   const [ctaOpen, setCtaOpen] = useState(false)
   const [showConfigurator, setShowConfigurator] = useState(false)
   const configuratorRef = useRef<HTMLDivElement | null>(null)
+  const { config } = useSiteConfig()
 
   useEffect(() => {
     const load = async () => {
@@ -50,7 +53,7 @@ export default function ConsultingPhasesDisplay() {
     load()
   }, [])
 
-  const currency = useMemo(() => new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR" }), [])
+  const fmt = (v: number) => formatCurrency(Number(v || 0), config.currency)
 
   const offerPrice = (o?: ConsultingPhaseOffer) => (o?.price && Number.isFinite(o.price) ? o.price : 0)
 
@@ -88,7 +91,6 @@ export default function ConsultingPhasesDisplay() {
       })
     )
     if (chosen.length === 0) {
-      alert("Bitte wählen Sie mindestens ein Angebot aus.")
       return
     }
     setSubmitting(true)
@@ -97,19 +99,19 @@ export default function ConsultingPhasesDisplay() {
       const itemsHtml = `<ul>${chosen
         .map((c) => {
           const phaseTitle = data.phases.find((p) => p.id === c.phaseId)?.title || c.phaseId
-          return `<li>${phaseTitle}: ${c.title} — ${new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR" }).format(c.price)}</li>`
+          return `<li>${phaseTitle}: ${c.title} — ${fmt(c.price)}</li>`
         })
         .join("")}</ul>`
 
       // Create details for team notification
       const details: Record<string, string> = {
-        Gesamtbetrag: `${new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR" }).format(totals.grand)}`,
+        Gesamtbetrag: `${fmt(totals.grand)}`,
         Unternehmen: customer.company || "-",
         Hinweise: customer.note || "-",
         Auswahl: chosen
           .map((c) => {
             const phaseTitle = data.phases.find((p) => p.id === c.phaseId)?.title || c.phaseId
-            return `${phaseTitle}: ${c.title} – ${new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR" }).format(c.price)}`
+            return `${phaseTitle}: ${c.title} – ${fmt(c.price)}`
           })
           .join("; ")
       }
@@ -122,7 +124,7 @@ export default function ConsultingPhasesDisplay() {
         "Consulting-Angebot (Baukasten)",
         `Vielen Dank für Ihre Anfrage zu unserem Beratungsbaukasten.<br/>\
         <br/>Ihre Auswahl:<br/>${itemsHtml}<br/>\
-        Gesamtsumme: ${new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR" }).format(totals.grand)}.`
+        Gesamtsumme: ${fmt(totals.grand)}.`
       )
 
       alert("Vielen Dank! Ihre Anfrage wurde gesendet. Wir melden uns zeitnah bei Ihnen.")
@@ -236,7 +238,7 @@ export default function ConsultingPhasesDisplay() {
                       <div className="flex-1">
                         <div className="flex items-center justify-between gap-3">
                           <div className="font-medium">{offer.title}</div>
-                          <div className="text-sm text-muted-foreground">{currency.format(offerPrice(offer))}</div>
+                          <div className="text-sm text-muted-foreground">{fmt(offerPrice(offer))}</div>
                         </div>
                         {offer.shortDescription && (
                           <div className="text-sm text-muted-foreground">{offer.shortDescription}</div>
@@ -245,7 +247,7 @@ export default function ConsultingPhasesDisplay() {
                     </li>
                   ))}
                 </ul>
-                <div className="mt-4 text-right font-semibold">Summe Phase: {currency.format(totals.perPhase[phase.id] || 0)}</div>
+                <div className="mt-4 text-right font-semibold">Summe Phase: {fmt(totals.perPhase[phase.id] || 0)}</div>
               </CardContent>
             </Card>
           ))}
@@ -257,7 +259,7 @@ export default function ConsultingPhasesDisplay() {
           <CardContent className="pt-6 space-y-4">
             <div className="flex items-center justify-between">
               <div className="text-xl font-semibold">Gesamtsumme</div>
-              <div className="text-xl font-semibold">{currency.format(totals.grand)}</div>
+              <div className="text-xl font-semibold">{fmt(totals.grand)}</div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               <input
