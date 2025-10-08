@@ -87,8 +87,11 @@ export default function PostgresAdminPage() {
       } finally {
         setLoading(false)
       }
+    }
+    run()
+  }, [])
 
-  // Client-side export helpers
+  // Client-side export helpers (top-level)
   const exportRowsAsCSV = (columns: string[], rows: any[], filename: string) => {
     const esc = (v: any) => {
       if (v == null) return ''
@@ -119,7 +122,7 @@ export default function PostgresAdminPage() {
     URL.revokeObjectURL(url)
   }
 
-  // Saved queries helpers
+  // Saved queries helpers (top-level)
   const saveCurrentQuery = () => {
     const name = prompt('Name für diese Abfrage eingeben:')
     if (!name) return
@@ -133,9 +136,6 @@ export default function PostgresAdminPage() {
     setSavedQueries(next)
     try { localStorage.setItem(savedQueriesKey, JSON.stringify(next)) } catch {}
   }
-    }
-    run()
-  }, [])
 
   useEffect(() => {
     const loadTables = async () => {
