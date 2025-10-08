@@ -4,10 +4,12 @@ import Link from "next/link"
 import { ImageWithFallback } from "@/components/ui/image-with-fallback"
 import { usePathname } from "next/navigation"
 import { Mail, Phone, MapPin, Facebook, Twitter, Linkedin, Instagram } from "lucide-react"
+import { useSiteConfig } from "@/hooks/use-site-config"
 
 export function EnhancedFooter() {
   const currentYear = new Date().getFullYear()
   const pathname = usePathname()
+  const { config, loading: cfgLoading } = useSiteConfig()
   
   // Create contact link that preserves the current path
   const contactLink = pathname === "/landing" ? "/landing#contact" : "/home#contact"
@@ -135,19 +137,40 @@ export function EnhancedFooter() {
             <ul className="space-y-3">
               <li className="flex items-start">
                 <MapPin className="h-5 w-5 text-gray-400 mr-2 mt-0.5 flex-shrink-0" />
-                <span className="text-gray-400">Im Welterbe 2, 45141 Essen</span>
+                <span className="text-gray-400">
+                  {(() => {
+                    const c = config.currency === 'CHF' ? config.contactCHF : config.contactEUR
+                    const line1 = c?.addressLine1 || (cfgLoading ? '' : 'Im Welterbe 2')
+                    const line2 = c?.addressLine2 || (cfgLoading ? '' : '45141 Essen')
+                    return `${line1}${line2 ? `, ${line2}` : ''}`
+                  })()}
+                </span>
               </li>
               <li className="flex items-center">
                 <Phone className="h-5 w-5 text-gray-400 mr-2 flex-shrink-0" />
-                <a href="tel:+49 201 48639980" className="text-gray-400 hover:text-gray-600 transition-colors">
-                  +49 201 48639980
-                </a>
+                {(() => {
+                  const c = config.currency === 'CHF' ? config.contactCHF : config.contactEUR
+                  const phone = c?.phone || (cfgLoading ? '' : '+49 201 48639980')
+                  const telHref = `tel:${phone.replace(/\s+/g, '')}`
+                  return (
+                    <a href={telHref} className="text-gray-400 hover:text-gray-600 transition-colors">
+                      {phone}
+                    </a>
+                  )
+                })()}
               </li>
               <li className="flex items-center">
                 <Mail className="h-5 w-5 text-gray-400 mr-2 flex-shrink-0" />
-                <a href="mailto:techhub@realcore.de" className="text-gray-400 hover:text-gray-600 transition-colors">
-                  techhub@realcore.de
-                </a>
+                {(() => {
+                  const c = config.currency === 'CHF' ? config.contactCHF : config.contactEUR
+                  const email = c?.email || (cfgLoading ? '' : 'techhub@realcore.de')
+                  const mailHref = `mailto:${email}`
+                  return (
+                    <a href={mailHref} className="text-gray-400 hover:text-gray-600 transition-colors">
+                      {email}
+                    </a>
+                  )
+                })()}
               </li>
             </ul>
           </div>

@@ -79,7 +79,7 @@ export default function Home() {
   // Fügen Sie den State für das mobile Menü hinzu
   // Fügen Sie diese Zeile zu den anderen useState-Deklarationen hinzu
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const { config } = useSiteConfig()
+  const { config, loading: cfgLoading } = useSiteConfig()
 
   // Refs für die Scroll-Funktionalität
   const servicesRef = useRef<HTMLDivElement>(null)
