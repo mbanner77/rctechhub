@@ -13,6 +13,7 @@ import type { ILandingPageData } from "@/types/landing-page"
 import { StickyHeader } from "@/components/sticky-header"
 import { BackToTop } from "@/components/back-to-top"
 import { EnhancedFooter } from "@/components/enhanced-footer"
+import { useSiteConfig } from "@/hooks/use-site-config"
 import { PathfinderUnits } from "@/components/pathfinder-units"
 import StarterPackages from "@/components/starter-packages"
 import { analytics } from "@/lib/analytics"
@@ -48,6 +49,7 @@ export default function LandingPage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const router = useRouter()
   const { toast } = useToast()
+  const { config, loading: cfgLoading } = useSiteConfig()
 
   // Handle contact form submission
   const handleContactSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -590,19 +592,36 @@ export default function LandingPage() {
                   <div className="space-y-3">
                     <div className="flex items-start">
                       <MapPin className="h-5 w-5 text-green-600 mr-2 mt-0.5" />
-                      <span>Im Welterbe 2, 45141 Essen</span>
+                      <span>
+                        {(() => {
+                          const c = config.currency === 'CHF' ? config.contactCHF : config.contactEUR
+                          const line1 = c?.addressLine1 || (cfgLoading ? '' : 'Im Welterbe 2')
+                          const line2 = c?.addressLine2 || (cfgLoading ? '' : '45141 Essen')
+                          return `${line1}${line2 ? `, ${line2}` : ''}`
+                        })()}
+                      </span>
                     </div>
                     <div className="flex items-center">
                       <Phone className="h-5 w-5 text-green-600 mr-2" />
-                      <a href="tel:+49 201 48639980" className="hover:text-green-600">
-                        +49 201 48639980
-                      </a>
+                      {(() => {
+                        const c = config.currency === 'CHF' ? config.contactCHF : config.contactEUR
+                        const phone = c?.phone || (cfgLoading ? '' : '+49 201 48639980')
+                        const telHref = `tel:${phone.replace(/\s+/g, '')}`
+                        return (
+                          <a href={telHref} className="hover:text-green-600">{phone}</a>
+                        )
+                      })()}
                     </div>
                     <div className="flex items-center">
                       <Mail className="h-5 w-5 text-green-600 mr-2" />
-                      <a href="mailto:techhub@realcore.de" className="hover:text-green-600">
-                        techhub@realcore.de
-                      </a>
+                      {(() => {
+                        const c = config.currency === 'CHF' ? config.contactCHF : config.contactEUR
+                        const email = c?.email || (cfgLoading ? '' : 'techhub@realcore.de')
+                        const mailHref = `mailto:${email}`
+                        return (
+                          <a href={mailHref} className="hover:text-green-600">{email}</a>
+                        )
+                      })()}
                     </div>
                   </div>
                 </div>
