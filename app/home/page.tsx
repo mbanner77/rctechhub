@@ -35,6 +35,7 @@ import { StickyHeader } from "@/components/sticky-header"
 import { EnhancedFooter } from "@/components/enhanced-footer"
 import { analytics } from "@/lib/analytics"
 import FlexLicenseDialog from "@/components/flexlicense-dialog"
+import { useSiteConfig } from "@/hooks/use-site-config"
 
 export default function Home() {
   // search query "Beratungsangebote"
@@ -78,6 +79,7 @@ export default function Home() {
   // Fügen Sie den State für das mobile Menü hinzu
   // Fügen Sie diese Zeile zu den anderen useState-Deklarationen hinzu
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const { config } = useSiteConfig()
 
   // Refs für die Scroll-Funktionalität
   const servicesRef = useRef<HTMLDivElement>(null)
@@ -730,23 +732,23 @@ export default function Home() {
               </div>
               <div className="flex flex-col justify-center">
                 <div className="bg-gray-50 p-6 rounded-lg">
-                  <h3 className="font-semibold text-lg mb-4">RealCore GmbH</h3>
+                  <h3 className="font-semibold text-lg mb-4">{(config.currency === 'CHF' ? config.contactCHF?.company : config.contactEUR?.company) || 'RealCore GmbH'}</h3>
                   <div className="space-y-3">
                     <div className="flex items-start">
                       <MapPin className="w-5 h-5 mr-3 text-green-600 mt-0.5" />
                       <span>
-                        Im Welterbe 2
+                        {(config.currency === 'CHF' ? config.contactCHF?.addressLine1 : config.contactEUR?.addressLine1) || 'Im Welterbe 2'}
                         <br />
-                        45141 Essen
+                        {(config.currency === 'CHF' ? config.contactCHF?.addressLine2 : config.contactEUR?.addressLine2) || '45141 Essen'}
                       </span>
                     </div>
                     <div className="flex items-center">
                       <Phone className="w-5 h-5 mr-3 text-green-600" />
-                      <span>+49 201 486 399 80</span>
+                      <span>{(config.currency === 'CHF' ? config.contactCHF?.phone : config.contactEUR?.phone) || '+49 201 486 399 80'}</span>
                     </div>
                     <div className="flex items-center">
                       <Mail className="w-5 h-5 mr-3 text-green-600" />
-                      <span>techhub@realcore.de</span>
+                      <span>{(config.currency === 'CHF' ? config.contactCHF?.email : config.contactEUR?.email) || 'techhub@realcore.de'}</span>
                     </div>
                   </div>
                   <div className="mt-6">

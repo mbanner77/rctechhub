@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { getSiteConfig, saveSiteConfig } from "@/lib/site-config-service"
+import type { ISiteConfig } from "@/types/site-config"
 
 export const dynamic = "force-dynamic"
 export const fetchCache = "force-no-store"
@@ -24,8 +25,12 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json()
-    const success = await saveSiteConfig({ currency: body?.currency === "CHF" ? "CHF" : "EUR" })
+    const body = (await request.json()) as Partial<ISiteConfig>
+    const success = await saveSiteConfig({
+      currency: body?.currency === "CHF" ? "CHF" : "EUR",
+      contactEUR: body?.contactEUR,
+      contactCHF: body?.contactCHF,
+    })
     if (success) {
       return NextResponse.json({ success: true })
     }

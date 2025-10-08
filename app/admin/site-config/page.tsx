@@ -5,12 +5,15 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import type { CurrencyCode, ISiteConfig } from "@/types/site-config"
+import type { CurrencyCode, ISiteConfig, ContactInfo } from "@/types/site-config"
+import { Input } from "@/components/ui/input"
 
 export default function SiteConfigPage() {
   const [currency, setCurrency] = useState<CurrencyCode>("EUR")
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState<null | "ok" | "err">(null)
+  const [contactEUR, setContactEUR] = useState<ContactInfo>({})
+  const [contactCHF, setContactCHF] = useState<ContactInfo>({})
 
   useEffect(() => {
     const load = async () => {
@@ -18,6 +21,8 @@ export default function SiteConfigPage() {
         const res = await fetch("/api/unified-data/site-config", { cache: "no-store" })
         const data: ISiteConfig = await res.json()
         setCurrency(data?.currency === "CHF" ? "CHF" : "EUR")
+        setContactEUR(data?.contactEUR || {})
+        setContactCHF(data?.contactCHF || {})
       } catch (e) {
         console.error("SiteConfig laden fehlgeschlagen", e)
       }
@@ -32,7 +37,7 @@ export default function SiteConfigPage() {
       const res = await fetch("/api/unified-data/site-config", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ currency }),
+        body: JSON.stringify({ currency, contactEUR, contactCHF }),
       })
       if (res.ok) {
         setSaved("ok")
@@ -68,6 +73,59 @@ export default function SiteConfigPage() {
                 <Label htmlFor="cur-chf" className="cursor-pointer">Schweizer Franken (CHF)</Label>
               </div>
             </RadioGroup>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-3">
+              <CardTitle className="text-base">Kontaktdaten für EUR</CardTitle>
+              <div className="grid grid-cols-1 gap-3">
+                <div>
+                  <Label>Unternehmen</Label>
+                  <Input value={contactEUR.company || ""} onChange={(e)=>setContactEUR({ ...contactEUR, company: e.target.value })} />
+                </div>
+                <div>
+                  <Label>Adresse Zeile 1</Label>
+                  <Input value={contactEUR.addressLine1 || ""} onChange={(e)=>setContactEUR({ ...contactEUR, addressLine1: e.target.value })} />
+                </div>
+                <div>
+                  <Label>Adresse Zeile 2</Label>
+                  <Input value={contactEUR.addressLine2 || ""} onChange={(e)=>setContactEUR({ ...contactEUR, addressLine2: e.target.value })} />
+                </div>
+                <div>
+                  <Label>Telefon</Label>
+                  <Input value={contactEUR.phone || ""} onChange={(e)=>setContactEUR({ ...contactEUR, phone: e.target.value })} />
+                </div>
+                <div>
+                  <Label>E-Mail</Label>
+                  <Input value={contactEUR.email || ""} onChange={(e)=>setContactEUR({ ...contactEUR, email: e.target.value })} />
+                </div>
+              </div>
+            </div>
+            <div className="space-y-3">
+              <CardTitle className="text-base">Kontaktdaten für CHF</CardTitle>
+              <div className="grid grid-cols-1 gap-3">
+                <div>
+                  <Label>Unternehmen</Label>
+                  <Input value={contactCHF.company || ""} onChange={(e)=>setContactCHF({ ...contactCHF, company: e.target.value })} />
+                </div>
+                <div>
+                  <Label>Adresse Zeile 1</Label>
+                  <Input value={contactCHF.addressLine1 || ""} onChange={(e)=>setContactCHF({ ...contactCHF, addressLine1: e.target.value })} />
+                </div>
+                <div>
+                  <Label>Adresse Zeile 2</Label>
+                  <Input value={contactCHF.addressLine2 || ""} onChange={(e)=>setContactCHF({ ...contactCHF, addressLine2: e.target.value })} />
+                </div>
+                <div>
+                  <Label>Telefon</Label>
+                  <Input value={contactCHF.phone || ""} onChange={(e)=>setContactCHF({ ...contactCHF, phone: e.target.value })} />
+                </div>
+                <div>
+                  <Label>E-Mail</Label>
+                  <Input value={contactCHF.email || ""} onChange={(e)=>setContactCHF({ ...contactCHF, email: e.target.value })} />
+                </div>
+              </div>
+            </div>
           </div>
 
           <div className="flex items-center gap-3">

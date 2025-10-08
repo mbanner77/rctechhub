@@ -15,7 +15,11 @@ export function useSiteConfig() {
         const res = await fetch("/api/unified-data/site-config", { cache: "no-store" })
         const data = await res.json()
         const currency: CurrencyCode = data?.currency === "CHF" ? "CHF" : "EUR"
-        setConfig({ currency })
+        setConfig({
+          currency,
+          contactEUR: data?.contactEUR,
+          contactCHF: data?.contactCHF,
+        })
         setError(null)
       } catch (e) {
         console.error("Failed to load site-config", e)
