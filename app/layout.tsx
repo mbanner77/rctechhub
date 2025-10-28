@@ -26,10 +26,10 @@ export const metadata: Metadata = {
       siteName: "RealCore Tech Hub",
       images: [
         {
-          url: "/images/all-technologies.png",
-          width: 1200,
-          height: 630,
-          alt: "RealCore Tech Hub"
+          url: "/images/share-preview.png",
+          width: 3090,
+          height: 2256,
+          alt: "RealCore Tech Hub Vorschau"
         }
       ],
       locale: 'de_DE',
@@ -39,7 +39,7 @@ export const metadata: Metadata = {
       card: 'summary_large_image',
       title: "RealCore Tech Hub",
       description: "Ihr Beratungsbaukasten für SAP, Open Source & Microsoft - alles aus einer Hand",
-      images: ["/images/all-technologies.png"],
+      images: ["/images/share-preview.png"],
       creator: '@realcoregroup'
     },
 }
