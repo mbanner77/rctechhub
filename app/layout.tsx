@@ -19,6 +19,10 @@ export const metadata: Metadata = {
     generator: 'v0.dev',
     // Use the public site URL if available for absolute OG/Twitter URLs
     metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'),
+    icons: {
+      icon: "/favicon.png",
+      shortcut: "/favicon.png",
+    },
     openGraph: {
       title: "RealCore Tech Hub",
       description: "Ihr Beratungsbaukasten für SAP, Open Source & Microsoft - alles aus einer Hand",
